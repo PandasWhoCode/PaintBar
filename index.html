@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Paint</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .save-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .save-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: left;
+        }
+
+        .save-option:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .save-icon {
+            font-size: 24px;
+        }
+
+        .save-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .save-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .save-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .color-picker-container {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .color-picker-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background-color: #000000;
+        }
+        
+        .color-value {
+            font-family: monospace;
+            padding: 4px 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            flex-grow: 1;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        #eyedropperBtn {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #eyedropperBtn:hover {
+            background: #f5f5f5;
+        }
+
+        #eyedropperBtn.active {
+            background: #e0e0e0;
+            border-color: #999;
+        }
+
+        .submenu-content {
+            display: none;
+            padding: 10px;
+        }
+
+        .submenu-content.expanded {
+            display: block;
+        }
+
+        .submenu-toggle {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .submenu-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .text-preview {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 50px;
+            background: #fff;
+        }
+
+        .text-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .text-controls input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .text-controls select,
+        .text-controls input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 100px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .modal-footer button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #confirmTextBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #cancelTextBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .text-settings {
+            padding: 15px;
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .setting-item textarea,
+        .setting-item select,
+        .setting-item input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .text-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 15px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .preview-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .cancel-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .text-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 20px;
+            z-index: 1000;
+        }
+
+        .preview-actions {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .apply-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .edit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar-toggle" id="toolbarToggle">
+            <span class="toggle-icon">🎨</span>
+        </div>
+        <div class="toolbar" id="toolbar">
+            <div class="toolbar-handle" id="toolbarHandle">
+                <span class="handle-icon">⋮</span>
+            </div>
+            
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Tools</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="pencilBtn" class="active" title="Pencil">✏️</button>
+                    <button id="eraserBtn" title="Eraser">🧹</button>
+                    <button id="fillBtn" title="Fill">🪣</button>
+                    <button id="textBtn" title="Text">T</button>
+                    <button id="selectBtn" title="Select">◰</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Shapes</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="rectangleBtn" title="Rectangle">⬜</button>
+                    <button id="circleBtn" title="Circle">⭕</button>
+                    <button id="lineBtn" title="Line">📏</button>
+                    <button id="triangleBtn" title="Triangle">📐</button>
+                    <select id="triangle-type" class="hidden">
+                        <option value="equilateral">Equilateral</option>
+                        <option value="isosceles">Isosceles</option>
+                        <option value="right">Right Angle</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Colors</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <div class="color-controls">
+                        <div class="color-picker-container">
+                            <div class="color-picker-wrapper">
+                                <div id="color-picker"></div>
+                                <div class="color-info">
+                                    <div class="color-preview" id="color-preview"></div>
+                                    <div class="color-value" id="color-value">#000000</div>
+                                    <button id="eyedropperBtn" class="tool-btn" title="Pick Color (I)">🔍</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="recent-colors-section">
+                        <label>Recent Colors</label>
+                        <div id="recentColors" class="recent-colors"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Size</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <span title="Line Weight">↔️</span>
+                    <input type="range" id="brushSize" min="1" max="100" value="25" title="Line Weight">
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Transform</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="rotateBtn" title="Rotate">🔄</button>
+                    <button id="flipHBtn" title="Flip Horizontal">↔️</button>
+                    <button id="flipVBtn" title="Flip Vertical">↕️</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>View</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="gridBtn" title="Toggle Grid">📏</button>
+                    <button id="zoomInBtn" title="Zoom In">🔍+</button>
+                    <button id="zoomOutBtn" title="Zoom Out">🔍-</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Actions</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <div class="action-group">
+                        <button id="cropBtn" title="Crop">📐</button>
+                        <button id="pasteBtn" title="Paste">📋</button>
+                        <button id="clearBtn" title="Clear">🧹</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>File</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="saveBtn" title="Save">💾</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Settings</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="canvasSettingsBtn" title="Canvas Settings">⚙️</button>
+                </div>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Canvas Settings</h3>
+                    <button id="closeSettingsBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="setting-item">
+                    <label for="canvasWidth">Width:</label>
+                    <input type="number" id="canvasWidth" min="1" max="4096" value="800">
+                </div>
+                <div class="setting-item">
+                    <label for="canvasHeight">Height:</label>
+                    <input type="number" id="canvasHeight" min="1" max="4096" value="600">
+                </div>
+                <div class="setting-item">
+                    <label for="transparentCanvas">
+                        <input type="checkbox" id="transparentCanvas">
+                        Transparent Background
+                    </label>
+                </div>
+                <div class="setting-item settings-buttons">
+                    <button id="applyCanvasSettings" class="action-btn apply-btn">Apply Changes</button>
+                    <button id="cancelCanvasSettings" class="action-btn cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="textModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Text Tool</h3>
+                    <button id="closeTextBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="text-settings">
+                    <div class="setting-item">
+                        <label for="textInput">Text:</label>
+                        <textarea id="textInput" rows="4"></textarea>
+                    </div>
+                    <div class="setting-item">
+                        <label for="fontFamily">Font:</label>
+                        <select id="fontFamily">
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="fontSize">Size:</label>
+                        <input type="number" id="fontSize" min="8" max="200" value="20">
+                    </div>
+                    <div class="setting-item">
+                        <label for="textColor">Color:</label>
+                        <input type="color" id="textColor">
+                    </div>
+                </div>
+                <div class="text-actions">
+                    <button id="previewTextBtn" class="action-btn preview-btn">Preview Text</button>
+                    <button id="cancelModalBtn" class="action-btn cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="textPreviewOverlay" class="text-preview-overlay hidden">
+            <div class="preview-actions">
+                <button id="applyTextBtn" class="action-btn apply-btn">Apply Text</button>
+                <button id="editTextBtn" class="action-btn edit-btn">Edit Text</button>
+                <button id="cancelPreviewBtn" class="action-btn cancel-btn">Cancel</button>
+            </div>
+        </div>
+        <div id="cropOverlay" class="hidden">
+            <div id="cropBox">
+                <div class="crop-handle" data-handle="top-left"></div>
+                <div class="crop-handle" data-handle="top-right"></div>
+                <div class="crop-handle" data-handle="bottom-left"></div>
+                <div class="crop-handle" data-handle="bottom-right"></div>
+            </div>
+            <div class="crop-controls">
+                <button id="squareCropBtn">1:1</button>
+                <button id="mobileCropBtn">9:16</button>
+                <button id="applyCropBtn">✅</button>
+                <button id="cancelCropBtn">❌</button>
+            </div>
+        </div>
+        <div id="saveModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Save Image</h3>
+                    <button id="closeSaveBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="save-options">
+                        <button id="savePng" class="save-option">
+                            <span class="save-icon">📄</span>
+                            <div class="save-details">
+                                <span class="save-name">PNG</span>
+                                <span class="save-desc">Best for images with transparency</span>
+                            </div>
+                        </button>
+                        <button id="saveJpg" class="save-option">
+                            <span class="save-icon">🖼️</span>
+                            <div class="save-details">
+                                <span class="save-name">JPG</span>
+                                <span class="save-desc">Best for photos and complex images</span>
+                            </div>
+                        </button>
+                        <button id="saveIco" class="save-option">
+                            <span class="save-icon">🎯</span>
+                            <div class="save-details">
+                                <span class="save-name">ICO</span>
+                                <span class="save-desc">Best for icons and favicons</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelSave" class="action-btn cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script src="app.js"></script>
+</body>
+</html>
