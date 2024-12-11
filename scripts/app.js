@@ -1,4 +1,4 @@
-class MobilePaint {
+class PaintBar {
     constructor() {
         // Canvas layers
         this.transparentBgCanvas = document.getElementById('transparentBackgroundCanvas');
@@ -2275,5 +2275,5 @@ class MobilePaint {
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const mobilePaint = new MobilePaint();
+    const paintBar = new PaintBar();
 });

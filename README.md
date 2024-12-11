@@ -1,6 +1,6 @@
-# Mobile Paint Web Application
+# PaintBar
 
-A modern, mobile-friendly web-based paint application that provides an intuitive drawing experience similar to MS Paint but optimized for touch devices.
+A modern, web-based paint application that provides an intuitive drawing experience with a clean, minimalist interface. PaintBar combines the simplicity of traditional paint programs with modern web technologies.
 
 ## Features
 
@@ -22,12 +22,13 @@ A modern, mobile-friendly web-based paint application that provides an intuitive
   - Undo/Redo functionality
   - Clear canvas
   - Save artwork
+  - Transparency support
 
 ## Getting Started
 
 1. Clone the repository:
 ```bash
-git clone [your-repo-url]
+git clone https://github.com/DJ-BBot/PaintBar.git
 ```
 
 2. Open `index.html` in a modern web browser
@@ -36,8 +37,8 @@ git clone [your-repo-url]
 
 The project uses vanilla JavaScript with the following structure:
 - `index.html`: Main application structure and UI
-- `app.js`: Core application logic and drawing functionality
-- `styles.css`: Application styling
+- `scripts/app.js`: Core application logic and drawing functionality
+- `styles/styles.css`: Application styling
 
 ## Browser Support
 
