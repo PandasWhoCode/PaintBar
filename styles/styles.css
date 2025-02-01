@@ -930,6 +930,108 @@ button.active {
     color: #666;
 }
 
+/* Save Options Styles */
+.save-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.save-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.save-option:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+.save-icon {
+    font-size: 24px;
+}
+
+.save-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.save-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.save-desc {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Color Picker Styles */
+.color-picker-container {
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.color-preview {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    background-color: #000000;
+}
+
+.color-value {
+    font-family: monospace;
+    padding: 4px 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    flex-grow: 1;
+    text-align: center;
+    min-width: 70px;
+}
+
+#eyedropperBtn {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Preview Button Style */
+.preview-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
 @media (max-width: 600px) {
     .toolbar {
         padding: 5px;

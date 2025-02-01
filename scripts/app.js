@@ -12,7 +12,7 @@ class PaintBar {
         
         this.overlayCanvas = document.getElementById('selectionOverlay');
         this.overlayCtx = this.overlayCanvas.getContext('2d');
-        
+
         // Initialize properties
         this.isDrawing = false;
         this.activeTool = 'pencil';
@@ -55,6 +55,18 @@ class PaintBar {
         this.isMovingSelection = false;
         this.selectionMoveStart = { x: 0, y: 0 };
         this.selectionBackgroundState = null;
+
+        // Add throttle/debounce utilities
+        this.throttle = (func, limit) => {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        };
 
         // Initialize the application
         this.initializeState();
@@ -261,16 +273,20 @@ class PaintBar {
     }
 
     setupEventListeners() {
-        // Canvas event listeners
+        // Optimize mouse/touch event handling with throttling
+        const throttledMouseMove = this.throttle(this.handleMouseMove.bind(this), 16); // ~60fps
+        const throttledTouch = this.throttle(this.handleTouch.bind(this), 16);
+
+        // Event delegation for canvas events
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.canvas.addEventListener('mousemove', throttledMouseMove);
         this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
         this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
         this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
 
-        // Touch events
+        // Optimized touch events
         this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-        this.canvas.addEventListener('touchmove', this.handleTouch.bind(this));
+        this.canvas.addEventListener('touchmove', throttledTouch);
         this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
 
         // Tool buttons
@@ -500,14 +516,14 @@ class PaintBar {
         // Other event listeners...
         // Mouse events
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.canvas.addEventListener('mousemove', throttledMouseMove);
         this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
         this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
         this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
 
         // Touch events
         this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-        this.canvas.addEventListener('touchmove', this.handleTouch.bind(this));
+        this.canvas.addEventListener('touchmove', throttledTouch);
         this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
 
         // Color button events
@@ -711,40 +727,29 @@ class PaintBar {
 
     handleMouseMove(e) {
         if (!this.isDrawing && !this.isSelecting && !this.isMovingSelection) return;
-
+        
         const point = this.getMousePos(e);
-
+        
         if (this.isMovingSelection) {
             const dx = point.x - this.lastX;
             const dy = point.y - this.lastY;
             this.moveSelection(dx, dy);
-            this.lastX = point.x;
-            this.lastY = point.y;
-            return;
-        }
-
-        if (this.isSelecting) {
+        } else if (this.isSelecting) {
             this.selectionEnd = point;
-            this.drawSelectionOverlay();
-            return;
-        }
-
-        // Handle drawing tools
-        switch (this.activeTool) {
-            case 'pencil':
+            this.clearOverlay();
+            this.drawSelectionBox();
+        } else {
+            if (this.activeTool === 'pencil') {
                 this.drawFreehand(point.x, point.y);
-                break;
-            case 'eraser':
+            } else if (this.activeTool === 'eraser') {
                 this.erase(point.x, point.y);
-                break;
-            case 'line':
-            case 'rectangle':
-            case 'circle':
-            case 'triangle':
-                this.drawShape(point.x, point.y);
-                break;
+            } else if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
+                requestAnimationFrame(() => {
+                    this.drawShape(point.x, point.y);
+                });
+            }
         }
-
+        
         this.lastX = point.x;
         this.lastY = point.y;
     }
