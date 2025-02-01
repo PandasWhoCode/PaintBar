@@ -391,11 +391,13 @@
                     <button id="circleBtn" title="Circle">⭕</button>
                     <button id="lineBtn" title="Line">📏</button>
                     <button id="triangleBtn" title="Triangle">📐</button>
-                    <select id="triangle-type" class="hidden">
-                        <option value="equilateral">Equilateral</option>
-                        <option value="isosceles">Isosceles</option>
-                        <option value="right">Right Angle</option>
-                    </select>
+                    <div class="tool-group">
+                        <select id="triangle-type" class="tool-select" style="display: none;">
+                            <option value="right">Right Triangle</option>
+                            <option value="isosceles">Isosceles Triangle</option>
+                            <option value="equilateral">Equilateral Triangle</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

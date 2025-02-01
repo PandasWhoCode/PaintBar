@@ -301,6 +301,28 @@ button.active {
     display: none;
 }
 
+.tool-select {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    margin: 4px;
+    cursor: pointer;
+}
+
+.tool-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+}
+
 /* Crop overlay styles */
 #cropOverlay {
     position: absolute;

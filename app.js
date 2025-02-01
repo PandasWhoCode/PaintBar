@@ -1045,30 +1045,41 @@ class MobilePaint {
         const angle = Math.atan2(dy, dx);
         
         switch (this.triangleType) {
-            case 'equilateral': {
-                const angle60 = Math.PI / 3; // 60 degrees
+            case 'isosceles': {
+                // For isosceles triangle with 30° apex angle (75° base angles)
+                const angle15 = Math.PI / 12; // 15 degrees (half of 30)
+                const baseDistance = distance * 2; // Longer base for 30° apex
                 const point2 = {
-                    x: pos.x,
-                    y: pos.y
+                    x: this.startX + distance * Math.cos(angle - angle15),
+                    y: this.startY + distance * Math.sin(angle - angle15)
                 };
                 const point3 = {
-                    x: this.startX + distance * Math.cos(angle + angle60),
-                    y: this.startY + distance * Math.sin(angle + angle60)
+                    x: this.startX + distance * Math.cos(angle + angle15),
+                    y: this.startY + distance * Math.sin(angle + angle15)
                 };
                 points = [
-                    { x: this.startX, y: this.startY },
+                    { x: this.startX, y: this.startY },  // Apex
                     point2,
                     point3
                 ];
                 break;
             }
-            case 'isosceles': {
-                // Base follows cursor y position, width based on x distance
-                const halfBaseWidth = Math.abs(dx);
+            case 'equilateral': {
+                // For equilateral triangle, all angles are 60° and all sides are equal
+                const angle60 = Math.PI / 3; // 60 degrees
+                
+                // First point is where we started (this.startX, this.startY)
+                // Second point is where the mouse is (pos.x, pos.y)
+                // Third point is calculated by rotating 60° from the line between first and second points
+                const point3 = {
+                    x: this.startX + distance * Math.cos(angle + angle60),
+                    y: this.startY + distance * Math.sin(angle + angle60)
+                };
+                
                 points = [
-                    { x: this.startX, y: this.startY },  // Apex
-                    { x: pos.x - halfBaseWidth, y: pos.y }, // Left base point
-                    { x: pos.x + halfBaseWidth, y: pos.y }  // Right base point
+                    { x: this.startX, y: this.startY },  // First vertex (start point)
+                    { x: pos.x, y: pos.y },              // Second vertex (mouse position)
+                    point3                               // Third vertex (60° rotation)
                 ];
                 break;
             }
@@ -1118,22 +1129,18 @@ class MobilePaint {
         if (this.isDrawing) {
             const point = this.getMousePos(e);
 
-            // Finalize shape drawing
             if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
-                // Copy from overlay to main canvas
-                this.ctx.save();
-                this.ctx.strokeStyle = this.currentColor;
-                this.ctx.fillStyle = this.currentColor;
-                this.ctx.lineWidth = this.lineWidth;
+                this.applyCanvasStyle(this.ctx);
 
                 switch (this.activeTool) {
-                    case 'line':
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(this.startX, this.startY);
-                        this.ctx.lineTo(point.x, point.y);
-                        this.ctx.stroke();
+                    case 'line': {
+                        this.drawShape(this.ctx, [
+                            { x: this.startX, y: this.startY },
+                            point
+                        ]);
                         break;
-                    case 'rectangle':
+                    }
+                    case 'rectangle': {
                         const width = point.x - this.startX;
                         const height = point.y - this.startY;
                         if (this.fillShape) {
@@ -1141,79 +1148,23 @@ class MobilePaint {
                         }
                         this.ctx.strokeRect(this.startX, this.startY, width, height);
                         break;
+                    }
                     case 'circle': {
-                        this.ctx.beginPath();
-                        const dx = point.x - this.startX;
-                        const dy = point.y - this.startY;
-                        const radius = Math.sqrt(dx * dx + dy * dy);
-                        this.ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-                        if (this.fillShape) {
-                            this.ctx.fill();
-                        }
-                        this.ctx.stroke();
+                        const { distance } = this.calculateDistance(
+                            { x: this.startX, y: this.startY },
+                            point
+                        );
+                        this.drawCircleShape(this.ctx, point, distance, this.fillShape);
                         break;
                     }
                     case 'triangle': {
-                        const dx = point.x - this.startX;
-                        const dy = point.y - this.startY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        const angle = Math.atan2(dy, dx);
-                        let points;
-                        
-                        switch (this.triangleType) {
-                            case 'equilateral': {
-                                const angle60 = Math.PI / 3;
-                                const point2 = {
-                                    x: point.x,
-                                    y: point.y
-                                };
-                                const point3 = {
-                                    x: this.startX + distance * Math.cos(angle + angle60),
-                                    y: this.startY + distance * Math.sin(angle + angle60)
-                                };
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    point2,
-                                    point3
-                                ];
-                                break;
-                            }
-                            case 'isosceles': {
-                                const halfBaseWidth = Math.abs(dx);
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    { x: point.x - halfBaseWidth, y: point.y },
-                                    { x: point.x + halfBaseWidth, y: point.y }
-                                ];
-                                break;
-                            }
-                            case 'right':
-                            default: {
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    { x: point.x, y: this.startY },
-                                    { x: point.x, y: point.y }
-                                ];
-                                break;
-                            }
-                        }
-                        
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(points[0].x, points[0].y);
-                        this.ctx.lineTo(points[1].x, points[1].y);
-                        this.ctx.lineTo(points[2].x, points[2].y);
-                        this.ctx.closePath();
-                        if (this.fillShape) {
-                            this.ctx.fill();
-                        }
-                        this.ctx.stroke();
+                        const points = this.calculateTrianglePoints(point, this.triangleType);
+                        this.drawShape(this.ctx, points, this.fillShape);
                         break;
                     }
                 }
                 this.ctx.restore();
-                
-                // Clear the overlay canvas
-                this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                this.clearOverlay();
             }
 
             this.isDrawing = false;
@@ -1774,23 +1725,40 @@ class MobilePaint {
         );
         
         switch (type) {
-            case 'equilateral': {
-                const angle60 = Math.PI / 3;
+            case 'isosceles': {
+                // For isosceles triangle with 30° apex angle (75° base angles)
+                const angle15 = Math.PI / 12; // 15 degrees (half of 30)
+                const baseDistance = metrics.distance * 2; // Longer base for 30° apex
+                const point2 = {
+                    x: this.startX + metrics.distance * Math.cos(metrics.angle - angle15),
+                    y: this.startY + metrics.distance * Math.sin(metrics.angle - angle15)
+                };
+                const point3 = {
+                    x: this.startX + metrics.distance * Math.cos(metrics.angle + angle15),
+                    y: this.startY + metrics.distance * Math.sin(metrics.angle + angle15)
+                };
                 return [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x, y: pos.y },
-                    {
-                        x: this.startX + metrics.distance * Math.cos(metrics.angle + angle60),
-                        y: this.startY + metrics.distance * Math.sin(metrics.angle + angle60)
-                    }
+                    { x: this.startX, y: this.startY },  // Apex
+                    point2,
+                    point3
                 ];
             }
-            case 'isosceles': {
-                const halfBaseWidth = Math.abs(metrics.dx);
+            case 'equilateral': {
+                // For equilateral triangle, all angles are 60° and all sides are equal
+                const angle60 = Math.PI / 3; // 60 degrees
+                
+                // First point is where we started (this.startX, this.startY)
+                // Second point is where the mouse is (pos.x, pos.y)
+                // Third point is calculated by rotating 60° from the line between first and second points
+                const point3 = {
+                    x: this.startX + metrics.distance * Math.cos(metrics.angle + angle60),
+                    y: this.startY + metrics.distance * Math.sin(metrics.angle + angle60)
+                };
+                
                 return [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x - halfBaseWidth, y: pos.y },
-                    { x: pos.x + halfBaseWidth, y: pos.y }
+                    { x: this.startX, y: this.startY },  // First vertex (start point)
+                    { x: pos.x, y: pos.y },              // Second vertex (mouse position)
+                    point3                               // Third vertex (60° rotation)
                 ];
             }
             case 'right':
