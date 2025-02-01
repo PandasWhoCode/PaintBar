@@ -1,4 +1,4 @@
-# Mobile Paint Web Application
+# PaintBar
 
 A modern, mobile-friendly web-based paint application that provides an intuitive drawing experience similar to MS Paint but optimized for touch devices.
 
