@@ -40,11 +40,13 @@
                     <button id="circleBtn" title="Circle">⭕</button>
                     <button id="lineBtn" title="Line">📏</button>
                     <button id="triangleBtn" title="Triangle">📐</button>
-                    <select id="triangle-type" class="hidden">
-                        <option value="equilateral">Equilateral</option>
-                        <option value="isosceles">Isosceles</option>
-                        <option value="right">Right Angle</option>
-                    </select>
+                    <div class="tool-group">
+                        <select id="triangle-type" class="tool-select">
+                            <option value="right">Right Triangle</option>
+                            <option value="isosceles">Isosceles Triangle</option>
+                            <option value="equilateral">Equilateral Triangle</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -245,27 +247,38 @@
                             <span class="save-icon">📄</span>
                             <div class="save-details">
                                 <span class="save-name">PNG</span>
+                                <span class="save-desc">Standard image format</span>
+                            </div>
+                        </button>
+                        <button id="savePngTransparent" class="save-option">
+                            <span class="save-icon">📄</span>
+                            <div class="save-details">
+                                <span class="save-name">Transparency (PNG)</span>
                                 <span class="save-desc">Best for images with transparency</span>
                             </div>
                         </button>
                         <button id="saveJpg" class="save-option">
-                            <span class="save-icon">🖼️</span>
+                            <span class="save-icon">📄</span>
                             <div class="save-details">
                                 <span class="save-name">JPG</span>
-                                <span class="save-desc">Best for photos and complex images</span>
+                                <span class="save-desc">Best for photos</span>
                             </div>
                         </button>
                         <button id="saveIco" class="save-option">
-                            <span class="save-icon">🎯</span>
+                            <span class="save-icon">📄</span>
                             <div class="save-details">
                                 <span class="save-name">ICO</span>
-                                <span class="save-desc">Best for icons and favicons</span>
+                                <span class="save-desc">Windows icon format</span>
+                            </div>
+                        </button>
+                        <button id="saveIcoTransparent" class="save-option">
+                            <span class="save-icon">📄</span>
+                            <div class="save-details">
+                                <span class="save-name">Transparency (ICO)</span>
+                                <span class="save-desc">Windows icon with transparency</span>
                             </div>
                         </button>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="cancelSave" class="action-btn cancel-btn">Cancel</button>
                 </div>
             </div>
         </div>
