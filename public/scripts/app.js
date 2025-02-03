@@ -1274,11 +1274,24 @@ class PaintBar {
     }
 
     erase(x, y) {
+        // Save current context settings
         this.ctx.save();
+        
+        // Set composite operation to clear pixels
         this.ctx.globalCompositeOperation = 'destination-out';
+        
+        // Draw a line from last position to current position
         this.ctx.beginPath();
-        this.ctx.arc(x, y, this.lineWidth / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.moveTo(this.lastX, this.lastY);
+        this.ctx.lineTo(x, y);
+        this.ctx.strokeStyle = '#000';  // Color doesn't matter due to composite operation
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.stroke();
+        this.ctx.closePath();
+        
+        // Restore context settings
         this.ctx.restore();
     }
 
