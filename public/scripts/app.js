@@ -236,31 +236,63 @@ class PaintBar {
     }
 
     initializeCanvas() {
-        const setCanvasSize = (canvas) => {
-            canvas.width = this.defaultWidth;
-            canvas.height = this.defaultHeight;
-        };
+        // Set canvas sizes
+        const canvasContainer = document.querySelector('.canvas-container');
+        if (!canvasContainer) return;
 
         // Set size for all canvas layers
-        setCanvasSize(this.transparentBgCanvas);
-        setCanvasSize(this.opaqueBgCanvas);
-        setCanvasSize(this.canvas);
-        setCanvasSize(this.overlayCanvas);
+        [this.transparentBgCanvas, this.opaqueBgCanvas, this.canvas, this.overlayCanvas].forEach(canvas => {
+            canvas.width = this.defaultWidth;
+            canvas.height = this.defaultHeight;
+        });
 
-        // Initialize contexts with appropriate settings
-        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
-        this.transparentBgCtx = this.transparentBgCanvas.getContext('2d');
-        this.opaqueBgCtx = this.opaqueBgCanvas.getContext('2d');
-        this.overlayCtx = this.overlayCanvas.getContext('2d');
+        // Initialize transparent background
+        this.drawTransparentBackground();
+
+        // Initialize opaque background
+        this.opaqueBgCtx.fillStyle = '#ffffff';
+        this.opaqueBgCtx.fillRect(0, 0, this.opaqueBgCanvas.width, this.opaqueBgCanvas.height);
+
+        // Initialize drawing canvas
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.strokeStyle = this.currentColor;
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        // Initialize overlay canvas
+        this.overlayCtx.strokeStyle = this.currentColor;
+        this.overlayCtx.fillStyle = this.currentColor;
+        this.overlayCtx.lineWidth = this.lineWidth;
+        this.overlayCtx.lineCap = 'round';
+        this.overlayCtx.lineJoin = 'round';
 
         // Set initial transparency state
         const wrapper = this.canvas.parentElement;
         if (this.isTransparent) {
             wrapper.classList.add('transparent-mode');
         }
-
-        // Initialize the first history state
+        
+        // Save initial state
         this.saveState();
+    }
+
+    drawTransparentBackground() {
+        // Create checkerboard pattern for transparent background
+        const size = 10;
+        const ctx = this.transparentBgCtx;
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, this.transparentBgCanvas.width, this.transparentBgCanvas.height);
+        
+        ctx.fillStyle = '#e0e0e0';
+        for (let i = 0; i < this.transparentBgCanvas.width; i += size * 2) {
+            for (let j = 0; j < this.transparentBgCanvas.height; j += size * 2) {
+                ctx.fillRect(i, j, size, size);
+                ctx.fillRect(i + size, j + size, size, size);
+            }
+        }
     }
 
     calculateLineWidth(value) {
@@ -273,21 +305,25 @@ class PaintBar {
     }
 
     setupEventListeners() {
-        // Optimize mouse/touch event handling with throttling
-        const throttledMouseMove = this.throttle(this.handleMouseMove.bind(this), 16); // ~60fps
+        // Create throttled versions of event handlers
+        const throttledMouseMove = this.throttle(this.handleMouseMove.bind(this), 16);
         const throttledTouch = this.throttle(this.handleTouch.bind(this), 16);
 
-        // Event delegation for canvas events
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', throttledMouseMove);
-        this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-        this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
-        this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
+        // Mouse events - attach to both drawing and overlay canvas
+        [this.canvas, this.overlayCanvas].forEach(canvas => {
+            canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+            canvas.addEventListener('mousemove', throttledMouseMove);
+            canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+            canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
+            canvas.addEventListener('click', this.handleCanvasClick.bind(this));
+        });
 
-        // Optimized touch events
-        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-        this.canvas.addEventListener('touchmove', throttledTouch);
-        this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
+        // Touch events - attach to both drawing and overlay canvas
+        [this.canvas, this.overlayCanvas].forEach(canvas => {
+            canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
+            canvas.addEventListener('touchmove', throttledTouch);
+            canvas.addEventListener('touchend', this.stopDrawing.bind(this));
+        });
 
         // Tool buttons
         const toolButtons = {
@@ -650,9 +686,18 @@ class PaintBar {
         // Handle selection overlay visibility
         if (tool === 'select') {
             this.overlayCanvas.classList.add('active');
+            this.overlayCanvas.style.pointerEvents = 'auto';
         } else if (prevTool === 'select') {
             this.clearSelection();
             this.overlayCanvas.classList.remove('active');
+            this.overlayCanvas.style.pointerEvents = 'none';
+        }
+
+        // Enable pointer events on overlay canvas for shape tools
+        if (['rectangle', 'circle', 'line', 'triangle'].includes(tool)) {
+            this.overlayCanvas.style.pointerEvents = 'auto';
+        } else {
+            this.overlayCanvas.style.pointerEvents = 'none';
         }
 
         // Handle cursor styles
@@ -676,6 +721,7 @@ class PaintBar {
     }
 
     handleMouseDown(e) {
+        console.log('Mouse down', this.activeTool);
         if (this.activeTool === 'text') {
             this.handleTextTool(e);
             return;
@@ -699,17 +745,29 @@ class PaintBar {
             return;
         }
 
-        this.isDrawing = true;
-        
         if (this.activeTool === 'fill') {
             this.floodFill(point.x, point.y, this.currentColor);
-            this.isDrawing = false;
             return;
         }
 
-        // Start path for drawing tools
-        this.ctx.beginPath();
-        this.ctx.moveTo(point.x, point.y);
+        this.isDrawing = true;
+        console.log('Started drawing', { x: point.x, y: point.y, tool: this.activeTool });
+        
+        // For shape tools, clear the overlay canvas to start fresh
+        if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
+            this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+            
+            // Set up initial overlay context state
+            this.overlayCtx.strokeStyle = this.currentColor;
+            this.overlayCtx.fillStyle = this.currentColor;
+            this.overlayCtx.lineWidth = this.lineWidth;
+            this.overlayCtx.lineCap = 'round';
+            this.overlayCtx.lineJoin = 'round';
+        } else {
+            // Start path for drawing tools
+            this.ctx.beginPath();
+            this.ctx.moveTo(point.x, point.y);
+        }
         
         // Save the initial state for this drawing operation
         this.saveState();
@@ -729,6 +787,12 @@ class PaintBar {
         if (!this.isDrawing && !this.isSelecting && !this.isMovingSelection) return;
         
         const point = this.getMousePos(e);
+        console.log('Mouse move', { 
+            x: point.x, 
+            y: point.y, 
+            tool: this.activeTool,
+            isDrawing: this.isDrawing
+        });
         
         if (this.isMovingSelection) {
             const dx = point.x - this.lastX;
@@ -744,9 +808,57 @@ class PaintBar {
             } else if (this.activeTool === 'eraser') {
                 this.erase(point.x, point.y);
             } else if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
-                requestAnimationFrame(() => {
-                    this.drawShape(point.x, point.y);
+                // Clear previous preview
+                this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                
+                // Draw new preview
+                this.overlayCtx.save();
+                this.overlayCtx.strokeStyle = this.currentColor;
+                this.overlayCtx.fillStyle = this.currentColor;
+                this.overlayCtx.lineWidth = this.lineWidth;
+                this.overlayCtx.lineCap = 'round';
+                this.overlayCtx.lineJoin = 'round';
+                
+                console.log('Drawing shape preview', {
+                    start: { x: this.startX, y: this.startY },
+                    current: { x: point.x, y: point.y },
+                    tool: this.activeTool
                 });
+                
+                switch (this.activeTool) {
+                    case 'line':
+                        this.drawShape(this.overlayCtx, [
+                            { x: this.startX, y: this.startY },
+                            point
+                        ]);
+                        break;
+                    case 'rectangle': {
+                        const width = point.x - this.startX;
+                        const height = point.y - this.startY;
+                        if (this.fillShape) {
+                            this.overlayCtx.globalAlpha = 0.5;
+                            this.overlayCtx.fillRect(this.startX, this.startY, width, height);
+                            this.overlayCtx.globalAlpha = 1;
+                        }
+                        this.overlayCtx.strokeRect(this.startX, this.startY, width, height);
+                        break;
+                    }
+                    case 'circle': {
+                        const { distance } = this.calculateDistance(
+                            { x: this.startX, y: this.startY },
+                            point
+                        );
+                        this.drawCircleShape(this.overlayCtx, point, distance, this.fillShape);
+                        break;
+                    }
+                    case 'triangle': {
+                        const points = this.calculateTrianglePoints(point, this.triangleType);
+                        this.drawShape(this.overlayCtx, points, this.fillShape);
+                        break;
+                    }
+                }
+                
+                this.overlayCtx.restore();
             }
         }
         
@@ -967,42 +1079,31 @@ class PaintBar {
         return points;
     }
 
-    drawShape(x, y) {
-        if (!this.isDrawing) return;
+    drawShape(ctx, points, shouldFill = false) {
+        if (!ctx || !points || points.length < 2) return;
 
-        // Clear the overlay canvas for preview
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-
-        // Set up overlay context styles
-        this.overlayCtx.save();
-        this.overlayCtx.strokeStyle = this.currentColor;
-        this.overlayCtx.fillStyle = this.currentColor;
-        this.overlayCtx.lineWidth = this.lineWidth;
-
-        switch (this.activeTool) {
-            case 'line':
-                this.overlayCtx.beginPath();
-                this.overlayCtx.moveTo(this.startX, this.startY);
-                this.overlayCtx.lineTo(x, y);
-                this.overlayCtx.stroke();
-                break;
-            case 'rectangle':
-                const width = x - this.startX;
-                const height = y - this.startY;
-                if (this.fillShape) {
-                    this.overlayCtx.fillRect(this.startX, this.startY, width, height);
-                }
-                this.overlayCtx.strokeRect(this.startX, this.startY, width, height);
-                break;
-            case 'circle':
-                this.drawCircle({ clientX: x, clientY: y });
-                break;
-            case 'triangle':
-                this.drawTriangle({ clientX: x, clientY: y });
-                break;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
         }
+        
+        ctx.closePath();
+        
+        if (shouldFill) {
+            ctx.fill();
+        }
+        ctx.stroke();
+    }
 
-        this.overlayCtx.restore();
+    drawCircleShape(ctx, center, radius, shouldFill = false) {
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+        if (shouldFill) {
+            ctx.fill();
+        }
+        ctx.stroke();
     }
 
     drawCircle(e) {
@@ -1013,26 +1114,52 @@ class PaintBar {
         // Clear overlay canvas
         this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         
-        // Draw preview circle
-        this.overlayCtx.beginPath();
-        const dx = pos.x - this.startX;
-        const dy = pos.y - this.startY;
-        const radius = Math.sqrt(dx * dx + dy * dy);
+        const { distance } = this.calculateDistance(
+            { x: this.startX, y: this.startY },
+            pos
+        );
         
-        // Draw from center point
-        this.overlayCtx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        
-        // Apply current stroke and fill settings
-        this.overlayCtx.save();
-        this.overlayCtx.strokeStyle = this.currentColor;
-        this.overlayCtx.lineWidth = this.lineWidth;
-        this.overlayCtx.fillStyle = this.currentColor;
-        
-        if (this.fillShape) {
-            this.overlayCtx.fill();
-        }
-        this.overlayCtx.stroke();
+        this.applyCanvasStyle(this.overlayCtx);
+        this.drawCircleShape(this.overlayCtx, pos, distance, this.fillShape);
         this.overlayCtx.restore();
+    }
+
+    calculateTrianglePoints(pos, type) {
+        const metrics = this.calculateDistance(
+            { x: this.startX, y: this.startY },
+            pos
+        );
+        
+        switch (type) {
+            case 'equilateral': {
+                const angle60 = Math.PI / 3;
+                return [
+                    { x: this.startX, y: this.startY },
+                    { x: pos.x, y: pos.y },
+                    {
+                        x: this.startX + metrics.distance * Math.cos(metrics.angle + angle60),
+                        y: this.startY + metrics.distance * Math.sin(metrics.angle + angle60)
+                    }
+                ];
+            }
+            case 'isosceles': {
+                // Base follows cursor y position, width based on x distance
+                const halfBaseWidth = Math.abs(metrics.dx);
+                return [
+                    { x: this.startX, y: this.startY },  // Apex
+                    { x: pos.x - halfBaseWidth, y: pos.y }, // Left base point
+                    { x: pos.x + halfBaseWidth, y: pos.y }  // Right base point
+                ];
+            }
+            case 'right':
+            default: {
+                return [
+                    { x: this.startX, y: this.startY },
+                    { x: pos.x, y: this.startY },
+                    { x: pos.x, y: pos.y }
+                ];
+            }
+        }
     }
 
     drawTriangle(e) {
@@ -1043,68 +1170,10 @@ class PaintBar {
         // Clear overlay canvas
         this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
         
-        let points;
-        const dx = pos.x - this.startX;
-        const dy = pos.y - this.startY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx);
+        const points = this.calculateTrianglePoints(pos, this.triangleType);
         
-        switch (this.triangleType) {
-            case 'equilateral': {
-                const angle60 = Math.PI / 3; // 60 degrees
-                const point2 = {
-                    x: pos.x,
-                    y: pos.y
-                };
-                const point3 = {
-                    x: this.startX + distance * Math.cos(angle + angle60),
-                    y: this.startY + distance * Math.sin(angle + angle60)
-                };
-                points = [
-                    { x: this.startX, y: this.startY },
-                    point2,
-                    point3
-                ];
-                break;
-            }
-            case 'isosceles': {
-                // Base follows cursor y position, width based on x distance
-                const halfBaseWidth = Math.abs(dx);
-                points = [
-                    { x: this.startX, y: this.startY },  // Apex
-                    { x: pos.x - halfBaseWidth, y: pos.y }, // Left base point
-                    { x: pos.x + halfBaseWidth, y: pos.y }  // Right base point
-                ];
-                break;
-            }
-            case 'right':
-            default: {
-                points = [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x, y: this.startY },
-                    { x: pos.x, y: pos.y }
-                ];
-                break;
-            }
-        }
-        
-        // Draw the triangle preview
-        this.overlayCtx.beginPath();
-        this.overlayCtx.moveTo(points[0].x, points[0].y);
-        this.overlayCtx.lineTo(points[1].x, points[1].y);
-        this.overlayCtx.lineTo(points[2].x, points[2].y);
-        this.overlayCtx.closePath();
-        
-        // Apply current stroke and fill settings
-        this.overlayCtx.save();
-        this.overlayCtx.strokeStyle = this.currentColor;
-        this.overlayCtx.lineWidth = this.lineWidth;
-        this.overlayCtx.fillStyle = this.currentColor;
-        
-        if (this.fillShape) {
-            this.overlayCtx.fill();
-        }
-        this.overlayCtx.stroke();
+        this.applyCanvasStyle(this.overlayCtx);
+        this.drawShape(this.overlayCtx, points, this.fillShape);
         this.overlayCtx.restore();
     }
 
@@ -1123,22 +1192,18 @@ class PaintBar {
         if (this.isDrawing) {
             const point = this.getMousePos(e);
 
-            // Finalize shape drawing
             if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
-                // Copy from overlay to main canvas
-                this.ctx.save();
-                this.ctx.strokeStyle = this.currentColor;
-                this.ctx.fillStyle = this.currentColor;
-                this.ctx.lineWidth = this.lineWidth;
+                this.applyCanvasStyle(this.ctx);
 
                 switch (this.activeTool) {
-                    case 'line':
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(this.startX, this.startY);
-                        this.ctx.lineTo(point.x, point.y);
-                        this.ctx.stroke();
+                    case 'line': {
+                        this.drawShape(this.ctx, [
+                            { x: this.startX, y: this.startY },
+                            point
+                        ]);
                         break;
-                    case 'rectangle':
+                    }
+                    case 'rectangle': {
                         const width = point.x - this.startX;
                         const height = point.y - this.startY;
                         if (this.fillShape) {
@@ -1146,79 +1211,23 @@ class PaintBar {
                         }
                         this.ctx.strokeRect(this.startX, this.startY, width, height);
                         break;
+                    }
                     case 'circle': {
-                        this.ctx.beginPath();
-                        const dx = point.x - this.startX;
-                        const dy = point.y - this.startY;
-                        const radius = Math.sqrt(dx * dx + dy * dy);
-                        this.ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-                        if (this.fillShape) {
-                            this.ctx.fill();
-                        }
-                        this.ctx.stroke();
+                        const { distance } = this.calculateDistance(
+                            { x: this.startX, y: this.startY },
+                            point
+                        );
+                        this.drawCircleShape(this.ctx, point, distance, this.fillShape);
                         break;
                     }
                     case 'triangle': {
-                        const dx = point.x - this.startX;
-                        const dy = point.y - this.startY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        const angle = Math.atan2(dy, dx);
-                        let points;
-                        
-                        switch (this.triangleType) {
-                            case 'equilateral': {
-                                const angle60 = Math.PI / 3;
-                                const point2 = {
-                                    x: point.x,
-                                    y: point.y
-                                };
-                                const point3 = {
-                                    x: this.startX + distance * Math.cos(angle + angle60),
-                                    y: this.startY + distance * Math.sin(angle + angle60)
-                                };
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    point2,
-                                    point3
-                                ];
-                                break;
-                            }
-                            case 'isosceles': {
-                                const halfBaseWidth = Math.abs(dx);
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    { x: point.x - halfBaseWidth, y: point.y },
-                                    { x: point.x + halfBaseWidth, y: point.y }
-                                ];
-                                break;
-                            }
-                            case 'right':
-                            default: {
-                                points = [
-                                    { x: this.startX, y: this.startY },
-                                    { x: point.x, y: this.startY },
-                                    { x: point.x, y: point.y }
-                                ];
-                                break;
-                            }
-                        }
-                        
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(points[0].x, points[0].y);
-                        this.ctx.lineTo(points[1].x, points[1].y);
-                        this.ctx.lineTo(points[2].x, points[2].y);
-                        this.ctx.closePath();
-                        if (this.fillShape) {
-                            this.ctx.fill();
-                        }
-                        this.ctx.stroke();
+                        const points = this.calculateTrianglePoints(point, this.triangleType);
+                        this.drawShape(this.ctx, points, this.fillShape);
                         break;
                     }
                 }
                 this.ctx.restore();
-                
-                // Clear the overlay canvas
-                this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+                this.clearOverlay();
             }
 
             this.isDrawing = false;
@@ -1274,11 +1283,24 @@ class PaintBar {
     }
 
     erase(x, y) {
+        // Save current context settings
         this.ctx.save();
+        
+        // Set composite operation to clear pixels
         this.ctx.globalCompositeOperation = 'destination-out';
+        
+        // Draw a line from last position to current position
         this.ctx.beginPath();
-        this.ctx.arc(x, y, this.lineWidth / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.moveTo(this.lastX, this.lastY);
+        this.ctx.lineTo(x, y);
+        this.ctx.strokeStyle = '#000';  // Color doesn't matter due to composite operation
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.stroke();
+        this.ctx.closePath();
+        
+        // Restore context settings
         this.ctx.restore();
     }
 
@@ -1715,30 +1737,18 @@ class PaintBar {
         ctx.fillStyle = this.currentColor;
     }
 
-    clearOverlay() {
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-    }
-
-    calculateDistance(point1, point2) {
-        const dx = point2.x - point1.x;
-        const dy = point2.y - point1.y;
-        return {
-            dx,
-            dy,
-            distance: Math.sqrt(dx * dx + dy * dy),
-            angle: Math.atan2(dy, dx)
-        };
-    }
-
     drawShape(ctx, points, shouldFill = false) {
+        if (!ctx || !points || points.length < 2) return;
+
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
+        
         for (let i = 1; i < points.length; i++) {
             ctx.lineTo(points[i].x, points[i].y);
         }
-        if (points.length > 2) {
-            ctx.closePath();
-        }
+        
+        ctx.closePath();
+        
         if (shouldFill) {
             ctx.fill();
         }
@@ -1791,11 +1801,12 @@ class PaintBar {
                 ];
             }
             case 'isosceles': {
+                // Base follows cursor y position, width based on x distance
                 const halfBaseWidth = Math.abs(metrics.dx);
                 return [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x - halfBaseWidth, y: pos.y },
-                    { x: pos.x + halfBaseWidth, y: pos.y }
+                    { x: this.startX, y: this.startY },  // Apex
+                    { x: pos.x - halfBaseWidth, y: pos.y }, // Left base point
+                    { x: pos.x + halfBaseWidth, y: pos.y }  // Right base point
                 ];
             }
             case 'right':
@@ -2006,12 +2017,67 @@ class PaintBar {
             case 'eraser':
                 this.erase(point.x, point.y);
                 break;
-            case 'line':
-            case 'rectangle':
-            case 'circle':
-            case 'triangle':
-                this.drawShape(point.x, point.y);
+            case 'line': {
+                // Clear previous preview
+                this.clearOverlay();
+                
+                // Draw new preview
+                this.applyCanvasStyle(this.overlayCtx);
+                this.drawShape(this.overlayCtx, [
+                    { x: this.startX, y: this.startY },
+                    point
+                ]);
+                this.overlayCtx.restore();
                 break;
+            }
+            case 'rectangle': {
+                // Clear previous preview
+                this.clearOverlay();
+                
+                // Draw new preview
+                this.applyCanvasStyle(this.overlayCtx);
+                const width = point.x - this.startX;
+                const height = point.y - this.startY;
+                if (this.fillShape) {
+                    this.overlayCtx.globalAlpha = 0.5;
+                    this.overlayCtx.fillRect(this.startX, this.startY, width, height);
+                    this.overlayCtx.globalAlpha = 1;
+                }
+                this.overlayCtx.strokeRect(this.startX, this.startY, width, height);
+                this.overlayCtx.restore();
+                break;
+            }
+            case 'circle': {
+                // Clear previous preview
+                this.clearOverlay();
+                
+                // Draw new preview
+                this.applyCanvasStyle(this.overlayCtx);
+                const { distance } = this.calculateDistance(
+                    { x: this.startX, y: this.startY },
+                    point
+                );
+                if (this.fillShape) {
+                    this.overlayCtx.globalAlpha = 0.5;
+                }
+                this.drawCircleShape(this.overlayCtx, { x: this.startX, y: this.startY }, distance, this.fillShape);
+                this.overlayCtx.restore();
+                break;
+            }
+            case 'triangle': {
+                // Clear previous preview
+                this.clearOverlay();
+                
+                // Draw new preview
+                this.applyCanvasStyle(this.overlayCtx);
+                const points = this.calculateTrianglePoints(point, this.triangleType);
+                if (this.fillShape) {
+                    this.overlayCtx.globalAlpha = 0.5;
+                }
+                this.drawShape(this.overlayCtx, points, this.fillShape);
+                this.overlayCtx.restore();
+                break;
+            }
         }
 
         this.lastX = point.x;
@@ -2137,13 +2203,12 @@ class PaintBar {
 
     getMousePos(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const point = e.touches ? e.touches[0] : e;
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
         
         return {
-            x: Math.round((point.clientX - rect.left) * scaleX),
-            y: Math.round((point.clientY - rect.top) * scaleY)
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
         };
     }
 
@@ -2275,6 +2340,108 @@ class PaintBar {
             this.isDrawing = false;
             this.saveState();
         }
+    }
+
+    handleMouseUp(e) {
+        if (this.activeTool === 'text' || !this.isDrawing) return;
+
+        const point = this.getMousePos(e);
+
+        if (this.isMovingSelection) {
+            this.isMovingSelection = false;
+            this.commitSelection();
+            return;
+        }
+        
+        if (this.isSelecting) {
+            this.isSelecting = false;
+            this.finalizeSelection();
+            return;
+        }
+
+        if (['rectangle', 'circle', 'line', 'triangle'].includes(this.activeTool)) {
+            this.ctx.save();
+            this.ctx.strokeStyle = this.currentColor;
+            this.ctx.fillStyle = this.currentColor;
+            this.ctx.lineWidth = this.lineWidth;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+
+            switch (this.activeTool) {
+                case 'line': {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.startX, this.startY);
+                    this.ctx.lineTo(point.x, point.y);
+                    this.ctx.stroke();
+                    break;
+                }
+                case 'rectangle': {
+                    const width = point.x - this.startX;
+                    const height = point.y - this.startY;
+                    if (this.fillShape) {
+                        this.ctx.fillRect(this.startX, this.startY, width, height);
+                    }
+                    this.ctx.strokeRect(this.startX, this.startY, width, height);
+                    break;
+                }
+                case 'circle': {
+                    const radius = Math.sqrt(
+                        Math.pow(point.x - this.startX, 2) + 
+                        Math.pow(point.y - this.startY, 2)
+                    );
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.startX, this.startY, radius, 0, Math.PI * 2);
+                    if (this.fillShape) {
+                        this.ctx.fill();
+                    }
+                    this.ctx.stroke();
+                    break;
+                }
+                case 'triangle': {
+                    const trianglePoints = this.calculateTrianglePoints(point, this.triangleType);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(trianglePoints[0].x, trianglePoints[0].y);
+                    this.ctx.lineTo(trianglePoints[1].x, trianglePoints[1].y);
+                    this.ctx.lineTo(trianglePoints[2].x, trianglePoints[2].y);
+                    this.ctx.closePath();
+                    if (this.fillShape) {
+                        this.ctx.fill();
+                    }
+                    this.ctx.stroke();
+                    break;
+                }
+            }
+            this.ctx.restore();
+            this.clearOverlay();
+        }
+
+        this.isDrawing = false;
+        this.saveState();
+    }
+
+    clearOverlay() {
+        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
+    }
+
+    calculateDistance(point1, point2) {
+        const dx = point2.x - point1.x;
+        const dy = point2.y - point1.y;
+        return {
+            dx,
+            dy,
+            distance: Math.sqrt(dx * dx + dy * dy),
+            angle: Math.atan2(dy, dx)
+        };
+    }
+
+    // Shape drawing utilities
+    applyCanvasStyle(ctx) {
+        ctx.save();
+        ctx.strokeStyle = this.currentColor;
+        ctx.fillStyle = this.currentColor;
+        ctx.lineWidth = this.lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
     }
 }
 
