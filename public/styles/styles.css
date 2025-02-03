@@ -47,7 +47,7 @@ body {
     top: 20px;
     left: 20px;
     z-index: 1000;
-    background: white;
+    background: rgb(49,35,58);
     border-radius: 50%;
     padding: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
