@@ -28,9 +28,9 @@ body {
     left: -300px; /* Start hidden */
     width: 300px;
     height: 100vh;
-    background: #f5f5f5;
-    border-right: 1px solid #ddd;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    background: rgb(49, 35, 58);
+    color: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
     z-index: 999;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
@@ -836,7 +836,8 @@ button.active {
 
 .submenu-header {
     padding: 12px 16px;
-    background: #f8f8f8;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
     cursor: pointer;
     user-select: none;
     display: flex;
@@ -845,12 +846,12 @@ button.active {
 }
 
 .submenu-header:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .submenu-content {
     padding: 12px 16px;
-    background: white;
+    background: rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
     max-height: 500px;
     opacity: 1;
@@ -878,21 +879,21 @@ button.active {
     width: 100%;
     padding: 8px;
     margin: 5px 0;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .submenu-content button:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
 }
 
 .submenu-content button.active {
-    background: #e0e0e0;
-    border-color: #999;
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .submenu-content input[type="range"] {
@@ -962,7 +963,8 @@ button.active {
 
 .submenu-header {
     padding: 12px 16px;
-    background: #f8f8f8;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
     cursor: pointer;
     user-select: none;
     display: flex;
@@ -971,12 +973,12 @@ button.active {
 }
 
 .submenu-header:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .submenu-content {
     padding: 12px 16px;
-    background: white;
+    background: rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
     max-height: 500px;
     opacity: 1;
@@ -989,6 +991,11 @@ button.active {
     padding-bottom: 0;
     opacity: 0;
     pointer-events: none;
+}
+
+.toolbar-section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
 }
 
 .recent-colors-section {
@@ -1235,13 +1242,8 @@ button.active {
 }
 
 .toolbar-section {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 10px;
-}
-
-.toolbar-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
 }
 
 .submenu-header {
@@ -1250,13 +1252,13 @@ button.active {
     align-items: center;
     padding: 10px;
     cursor: pointer;
-    background: #f8f8f8;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     transition: background-color 0.2s ease;
 }
 
 .submenu-header:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .submenu-toggle {
@@ -1284,21 +1286,35 @@ button.active {
     width: 100%;
     padding: 8px;
     margin: 5px 0;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .submenu-content button:hover {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.2);
     transform: translateX(5px);
 }
 
 .submenu-content button.active {
-    background: #e0e0e0;
-    border-color: #999;
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.submenu-content input[type="range"] {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.submenu-content input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 @media (max-width: 600px) {
