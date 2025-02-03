@@ -224,7 +224,7 @@ class PaintBar {
     toggleToolbar() {
         if (!this.toolbar) return;
         
-        this.toolbar.classList.toggle('visible');
+        this.toolbar.classList.toggle('expanded');
         if (this.toolbarToggle) {
             this.toolbarToggle.classList.toggle('active');
         }

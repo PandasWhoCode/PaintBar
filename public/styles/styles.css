@@ -30,12 +30,15 @@ body {
     height: 100vh;
     background: #f5f5f5;
     border-right: 1px solid #ddd;
-    transition: left 0.3s ease;
-    z-index: 1000;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    z-index: 999;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     padding: 20px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    gap: 0;
+    z-index: 1000;
 }
 
 .toolbar.expanded {
@@ -52,11 +55,12 @@ body {
     padding: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     cursor: pointer;
-    transition: transform 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toolbar-toggle:hover {
     transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .toggle-icon {
@@ -64,11 +68,20 @@ body {
     height: 32px;
     object-fit: contain;
     cursor: pointer;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toolbar-toggle.active {
     left: 320px;
-    background: #e0e0e0;
+    transform: rotate(360deg);
+}
+
+.toolbar-toggle.active:hover {
+    transform: rotate(360deg) scale(1.1);
+}
+
+.toolbar-toggle.active .toggle-icon {
+    filter: brightness(0.9);
 }
 
 .canvas-container {
@@ -79,6 +92,11 @@ body {
     z-index: 1;
     min-width: 100px;
     min-height: 100px;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.canvas-container.toolbar-visible {
+    margin-left: 300px;
 }
 
 .canvas-wrapper {
@@ -118,11 +136,6 @@ body {
 #selectionOverlay {
     z-index: 4;
     pointer-events: none;
-}
-
-.canvas-container.shifted {
-    margin-left: 300px;
-    width: calc(100% - 300px);
 }
 
 .color-history {
