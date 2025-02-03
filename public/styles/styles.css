@@ -104,7 +104,6 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
-    z-index: 1;
     min-width: 100px;
     min-height: 100px;
 }
@@ -136,7 +135,7 @@ body {
 
 #selectionOverlay {
     z-index: 4;
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 .color-history {
@@ -1517,7 +1516,7 @@ button.active {
 }
 
 #transparentBackgroundCanvas {
-    z-index: 0;
+    z-index: 1;
     background-image: 
         linear-gradient(45deg, #ddd 25%, transparent 25%),
         linear-gradient(-45deg, #ddd 25%, transparent 25%),
@@ -1530,19 +1529,19 @@ button.active {
 }
 
 #opaqueBackgroundCanvas {
-    z-index: 1;
+    z-index: 2;
     background: white;
     display: block;
 }
 
 #drawingCanvas {
-    z-index: 2;
+    z-index: 3;
     background: transparent;
 }
 
 #selectionOverlay {
-    z-index: 3;
-    pointer-events: none;
+    z-index: 4;
+    pointer-events: all;
 }
 
 .transparent-mode #transparentBackgroundCanvas {
