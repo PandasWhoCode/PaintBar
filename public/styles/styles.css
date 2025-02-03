@@ -46,33 +46,29 @@ body {
     position: fixed;
     top: 20px;
     left: 20px;
-    width: 40px;
-    height: 40px;
-    background: #fff;
-    border: 1px solid #ddd;
+    z-index: 1000;
+    background: white;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     cursor: pointer;
-    z-index: 1001;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
 }
 
 .toolbar-toggle:hover {
-    background: #f0f0f0;
     transform: scale(1.1);
+}
+
+.toggle-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    cursor: pointer;
 }
 
 .toolbar-toggle.active {
     left: 320px;
     background: #e0e0e0;
-}
-
-.toggle-icon {
-    font-size: 24px;
-    line-height: 1;
 }
 
 .canvas-container {
