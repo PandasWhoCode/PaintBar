@@ -579,11 +579,11 @@ button.active {
 }
 
 #cancelTextBtn {
-    background: #f44336;
+    background-color: #f44336;
 }
 
 #cancelTextBtn:hover {
-    background: #da190b;
+    background-color: #da190b;
 }
 
 /* Mobile responsiveness */
@@ -601,7 +601,11 @@ button.active {
 
 /* Text tool styles */
 #textModal .modal-content {
-    width: 400px;
+    background: rgba(49, 35, 58, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    color: white;
 }
 
 #textModal .text-settings {
@@ -609,12 +613,18 @@ button.active {
 }
 
 #textModal textarea {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
     width: 100%;
     padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
     resize: vertical;
     min-height: 100px;
+}
+
+#textModal textarea::placeholder {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 #textModal select,
@@ -1623,4 +1633,27 @@ button.active {
     background: rgb(49, 35, 58);
     color: white;
     padding: 8px;
+}
+
+#textModal .modal-header h3 {
+    color: white;
+    margin: 0;
+}
+
+#textModal label {
+    color: white;
+    margin-right: 10px;
+}
+
+#textModal select {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+#textModal select option {
+    background: rgb(49, 35, 58);
+    color: white;
 }
