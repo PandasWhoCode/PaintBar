@@ -173,8 +173,11 @@
                         </div>
                         <div class="option-row">
                             <label for="textRotation">Rotation:</label>
-                            <input type="range" id="textRotation" min="0" max="365" value="0" step="1" style="accent-color: cyan; width: 100px">
-                            <input type="number" id="rotationValue" value="0" min="0" max="365" style="width: 4ch">°
+                            <input type="range" id="textRotation" min="0" max="360" value="0" step="1" style="accent-color: cyan; width: 100px">
+                            <div style="display: flex; align-items: center; gap: 2px">
+                                <input type="number" id="rotationValue" value="0" min="0" max="360" style="width: 7ch">
+                                <span>°</span>
+                            </div>
                         </div>
                     </div>
                 </div>
