@@ -296,8 +296,6 @@ class PaintBar {
         this.opaqueBgCtx.fillRect(0, 0, this.opaqueBgCanvas.width, this.opaqueBgCanvas.height);
 
         // Initialize drawing canvas
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.strokeStyle = this.currentColor;
         this.ctx.lineWidth = this.lineWidth;
         this.ctx.lineCap = 'round';
@@ -2141,10 +2139,8 @@ class PaintBar {
     applyCanvasStyle(ctx) {
         ctx.save();
         ctx.strokeStyle = this.currentColor;
-        ctx.fillStyle = this.currentColor;
         ctx.lineWidth = this.lineWidth;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.fillStyle = this.currentColor;
     }
 
     showSaveModal() {
@@ -2169,34 +2165,27 @@ class PaintBar {
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
         const fileName = `paint-${timestamp}${transparent ? '-transparent' : ''}`;
 
-        // Create a temporary canvas
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = this.canvas.width;
-        tempCanvas.height = this.canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        // Store current visibility states
+        const wasOpaqueBgVisible = this.opaqueBgCanvas.style.display;
 
         try {
+            // For transparent saves, hide the opaque background
+            if (transparent) {
+                this.opaqueBgCanvas.style.display = 'none';
+            }
+
+            // Create a temporary canvas
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = this.canvas.width;
+            tempCanvas.height = this.canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
             switch (format.toLowerCase()) {
                 case 'png':
                     link.download = `${fileName}.png`;
-                    // For transparent PNG, just use the drawing canvas
+                    // For PNG, just copy the drawing canvas
                     tempCtx.drawImage(this.canvas, 0, 0);
-                    
-                    // Only add opaque background for non-transparent saves
-                    if (!transparent) {
-                        // Create another temp canvas to composite the layers
-                        const finalCanvas = document.createElement('canvas');
-                        finalCanvas.width = this.canvas.width;
-                        finalCanvas.height = this.canvas.height;
-                        const finalCtx = finalCanvas.getContext('2d');
-                        
-                        // Draw background first, then the content
-                        finalCtx.drawImage(this.opaqueBgCanvas, 0, 0);
-                        finalCtx.drawImage(tempCanvas, 0, 0);
-                        link.href = finalCanvas.toDataURL('image/png');
-                    } else {
-                        link.href = tempCanvas.toDataURL('image/png');
-                    }
+                    link.href = tempCanvas.toDataURL('image/png');
                     break;
 
                 case 'jpg':
@@ -2227,13 +2216,6 @@ class PaintBar {
                     icoCtx.imageSmoothingEnabled = true;
                     icoCtx.imageSmoothingQuality = 'high';
                     
-                    if (!transparent) {
-                        // For non-transparent ICO, include the opaque background
-                        icoCtx.drawImage(this.opaqueBgCanvas,
-                            sourceX, sourceY, sourceWidth, sourceHeight,
-                            0, 0, 64, 64);
-                    }
-                    
                     // Draw the main canvas content
                     icoCtx.drawImage(this.canvas,
                         sourceX, sourceY, sourceWidth, sourceHeight,
@@ -2255,6 +2237,9 @@ class PaintBar {
             this.hideSaveModal();
         } catch (error) {
             console.error('Error saving image:', error);
+        } finally {
+            // Restore original visibility states
+            this.opaqueBgCanvas.style.display = wasOpaqueBgVisible;
         }
     }
 }
