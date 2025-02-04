@@ -250,6 +250,7 @@ export class TextTool extends GenericTool {
             fontFamily: 'Arial',
             fontSize: 20,
             color: '#000000',
+            rotation: 0,
             x: 0,
             y: 0
         };
@@ -301,14 +302,17 @@ export class TextTool extends GenericTool {
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
+        const textRotation = document.getElementById('textRotation');
+        const rotationValue = document.getElementById('rotationValue');
 
         const updatePreview = () => {
             const text = textInput?.value.trim() || '';
             const font = fontFamily?.value || 'Arial';
             const size = parseInt(fontSize?.value || '20');
             const color = textColor?.value || '#000000';
+            const rotation = parseInt(textRotation?.value || '0');
 
-            this.updatePreview(text, font, size, color);
+            this.updatePreview(text, font, size, color, rotation);
         };
 
         // Add input event listeners for live preview
@@ -316,6 +320,22 @@ export class TextTool extends GenericTool {
         fontFamily?.addEventListener('change', updatePreview);
         fontSize?.addEventListener('input', updatePreview);
         textColor?.addEventListener('input', updatePreview);
+        textRotation?.addEventListener('input', () => {
+            const rotation = parseInt(textRotation.value);
+            rotationValue.value = rotation;
+            this.textState.rotation = rotation;
+            updatePreview();
+        });
+
+        rotationValue?.addEventListener('input', () => {
+            let rotation = parseInt(rotationValue.value) || 0;
+            // Clamp the value between 0 and 365
+            rotation = Math.max(0, Math.min(365, rotation));
+            rotationValue.value = rotation;
+            textRotation.value = rotation;
+            this.textState.rotation = rotation;
+            updatePreview();
+        });
     }
 
     startDragging(e) {
@@ -396,8 +416,10 @@ export class TextTool extends GenericTool {
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
-        
-        if (textModal && textInput && fontFamily && fontSize && textColor) {
+        const textRotation = document.getElementById('textRotation');
+        const rotationValue = document.getElementById('rotationValue');
+
+        if (textModal && textInput && fontFamily && fontSize && textColor && textRotation && rotationValue) {
             // Show modal
             textModal.classList.remove('hidden');
             
@@ -411,6 +433,8 @@ export class TextTool extends GenericTool {
             fontFamily.value = this.textState.fontFamily;
             fontSize.value = this.textState.fontSize;
             textColor.value = this.paintBar.currentColor;
+            textRotation.value = this.textState.rotation;
+            rotationValue.value = this.textState.rotation;
             
             // Focus text input
             textInput.focus();
@@ -420,22 +444,40 @@ export class TextTool extends GenericTool {
         }
     }
 
-    updatePreview(text, font, size, color) {
+    updatePreview(text, font, size, color, rotation) {
+        const ctx = this.paintBar.previewContext;
+        if (!ctx) return;
+
         // Clear previous preview
-        this.clearPreview();
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        if (!text) return;
+        // Get current text state
+        const currentText = text || document.getElementById('textInput')?.value || this.textState.text;
+        const currentFont = font || document.getElementById('fontFamily')?.value || this.textState.fontFamily;
+        const currentSize = size || document.getElementById('fontSize')?.value || this.textState.fontSize;
+        const currentColor = color || document.getElementById('textColor')?.value || this.textState.color;
+        const currentRotation = rotation !== undefined ? rotation : this.textState.rotation;
 
-        // Get overlay canvas context
-        const overlayCtx = this.paintBar.overlayCtx;
-        
-        // Set text properties
-        overlayCtx.font = `${size}px ${font}`;
-        overlayCtx.fillStyle = color;
-        overlayCtx.textBaseline = 'top';
-
-        // Draw preview text
-        overlayCtx.fillText(text, this.textState.x, this.textState.y);
+        if (currentText) {
+            ctx.save();
+            
+            // Set text properties
+            ctx.font = `${currentSize}px ${currentFont}`;
+            ctx.fillStyle = currentColor;
+            ctx.textBaseline = 'top';
+            
+            // Apply rotation around text position
+            const centerX = this.textState.x;
+            const centerY = this.textState.y;
+            ctx.translate(centerX, centerY);
+            ctx.rotate(currentRotation * Math.PI / 180);
+            ctx.translate(-centerX, -centerY);
+            
+            // Draw the text
+            ctx.fillText(currentText, this.textState.x, this.textState.y);
+            
+            ctx.restore();
+        }
     }
 
     clearPreview() {
@@ -449,8 +491,9 @@ export class TextTool extends GenericTool {
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
-        
-        if (textInput && fontFamily && fontSize && textColor) {
+        const textRotation = document.getElementById('textRotation');
+
+        if (textInput && fontFamily && fontSize && textColor && textRotation) {
             const text = textInput.value.trim();
             if (text === '') {
                 this.hideTextControls();
@@ -463,16 +506,27 @@ export class TextTool extends GenericTool {
                 fontFamily: fontFamily.value,
                 fontSize: parseInt(fontSize.value),
                 color: textColor.value,
+                rotation: parseInt(textRotation.value),
                 x: this.textState.x,
                 y: this.textState.y
             };
             
             // Draw text on canvas
             const ctx = this.getContext();
+            ctx.save();
             ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
             ctx.textBaseline = 'top';  // Makes y coordinate the top of the text
+            
+            // Apply rotation around text position
+            const centerX = this.textState.x;
+            const centerY = this.textState.y;
+            ctx.translate(centerX, centerY);
+            ctx.rotate(this.textState.rotation * Math.PI / 180);
+            ctx.translate(-centerX, -centerY);
+            
             ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            ctx.restore();
             
             // Save state and cleanup
             this.paintBar.saveState();
@@ -496,6 +550,7 @@ export class TextTool extends GenericTool {
             fontFamily: 'Arial',
             fontSize: 20,
             color: '#000000',
+            rotation: 0,
             x: 0,
             y: 0
         };
