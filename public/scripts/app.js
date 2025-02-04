@@ -183,10 +183,6 @@ class PaintBar {
         this.cancelTextBtn = document.getElementById('cancelTextBtn');
         this.closeTextBtn = document.getElementById('closeTextBtn');
         
-        this.saveModal = document.getElementById('saveModal');
-        this.closeSaveBtn = document.getElementById('closeSaveBtn');
-        this.cancelSaveBtn = document.getElementById('cancelSave');
-
         // Initialize brush size
         if (this.brushSize && this.brushSizeLabel) {
             this.brushSize.value = 5;
