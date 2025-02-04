@@ -135,15 +135,6 @@
                 </div>
             </div>
 
-            <div class="toolbar-section">
-                <div class="submenu-header">
-                    <span>Settings</span>
-                    <span class="submenu-toggle">▼</span>
-                </div>
-                <div class="submenu-content">
-                    <button id="canvasSettingsBtn" title="Canvas Settings">⚙️</button>
-                </div>
-            </div>
         </div>
         <div class="canvas-container">
             <div class="canvas-wrapper">
@@ -153,87 +144,41 @@
                 <canvas id="selectionOverlay" class="canvas-layer"></canvas>
             </div>
         </div>
-        <div id="settingsModal" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Canvas Settings</h3>
-                    <button id="closeSettingsBtn" class="close-btn">&times;</button>
-                </div>
-                <div class="settings-row">
-                    <label for="canvasWidth">Width:</label>
-                    <input type="number" id="canvasWidth" min="1" max="4096" value="800">
-                </div>
-                <div class="settings-row">
-                    <label for="canvasHeight">Height:</label>
-                    <input type="number" id="canvasHeight" min="1" max="4096" value="600">
-                </div>
-                <div class="settings-row">
-                    <label for="transparentCanvas">
-                        <input type="checkbox" id="transparentCanvas">
-                        Transparent Background
-                    </label>
-                </div>
-                <div class="settings-row settings-buttons">
-                    <button id="applyCanvasSettings" class="action-btn apply-btn">Apply Changes</button>
-                    <button id="cancelCanvasSettings" class="action-btn cancel-btn">Cancel</button>
-                </div>
-            </div>
-        </div>
         <div id="textModal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Text Tool</h3>
+                    <h3>Add Text</h3>
                     <button id="closeTextBtn" class="close-btn">&times;</button>
                 </div>
-                <div class="text-settings">
-                    <div class="setting-item">
-                        <label for="textInput">Text:</label>
-                        <textarea id="textInput" rows="4"></textarea>
+                <div class="modal-body">
+                    <div class="text-input-container">
+                        <textarea id="textInput" placeholder="Enter your text here"></textarea>
                     </div>
-                    <div class="setting-item">
-                        <label for="fontFamily">Font:</label>
-                        <select id="fontFamily">
-                            <option value="Arial">Arial</option>
-                            <option value="Times New Roman">Times New Roman</option>
-                            <option value="Courier New">Courier New</option>
-                            <option value="Georgia">Georgia</option>
-                            <option value="Verdana">Verdana</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label for="fontSize">Size:</label>
-                        <input type="number" id="fontSize" min="8" max="200" value="20">
-                    </div>
-                    <div class="setting-item">
-                        <label for="textColor">Color:</label>
-                        <input type="color" id="textColor">
+                    <div class="text-options">
+                        <div class="option-row">
+                            <label for="fontFamily">Font:</label>
+                            <select id="fontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label for="fontSize">Size:</label>
+                            <input type="number" id="fontSize" min="8" max="72" value="20">
+                        </div>
+                        <div class="option-row">
+                            <label for="textColor">Color:</label>
+                            <input type="color" id="textColor" value="#000000">
+                        </div>
                     </div>
                 </div>
-                <div class="text-actions">
-                    <button id="previewTextBtn" class="action-btn preview-btn">Preview Text</button>
-                    <button id="cancelModalBtn" class="action-btn cancel-btn">Cancel</button>
+                <div class="modal-footer">
+                    <button id="applyTextBtn" class="btn">Apply</button>
+                    <button id="cancelTextBtn" class="btn">Cancel</button>
                 </div>
-            </div>
-        </div>
-        <div id="textPreviewOverlay" class="text-preview-overlay hidden">
-            <div class="preview-actions">
-                <button id="applyTextBtn" class="action-btn apply-btn">Apply Text</button>
-                <button id="editTextBtn" class="action-btn edit-btn">Edit Text</button>
-                <button id="cancelPreviewBtn" class="action-btn cancel-btn">Cancel</button>
-            </div>
-        </div>
-        <div id="cropOverlay" class="hidden">
-            <div id="cropBox">
-                <div class="crop-handle" data-handle="top-left"></div>
-                <div class="crop-handle" data-handle="top-right"></div>
-                <div class="crop-handle" data-handle="bottom-left"></div>
-                <div class="crop-handle" data-handle="bottom-right"></div>
-            </div>
-            <div class="crop-controls">
-                <button id="squareCropBtn">1:1</button>
-                <button id="mobileCropBtn">9:16</button>
-                <button id="applyCropBtn">✅</button>
-                <button id="cancelCropBtn">❌</button>
             </div>
         </div>
         <div id="saveModal" class="modal hidden">
@@ -281,6 +226,30 @@
                         </button>
                     </div>
                 </div>
+                <div class="modal-footer">
+                    <button id="cancelSave" class="btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="textPreviewOverlay" class="text-preview-overlay hidden">
+            <div class="preview-actions">
+                <button id="applyTextBtn" class="action-btn apply-btn">Apply Text</button>
+                <button id="editTextBtn" class="action-btn edit-btn">Edit Text</button>
+                <button id="cancelPreviewBtn" class="action-btn cancel-btn">Cancel</button>
+            </div>
+        </div>
+        <div id="cropOverlay" class="hidden">
+            <div id="cropBox">
+                <div class="crop-handle" data-handle="top-left"></div>
+                <div class="crop-handle" data-handle="top-right"></div>
+                <div class="crop-handle" data-handle="bottom-left"></div>
+                <div class="crop-handle" data-handle="bottom-right"></div>
+            </div>
+            <div class="crop-controls">
+                <button id="squareCropBtn">1:1</button>
+                <button id="mobileCropBtn">9:16</button>
+                <button id="applyCropBtn">✅</button>
+                <button id="cancelCropBtn">❌</button>
             </div>
         </div>
     </div>

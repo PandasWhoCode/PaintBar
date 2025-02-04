@@ -77,6 +77,47 @@ class PaintBar {
         // Debug logging
         console.log('Initial tool:', this.activeTool);
         console.log('Transparency button:', document.getElementById('transparencyBtn'));
+
+        // Save modal event listeners
+        if (this.saveBtn) {
+            this.saveBtn.addEventListener('click', () => this.showSaveModal());
+        }
+        if (this.closeSaveBtn) {
+            this.closeSaveBtn.addEventListener('click', () => this.hideSaveModal());
+        }
+        if (this.cancelSaveBtn) {
+            this.cancelSaveBtn.addEventListener('click', () => this.hideSaveModal());
+        }
+        if (this.savePngBtn) {
+            this.savePngBtn.addEventListener('click', () => {
+                this.saveImage('png', false);
+                this.hideSaveModal();
+            });
+        }
+        if (this.savePngTransparentBtn) {
+            this.savePngTransparentBtn.addEventListener('click', () => {
+                this.saveImage('png', true);
+                this.hideSaveModal();
+            });
+        }
+        if (this.saveJpgBtn) {
+            this.saveJpgBtn.addEventListener('click', () => {
+                this.saveImage('jpg', false);
+                this.hideSaveModal();
+            });
+        }
+        if (this.saveIcoBtn) {
+            this.saveIcoBtn.addEventListener('click', () => {
+                this.saveImage('ico', false);
+                this.hideSaveModal();
+            });
+        }
+        if (this.saveIcoTransparentBtn) {
+            this.saveIcoTransparentBtn.addEventListener('click', () => {
+                this.saveImage('ico', true);
+                this.hideSaveModal();
+            });
+        }
     }
 
     initializeState() {
@@ -174,17 +215,18 @@ class PaintBar {
         
         // Initialize modals and their elements
         this.textModal = document.getElementById('textModal');
+        this.applyTextBtn = document.getElementById('applyTextBtn');
         this.textInput = document.getElementById('textInput');
-        this.textPreviewBtn = document.getElementById('previewTextBtn');
-        this.acceptTextBtn = document.getElementById('acceptTextBtn');
         this.cancelTextBtn = document.getElementById('cancelTextBtn');
         this.closeTextBtn = document.getElementById('closeTextBtn');
         
         this.saveModal = document.getElementById('saveModal');
         this.closeSaveBtn = document.getElementById('closeSaveBtn');
         this.savePngBtn = document.getElementById('savePng');
+        this.savePngTransparentBtn = document.getElementById('savePngTransparent');
         this.saveJpgBtn = document.getElementById('saveJpg');
         this.saveIcoBtn = document.getElementById('saveIco');
+        this.saveIcoTransparentBtn = document.getElementById('saveIcoTransparent');
         this.cancelSaveBtn = document.getElementById('cancelSave');
 
         // Initialize brush size
@@ -389,107 +431,6 @@ class PaintBar {
             }
         });
 
-        // Canvas settings modal handlers
-        const modalElements = {
-            settingsBtn: document.getElementById('canvasSettingsBtn'),
-            settingsModal: document.getElementById('settingsModal'),
-            closeBtn: document.getElementById('closeSettingsBtn'),
-            cancelBtn: document.getElementById('cancelCanvasSettings'),
-            applyBtn: document.getElementById('applyCanvasSettings')
-        };
-
-        const { settingsBtn, settingsModal, closeBtn, cancelBtn, applyBtn } = modalElements;
-
-        // Settings modal toggle
-        if (settingsBtn && settingsModal) {
-            settingsBtn.addEventListener('click', () => {
-                // Store initial state when opening modal
-                this.initialModalState = {
-                    width: this.canvas.width,
-                    height: this.canvas.height,
-                    isTransparent: this.isTransparent
-                };
-                
-                // Set initial form values
-                const widthInput = document.getElementById('canvasWidth');
-                const heightInput = document.getElementById('canvasHeight');
-                const transparentInput = document.getElementById('transparentCanvas');
-                
-                if (widthInput) widthInput.value = this.canvas.width;
-                if (heightInput) heightInput.value = this.canvas.height;
-                if (transparentInput) transparentInput.checked = this.isTransparent;
-                
-                settingsModal.classList.remove('hidden');
-            });
-        }
-
-        // Close/Cancel settings modal
-        [closeBtn, cancelBtn].forEach(btn => {
-            if (btn && settingsModal) {
-                btn.addEventListener('click', () => {
-                    // Reset form values to initial state
-                    const widthInput = document.getElementById('canvasWidth');
-                    const heightInput = document.getElementById('canvasHeight');
-                    const transparentInput = document.getElementById('transparentCanvas');
-                    
-                    if (this.initialModalState) {
-                        if (widthInput) widthInput.value = this.initialModalState.width;
-                        if (heightInput) heightInput.value = this.initialModalState.height;
-                        if (transparentInput) {
-                            transparentInput.checked = this.initialModalState.isTransparent;
-                            // Revert transparency state if it was changed
-                            if (this.isTransparent !== this.initialModalState.isTransparent) {
-                                this.toggleTransparency();
-                            }
-                        }
-                    }
-                    
-                    settingsModal.classList.add('hidden');
-                });
-            }
-        });
-
-        // Apply settings changes
-        if (applyBtn && settingsModal) {
-            applyBtn.addEventListener('click', () => {
-                const widthInput = document.getElementById('canvasWidth');
-                const heightInput = document.getElementById('canvasHeight');
-                const transparentInput = document.getElementById('transparentCanvas');
-                
-                // Save current drawing content
-                const drawingContent = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-                
-                if (widthInput && heightInput) {
-                    const newWidth = parseInt(widthInput.value, 10);
-                    const newHeight = parseInt(heightInput.value, 10);
-                    
-                    // Update canvas sizes
-                    this.transparentBgCanvas.width = newWidth;
-                    this.transparentBgCanvas.height = newHeight;
-                    this.opaqueBgCanvas.width = newWidth;
-                    this.opaqueBgCanvas.height = newHeight;
-                    this.overlayCanvas.width = newWidth;
-                    this.overlayCanvas.height = newHeight;
-                    
-                    // Update main canvas last
-                    this.canvas.width = newWidth;
-                    this.canvas.height = newHeight;
-                }
-                
-                // Restore drawing content
-                this.ctx.putImageData(drawingContent, 0, 0);
-                
-                // Handle transparency toggle
-                if (transparentInput && (this.isTransparent !== transparentInput.checked)) {
-                    this.toggleTransparency();
-                }
-                
-                // Hide modal and save state
-                settingsModal.classList.add('hidden');
-                this.saveState();
-            });
-        }
-
         // Action button events
         const actionButtons = {
             cropBtn: () => this.cropCanvas(),
@@ -501,7 +442,7 @@ class PaintBar {
         Object.entries(actionButtons).forEach(([btnId, handler]) => {
             const button = document.getElementById(btnId);
             if (button) {
-                button.addEventListener('click', handler.bind(this));  
+                button.addEventListener('click', handler);
             }
         });
 
@@ -519,35 +460,6 @@ class PaintBar {
                 });
             }
         });
-
-        // Save modal event listeners
-        if (this.saveBtn) {
-            this.saveBtn.addEventListener('click', () => this.showSaveModal());
-        }
-        if (this.closeSaveBtn) {
-            this.closeSaveBtn.addEventListener('click', () => this.hideSaveModal());
-        }
-        if (this.cancelSaveBtn) {
-            this.cancelSaveBtn.addEventListener('click', () => this.hideSaveModal());
-        }
-        if (this.savePngBtn) {
-            this.savePngBtn.addEventListener('click', () => {
-                this.saveImage('png');
-                this.hideSaveModal();
-            });
-        }
-        if (this.saveJpgBtn) {
-            this.saveJpgBtn.addEventListener('click', () => {
-                this.saveImage('jpg');
-                this.hideSaveModal();
-            });
-        }
-        if (this.saveIcoBtn) {
-            this.saveIcoBtn.addEventListener('click', () => {
-                this.saveImage('ico');
-                this.hideSaveModal();
-            });
-        }
 
         // Other event listeners...
         // Mouse events
@@ -1381,215 +1293,6 @@ class PaintBar {
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         return { r, g, b, a: 1 };
-    }
-
-    applyCanvasSettings() {
-        const widthInput = document.getElementById('canvasWidth');
-        const heightInput = document.getElementById('canvasHeight');
-        const transparentInput = document.getElementById('transparentCanvas');
-        
-        if (widthInput && heightInput) {
-            const newWidth = parseInt(widthInput.value, 10);
-            const newHeight = parseInt(heightInput.value, 10);
-            
-            // Save current drawing content
-            const drawingContent = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            
-            // Update canvas sizes
-            const setCanvasSize = (canvas) => {
-                canvas.width = newWidth;
-                canvas.height = newHeight;
-            };
-            
-            setCanvasSize(this.transparentBgCanvas);
-            setCanvasSize(this.opaqueBgCanvas);
-            setCanvasSize(this.canvas);
-            setCanvasSize(this.overlayCanvas);
-            
-            // Restore drawing content
-            this.ctx.putImageData(drawingContent, 0, 0);
-        }
-        
-        if (transparentInput && (this.isTransparent !== transparentInput.checked)) {
-            this.toggleTransparency();
-        }
-        
-        // Save state after all changes are applied
-        this.saveState();
-    }
-
-    downloadImage(format) {
-        if (!this.canvas) return;
-
-        // Create a temporary link element
-        const link = document.createElement('a');
-        
-        // Set up the file name
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const fileName = `paint-${timestamp}`;
-
-        // Handle different formats
-        switch (format.toLowerCase()) {
-            case 'png':
-                // For PNG, just use the canvas directly to preserve transparency
-                link.download = `${fileName}.png`;
-                link.href = this.canvas.toDataURL('image/png');
-                break;
-
-            case 'jpg':
-                // Create a temporary canvas with white background for JPG
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = this.canvas.width;
-                tempCanvas.height = this.canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                // Fill with white background
-                tempCtx.fillStyle = 'white';
-                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-                
-                // Draw the original canvas content
-                tempCtx.drawImage(this.canvas, 0, 0);
-                
-                link.download = `${fileName}.jpg`;
-                link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
-                break;
-
-            case 'ico':
-                // Create multiple ICO sizes
-                const sizes = [16, 32, 64, 128, 256];
-                const icoCanvases = sizes.map(size => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Enable high-quality scaling
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    
-                    // Draw and scale the original canvas
-                    ctx.drawImage(this.canvas, 0, 0, size, size);
-                    
-                    return canvas.toDataURL('image/png');
-                });
-
-                // For now, we'll just download the 256x256 version
-                // TODO: Implement server-side 7z compression for multiple sizes
-                link.download = `${fileName}-256.ico`;
-                link.href = icoCanvases[icoCanvases.length - 1];
-                break;
-
-            default:
-                console.error('Unsupported format:', format);
-                return;
-        }
-
-        // Trigger the download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    }
-
-    clearCanvas() {
-        if (!this.ctx || !this.canvas) return;
-        
-        // Save current state before clearing
-        this.saveState();
-        
-        // Clear the canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // If not transparent, fill with white
-        if (!this.isTransparent) {
-            this.ctx.fillStyle = 'white';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        }
-        
-        // Save the cleared state
-        this.saveState();
-    }
-
-    cropCanvas() {
-        // TODO: Implement crop functionality
-        console.log('Crop functionality not yet implemented');
-    }
-
-    pasteContent() {
-        // TODO: Implement paste functionality
-        console.log('Paste functionality not yet implemented');
-    }
-
-    showDownloadOptions() {
-        const dropdown = document.querySelector('.dropdown-content');
-        if (dropdown) {
-            dropdown.classList.toggle('active');
-        }
-    }
-
-    showSaveModal() {
-        if (this.saveModal) {
-            this.saveModal.classList.remove('hidden');
-        }
-    }
-
-    hideSaveModal() {
-        if (this.saveModal) {
-            this.saveModal.classList.add('hidden');
-        }
-    }
-
-    saveImage(format) {
-        let filename = `paint-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}`;
-        let mimeType;
-        
-        switch (format) {
-            case 'png':
-                filename += '.png';
-                mimeType = 'image/png';
-                break;
-            case 'jpg':
-                filename += '.jpg';
-                mimeType = 'image/jpeg';
-                break;
-            case 'ico':
-                filename += '.ico';
-                mimeType = 'image/x-icon';
-                break;
-            default:
-                filename += '.png';
-                mimeType = 'image/png';
-        }
-
-        // Create a temporary canvas to handle transparent background if needed
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = this.canvas.width;
-        tempCanvas.height = this.canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        // For JPG, fill with white background since it doesn't support transparency
-        if (format === 'jpg') {
-            tempCtx.fillStyle = '#FFFFFF';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        }
-
-        // Draw the original canvas content
-        tempCtx.drawImage(this.canvas, 0, 0);
-
-        // Convert to blob and download
-        tempCanvas.toBlob((blob) => {
-            if (blob) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                this.hideSaveModal();
-            }
-        }, mimeType);
     }
 
     updateColor(color) {
@@ -2442,6 +2145,117 @@ class PaintBar {
         ctx.lineWidth = this.lineWidth;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+    }
+
+    showSaveModal() {
+        if (this.saveModal) {
+            this.saveModal.classList.remove('hidden');
+        }
+    }
+
+    hideSaveModal() {
+        if (this.saveModal) {
+            this.saveModal.classList.add('hidden');
+        }
+    }
+
+    saveImage(format, transparent = false) {
+        if (!this.canvas) return;
+
+        // Create a temporary link element
+        const link = document.createElement('a');
+        
+        // Set up the file name
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        const fileName = `paint-${timestamp}${transparent ? '-transparent' : ''}`;
+
+        // Create a temporary canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.canvas.width;
+        tempCanvas.height = this.canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // Function to draw content with or without background
+        const drawContent = (ctx, size = null) => {
+            const targetWidth = size || tempCanvas.width;
+            const targetHeight = size || tempCanvas.height;
+            
+            if (!transparent) {
+                // Draw white background for non-transparent images
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, targetWidth, targetHeight);
+                
+                // Draw opaque background if it exists
+                if (this.opaqueBgCanvas) {
+                    ctx.drawImage(this.opaqueBgCanvas, 0, 0, targetWidth, targetHeight);
+                }
+            } else {
+                // For transparent images, only draw transparent background if it exists
+                if (this.transparentBgCanvas) {
+                    ctx.drawImage(this.transparentBgCanvas, 0, 0, targetWidth, targetHeight);
+                }
+            }
+            
+            // Draw the main canvas content
+            ctx.drawImage(this.canvas, 0, 0, targetWidth, targetHeight);
+        };
+
+        // Handle different formats
+        switch (format.toLowerCase()) {
+            case 'png':
+                link.download = `${fileName}.png`;
+                drawContent(tempCtx);
+                link.href = tempCanvas.toDataURL('image/png');
+                break;
+
+            case 'jpg':
+                link.download = `${fileName}.jpg`;
+                // JPG doesn't support transparency, always draw with background
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                if (this.opaqueBgCanvas) {
+                    tempCtx.drawImage(this.opaqueBgCanvas, 0, 0);
+                }
+                tempCtx.drawImage(this.canvas, 0, 0);
+                link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
+                break;
+
+            case 'ico':
+                link.download = `${fileName}.ico`;
+                // Create multiple ICO sizes
+                const sizes = [16, 32, 48, 64, 128, 256];
+                const icoCanvases = sizes.map(size => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Enable high-quality scaling
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    
+                    // Draw content at the specific size
+                    drawContent(ctx, size);
+                    
+                    return canvas.toDataURL('image/png');
+                });
+
+                // For now, we'll just use the 256x256 version
+                // TODO: Implement proper ICO format with multiple sizes
+                link.href = icoCanvases[icoCanvases.length - 1];
+                break;
+
+            default:
+                console.error('Unsupported format:', format);
+                return;
+        }
+
+        // Trigger the download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        this.hideSaveModal();
     }
 }
 
