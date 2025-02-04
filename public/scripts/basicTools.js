@@ -251,6 +251,10 @@ export class TextTool extends GenericTool {
             fontSize: 20,
             color: '#000000',
             rotation: 0,
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
             x: 0,
             y: 0
         };
@@ -341,6 +345,26 @@ export class TextTool extends GenericTool {
             this.textState.rotation = rotation;
             updatePreview();
         });
+
+        // Style button listeners
+        const boldBtn = document.getElementById('boldBtn');
+        const italicBtn = document.getElementById('italicBtn');
+        const underlineBtn = document.getElementById('underlineBtn');
+        const strikeBtn = document.getElementById('strikeBtn');
+
+        const toggleStyleButton = (button, property) => {
+            if (!button) return;
+            button.addEventListener('click', () => {
+                this.textState[property] = !this.textState[property];
+                button.classList.toggle('active');
+                updatePreview();
+            });
+        };
+
+        toggleStyleButton(boldBtn, 'bold');
+        toggleStyleButton(italicBtn, 'italic');
+        toggleStyleButton(underlineBtn, 'underline');
+        toggleStyleButton(strikeBtn, 'strikethrough');
     }
 
     startDragging(e) {
@@ -407,7 +431,10 @@ export class TextTool extends GenericTool {
             ctx.save();
             
             // Set text properties
-            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            let fontStyle = '';
+            if (this.textState.bold) fontStyle += 'bold ';
+            if (this.textState.italic) fontStyle += 'italic ';
+            ctx.font = `${fontStyle}${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
             ctx.textBaseline = 'middle';
             
@@ -425,8 +452,33 @@ export class TextTool extends GenericTool {
             ctx.rotate(this.textState.rotation * Math.PI / 180);
             ctx.translate(-centerX, -centerY);
             
-            // Draw the text with adjusted position for middle baseline
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y + textHeight / 2);
+            // Draw the text
+            const x = this.textState.x;
+            const y = this.textState.y + textHeight / 2;
+            
+            ctx.fillText(this.textState.text, x, y);
+            
+            // Draw underline and/or strikethrough
+            if (this.textState.underline || this.textState.strikethrough) {
+                ctx.beginPath();
+                const lineWidth = Math.max(1, this.textState.fontSize / 20);
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = this.textState.color;
+                
+                if (this.textState.underline) {
+                    // Position underline 1px below text bottom (half height from middle baseline + 1)
+                    const underlineY = y + (textHeight / 2) + 1;
+                    ctx.moveTo(x, underlineY);
+                    ctx.lineTo(x + textWidth, underlineY);
+                }
+                
+                if (this.textState.strikethrough) {
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + textWidth, y);
+                }
+                
+                ctx.stroke();
+            }
             
             ctx.restore();
         }
@@ -467,7 +519,7 @@ export class TextTool extends GenericTool {
         const textColor = document.getElementById('textColor');
         const textRotation = document.getElementById('textRotation');
         const rotationValue = document.getElementById('rotationValue');
-
+        
         if (textModal && textInput && fontFamily && fontSize && textColor && textRotation && rotationValue) {
             // Show modal
             textModal.classList.remove('hidden');
@@ -484,6 +536,18 @@ export class TextTool extends GenericTool {
             textColor.value = this.paintBar.currentColor;
             textRotation.value = this.textState.rotation;
             rotationValue.value = this.textState.rotation;
+            
+            // Reset style buttons
+            const boldBtn = document.getElementById('boldBtn');
+            const italicBtn = document.getElementById('italicBtn');
+            const underlineBtn = document.getElementById('underlineBtn');
+            const strikeBtn = document.getElementById('strikeBtn');
+            
+            // Update button states based on text state
+            if (boldBtn) boldBtn.classList.toggle('active', this.textState.bold);
+            if (italicBtn) italicBtn.classList.toggle('active', this.textState.italic);
+            if (underlineBtn) underlineBtn.classList.toggle('active', this.textState.underline);
+            if (strikeBtn) strikeBtn.classList.toggle('active', this.textState.strikethrough);
             
             // Focus text input
             textInput.focus();
@@ -507,9 +571,10 @@ export class TextTool extends GenericTool {
                 this.hideTextControls();
                 return;
             }
-            
-            // Update text state
-            this.textState = {
+
+            // Update text state (keep existing style states)
+            const newState = {
+                ...this.textState,  // Preserve existing states including style flags
                 text: text,
                 fontFamily: fontFamily.value,
                 fontSize: parseInt(fontSize.value),
@@ -518,13 +583,17 @@ export class TextTool extends GenericTool {
                 x: this.textState.x,
                 y: this.textState.y
             };
-            
+            this.textState = newState;
+
             // Draw text on canvas
             const ctx = this.getContext();
             ctx.save();
             
             // Set text properties
-            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            let fontStyle = '';
+            if (this.textState.bold) fontStyle += 'bold ';
+            if (this.textState.italic) fontStyle += 'italic ';
+            ctx.font = `${fontStyle}${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
             ctx.textBaseline = 'middle';
             
@@ -542,16 +611,39 @@ export class TextTool extends GenericTool {
             ctx.rotate(this.textState.rotation * Math.PI / 180);
             ctx.translate(-centerX, -centerY);
             
-            // Draw the text with adjusted position for middle baseline
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y + textHeight / 2);
+            // Draw the text
+            const x = this.textState.x;
+            const y = this.textState.y + textHeight / 2;
+            
+            ctx.fillText(this.textState.text, x, y);
+            
+            // Draw underline and/or strikethrough
+            if (this.textState.underline || this.textState.strikethrough) {
+                ctx.beginPath();
+                const lineWidth = Math.max(1, this.textState.fontSize / 20);
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = this.textState.color;
+                
+                if (this.textState.underline) {
+                    // Position underline 1px below text bottom (half height from middle baseline + 1)
+                    const underlineY = y + (textHeight / 2) + 1;
+                    ctx.moveTo(x, underlineY);
+                    ctx.lineTo(x + textWidth, underlineY);
+                }
+                
+                if (this.textState.strikethrough) {
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + textWidth, y);
+                }
+                
+                ctx.stroke();
+            }
             
             ctx.restore();
             
             // Save state and cleanup
             this.paintBar.saveState();
             this.hideTextControls();
-            this.resetTextState();
-            this.clearPreview();
         }
     }
 
@@ -570,6 +662,10 @@ export class TextTool extends GenericTool {
             fontSize: 20,
             color: '#000000',
             rotation: 0,
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
             x: 0,
             y: 0
         };
