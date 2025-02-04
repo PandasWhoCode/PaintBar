@@ -1,113 +1,227 @@
 import { GenericTool } from './genericTool.js';
 
 export class PencilTool extends GenericTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.lastX = 0;
+        this.lastY = 0;
+    }
+
     onMouseDown(point) {
         super.onMouseDown(point);
-        const ctx = this.getContext();
-        ctx.beginPath();
-        ctx.moveTo(point.x, point.y);
-        this.applyBrushSettings(ctx);
+        this.lastX = point.x;
+        this.lastY = point.y;
+        this.draw(point);
     }
 
     onMouseMove(point) {
         if (!this.isDrawing) return;
-        const ctx = this.getContext();
-        ctx.lineTo(point.x, point.y);
-        ctx.stroke();
+        this.draw(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
     }
 
     onMouseUp(point) {
+        if (!this.isDrawing) return;
+        this.draw(point);
+        this.paintBar.saveState();
         super.onMouseUp(point);
-        this.saveState();
+    }
+
+    draw(point) {
+        const ctx = this.getContext();
+        this.applyBrushSettings(ctx);
+        
+        ctx.beginPath();
+        ctx.moveTo(this.lastX, this.lastY);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
     }
 }
 
 export class EraserTool extends GenericTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.lastX = 0;
+        this.lastY = 0;
+    }
+
     onMouseDown(point) {
         super.onMouseDown(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
         this.erase(point);
     }
 
     onMouseMove(point) {
         if (!this.isDrawing) return;
         this.erase(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
     }
 
     onMouseUp(point) {
+        if (!this.isDrawing) return;
+        this.erase(point);
+        this.paintBar.saveState();
         super.onMouseUp(point);
-        this.saveState();
     }
 
     erase(point) {
         const ctx = this.getContext();
-        const eraseWidth = this.paintBar.lineWidth * 2;
         ctx.save();
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
-        ctx.arc(point.x, point.y, eraseWidth / 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(this.lastX, this.lastY);
+        ctx.lineTo(point.x, point.y);
+        ctx.strokeStyle = '#000';  // Color doesn't matter due to composite operation
+        ctx.lineWidth = this.paintBar.lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
         ctx.restore();
     }
 }
 
 export class FillTool extends GenericTool {
-    onMouseDown(point) {
-        super.onMouseDown(point);
-        this.floodFill(point);
-        this.saveState();
+    constructor(paintBar) {
+        super(paintBar);
+        console.log('FillTool constructed');
     }
 
-    floodFill(point) {
+    onMouseDown(point) {
+        console.log('FillTool onMouseDown', point);
+        // Don't call super.onMouseDown to avoid setting isDrawing
+        this.fill(point);
+    }
+
+    onMouseMove(point) {
+        // Fill tool doesn't need mouse move handling
+    }
+
+    onMouseUp(point) {
+        // Don't call super.onMouseUp since we're not using isDrawing
+    }
+
+    fill(point) {
+        console.log('FillTool fill starting', point);
         const ctx = this.getContext();
+        console.log('Got context:', ctx);
+        
         const imageData = ctx.getImageData(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
+        console.log('Got imageData:', {
+            width: imageData.width,
+            height: imageData.height,
+            dataLength: imageData.data.length
+        });
+        
         const pixels = imageData.data;
         
-        const startPos = (point.y * this.paintBar.canvas.width + point.x) * 4;
-        let startR = pixels[startPos];
-        let startG = pixels[startPos + 1];
-        let startB = pixels[startPos + 2];
-        let startA = pixels[startPos + 3];
+        // Convert floating point coordinates to integers
+        const x = Math.round(point.x);
+        const y = Math.round(point.y);
+        console.log('Rounded coordinates:', {x, y});
         
-        if (startA === 0) {
-            // If starting on a transparent pixel, treat it as white
-            startR = 255;
-            startG = 255;
-            startB = 255;
-            startA = 255;
+        // Ensure point is within bounds
+        if (x < 0 || x >= imageData.width || 
+            y < 0 || y >= imageData.height) {
+            console.log('Point out of bounds:', {x, y});
+            return;
         }
         
-        const fillRGBA = this.hexToRGBA(this.paintBar.currentColor);
+        // Calculate pixel position
+        const startPos = (y * imageData.width + x) * 4;
+        console.log('Start position:', startPos);
         
-        if (this.colorsMatch(
-            [startR, startG, startB, startA],
-            [fillRGBA.r, fillRGBA.g, fillRGBA.b, fillRGBA.a * 255]
-        )) {
-            return; // Already filled
+        // Debug pixel data
+        console.log('Pixel data at position:', {
+            pos: startPos,
+            r: pixels[startPos],
+            g: pixels[startPos + 1],
+            b: pixels[startPos + 2],
+            a: pixels[startPos + 3]
+        });
+        
+        const startColor = {
+            r: pixels[startPos],
+            g: pixels[startPos + 1],
+            b: pixels[startPos + 2],
+            a: pixels[startPos + 3]
+        };
+        console.log('Start color:', startColor);
+        
+        const fillColor = this.hexToRGBA(this.paintBar.currentColor);
+        console.log('Fill color:', fillColor);
+        if (!fillColor) {
+            console.log('Invalid fill color');
+            return;
         }
+
+        // If starting on a transparent pixel, we'll fill all connected transparent pixels
+        const isStartTransparent = startColor.a === 0;
+        console.log('Starting on transparent pixel:', isStartTransparent);
         
-        const stack = [[point.x, point.y]];
-        const width = this.paintBar.canvas.width;
-        const height = this.paintBar.canvas.height;
+        // Start with the integer coordinates
+        const stack = [[x, y]];
+        const width = imageData.width;
+        const height = imageData.height;
+        console.log('Canvas dimensions:', {width, height});
+        
+        const visited = new Set();
+        let pixelsFilled = 0;
         
         while (stack.length > 0) {
-            const [x, y] = stack.pop();
-            const pos = (y * width + x) * 4;
+            const [px, py] = stack.pop();
             
-            if (x < 0 || x >= width || y < 0 || y >= height) continue;
-            if (!this.colorsMatch(
-                [pixels[pos], pixels[pos + 1], pixels[pos + 2], pixels[pos + 3]],
-                [startR, startG, startB, startA]
-            )) continue;
+            // Skip if outside canvas bounds
+            if (px < 0 || px >= width || py < 0 || py >= height) continue;
             
-            pixels[pos] = fillRGBA.r;
-            pixels[pos + 1] = fillRGBA.g;
-            pixels[pos + 2] = fillRGBA.b;
-            pixels[pos + 3] = fillRGBA.a * 255;
+            const key = `${px},${py}`;
+            if (visited.has(key)) continue;
             
-            stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+            const pos = (py * width + px) * 4;
+            const currentAlpha = pixels[pos + 3];
+            
+            // If we started on a transparent pixel, only fill transparent pixels
+            // If we started on an opaque pixel, match all color components
+            if (isStartTransparent) {
+                if (currentAlpha !== 0) continue;
+            } else {
+                if (!this.colorsMatch(
+                    [pixels[pos], pixels[pos + 1], pixels[pos + 2], pixels[pos + 3]],
+                    [startColor.r, startColor.g, startColor.b, startColor.a]
+                )) continue;
+            }
+            
+            visited.add(key);
+            pixelsFilled++;
+            
+            // Fill the pixel
+            pixels[pos] = fillColor.r;
+            pixels[pos + 1] = fillColor.g;
+            pixels[pos + 2] = fillColor.b;
+            pixels[pos + 3] = fillColor.a * 255;
+            
+            // Add unvisited neighbors to stack
+            const neighbors = [
+                [px + 1, py],
+                [px - 1, py],
+                [px, py + 1],
+                [px, py - 1]
+            ];
+            
+            for (const [nx, ny] of neighbors) {
+                const neighborKey = `${nx},${ny}`;
+                if (!visited.has(neighborKey)) {
+                    stack.push([nx, ny]);
+                }
+            }
         }
         
+        console.log(`Filled ${pixelsFilled} pixels`);
         ctx.putImageData(imageData, 0, 0);
+        this.paintBar.saveState();
+        console.log('Fill operation complete');
     }
 
     colorsMatch(color1, color2, tolerance = 1) {
@@ -177,9 +291,7 @@ export class TextTool extends GenericTool {
             // Set up preview button
             const previewBtn = document.getElementById('previewTextBtn');
             if (previewBtn) {
-                const newPreviewBtn = previewBtn.cloneNode(true);
-                previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
-                newPreviewBtn.addEventListener('click', () => this.previewText());
+                previewBtn.onclick = () => this.previewText();
             }
         }
     }
@@ -191,11 +303,8 @@ export class TextTool extends GenericTool {
         const fontSelect = document.getElementById('fontSelect');
         const fontSizeInput = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
-        const applyBtn = document.getElementById('applyTextBtn');
-        const editBtn = document.getElementById('editTextBtn');
-        const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
         
-        if (textModal && previewOverlay && textInput) {
+        if (textModal && previewOverlay && textInput && fontSelect && fontSizeInput && textColor) {
             const text = textInput.value.trim();
             if (text === '') return;
 
@@ -210,35 +319,39 @@ export class TextTool extends GenericTool {
                 isPreview: true
             };
 
-            // Draw preview text
-            const ctx = this.getContext();
-            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
-            ctx.fillStyle = this.textState.color;
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            // Draw preview text on overlay canvas
+            const overlayCtx = this.getOverlayContext();
+            this.clearOverlay();
+            overlayCtx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            overlayCtx.fillStyle = this.textState.color;
+            overlayCtx.fillText(this.textState.text, this.textState.x, this.textState.y);
 
             // Hide text modal and show preview overlay
             textModal.classList.add('hidden');
             previewOverlay.classList.remove('hidden');
 
             // Set up preview action buttons
-            if (applyBtn && editBtn && cancelPreviewBtn) {
-                const newApplyBtn = applyBtn.cloneNode(true);
-                const newEditBtn = editBtn.cloneNode(true);
-                const newCancelBtn = cancelPreviewBtn.cloneNode(true);
+            const applyBtn = document.getElementById('applyTextBtn');
+            const editBtn = document.getElementById('editTextBtn');
+            const cancelBtn = document.getElementById('cancelPreviewBtn');
 
-                applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
-                editBtn.parentNode.replaceChild(newEditBtn, editBtn);
-                cancelPreviewBtn.parentNode.replaceChild(newCancelBtn, cancelPreviewBtn);
-
-                newApplyBtn.addEventListener('click', () => this.applyText());
-                newEditBtn.addEventListener('click', () => this.editText());
-                newCancelBtn.addEventListener('click', () => this.cancelPreview());
+            if (applyBtn && editBtn && cancelBtn) {
+                applyBtn.onclick = () => this.applyText();
+                editBtn.onclick = () => this.editText();
+                cancelBtn.onclick = () => this.cancelPreview();
             }
         }
     }
 
     applyText() {
         if (this.textState.isPreview) {
+            // Draw the text on the main canvas
+            const ctx = this.getContext();
+            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            ctx.fillStyle = this.textState.color;
+            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            
+            this.clearOverlay();
             this.paintBar.saveState();
             this.hideTextControls();
             this.resetTextState();
@@ -249,8 +362,7 @@ export class TextTool extends GenericTool {
         if (!this.textState.isPreview) return;
 
         // Clear the preview
-        const ctx = this.getContext();
-        ctx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
+        this.clearOverlay();
 
         // Hide preview overlay and show text modal with current text state
         const modal = document.getElementById('textModal');
@@ -263,28 +375,27 @@ export class TextTool extends GenericTool {
         if (modal && previewOverlay && textInput && fontSelect && fontSizeInput && textColor) {
             modal.classList.remove('hidden');
             previewOverlay.classList.add('hidden');
+            
             textInput.value = this.textState.text;
             fontSelect.value = this.textState.fontFamily;
             fontSizeInput.value = this.textState.fontSize;
             textColor.value = this.textState.color;
+            
             textInput.focus();
         }
     }
 
     cancelPreview() {
-        // Clear the preview
-        const ctx = this.getContext();
-        ctx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
-
+        this.clearOverlay();
         this.hideTextControls();
         this.resetTextState();
     }
 
     hideTextControls() {
-        const modal = document.getElementById('textModal');
+        const textModal = document.getElementById('textModal');
         const previewOverlay = document.getElementById('textPreviewOverlay');
         
-        if (modal) modal.classList.add('hidden');
+        if (textModal) textModal.classList.add('hidden');
         if (previewOverlay) previewOverlay.classList.add('hidden');
     }
 
@@ -293,7 +404,7 @@ export class TextTool extends GenericTool {
             text: '',
             fontFamily: 'Arial',
             fontSize: 20,
-            color: this.paintBar.currentColor,
+            color: '#000000',
             x: 0,
             y: 0,
             isPreview: false
