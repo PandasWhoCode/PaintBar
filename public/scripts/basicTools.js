@@ -250,6 +250,11 @@ export class TextTool extends GenericTool {
             fontFamily: 'Arial',
             fontSize: 20,
             color: '#000000',
+            rotation: 0,
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
             x: 0,
             y: 0
         };
@@ -296,19 +301,26 @@ export class TextTool extends GenericTool {
             cancelBtn.onclick = () => this.hideTextControls();
         }
 
-        // Setup live preview listeners
+        // Get all the text input elements
         const textInput = document.getElementById('textInput');
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
+        const textRotation = document.getElementById('textRotation');
+        const rotationValue = document.getElementById('rotationValue');
 
         const updatePreview = () => {
-            const text = textInput?.value.trim() || '';
-            const font = fontFamily?.value || 'Arial';
+            const text = textInput?.value || '';
+            const font = fontFamily?.value || this.textState.fontFamily;
             const size = parseInt(fontSize?.value || '20');
             const color = textColor?.value || '#000000';
-
-            this.updatePreview(text, font, size, color);
+            const rotation = parseInt(textRotation?.value || '0');
+            this.textState.text = text;
+            this.textState.fontFamily = font;
+            this.textState.fontSize = size;
+            this.textState.color = color;
+            this.textState.rotation = rotation;
+            this.updatePreview();
         };
 
         // Add input event listeners for live preview
@@ -316,6 +328,43 @@ export class TextTool extends GenericTool {
         fontFamily?.addEventListener('change', updatePreview);
         fontSize?.addEventListener('input', updatePreview);
         textColor?.addEventListener('input', updatePreview);
+        
+        textRotation?.addEventListener('input', () => {
+            const rotation = parseInt(textRotation.value);
+            rotationValue.value = rotation;
+            this.textState.rotation = rotation;
+            updatePreview();
+        });
+
+        rotationValue?.addEventListener('input', () => {
+            let rotation = parseInt(rotationValue.value) || 0;
+            // Clamp the value between 0 and 365
+            rotation = Math.max(0, Math.min(365, rotation));
+            rotationValue.value = rotation;
+            textRotation.value = rotation;
+            this.textState.rotation = rotation;
+            updatePreview();
+        });
+
+        // Style button listeners
+        const boldBtn = document.getElementById('boldBtn');
+        const italicBtn = document.getElementById('italicBtn');
+        const underlineBtn = document.getElementById('underlineBtn');
+        const strikeBtn = document.getElementById('strikeBtn');
+
+        const toggleStyleButton = (button, property) => {
+            if (!button) return;
+            button.addEventListener('click', () => {
+                this.textState[property] = !this.textState[property];
+                button.classList.toggle('active');
+                updatePreview();
+            });
+        };
+
+        toggleStyleButton(boldBtn, 'bold');
+        toggleStyleButton(italicBtn, 'italic');
+        toggleStyleButton(underlineBtn, 'underline');
+        toggleStyleButton(strikeBtn, 'strikethrough');
     }
 
     startDragging(e) {
@@ -370,6 +419,78 @@ export class TextTool extends GenericTool {
         }
     }
 
+    updatePreview() {
+        // Get the preview canvas context
+        const ctx = this.paintBar.overlayCtx;
+        if (!ctx) return;
+
+        // Clear previous preview
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        if (this.textState.text) {
+            ctx.save();
+            
+            // Set text properties
+            let fontStyle = '';
+            if (this.textState.bold) fontStyle += 'bold ';
+            if (this.textState.italic) fontStyle += 'italic ';
+            ctx.font = `${fontStyle}${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            ctx.fillStyle = this.textState.color;
+            ctx.textBaseline = 'middle';
+            
+            // Measure text to find center point
+            const metrics = ctx.measureText(this.textState.text);
+            const textWidth = metrics.width;
+            const textHeight = this.textState.fontSize;
+            
+            // Calculate center point
+            const centerX = this.textState.x + textWidth / 2;
+            const centerY = this.textState.y + textHeight / 2;
+            
+            // Apply rotation around center point
+            ctx.translate(centerX, centerY);
+            ctx.rotate(this.textState.rotation * Math.PI / 180);
+            ctx.translate(-centerX, -centerY);
+            
+            // Draw the text
+            const x = this.textState.x;
+            const y = this.textState.y + textHeight / 2;
+            
+            ctx.fillText(this.textState.text, x, y);
+            
+            // Draw underline and/or strikethrough
+            if (this.textState.underline || this.textState.strikethrough) {
+                ctx.beginPath();
+                const lineWidth = Math.max(1, this.textState.fontSize / 20);
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = this.textState.color;
+                
+                if (this.textState.underline) {
+                    // Position underline 1px below text bottom (half height from middle baseline + 1)
+                    const underlineY = y + (textHeight / 2) + 1;
+                    ctx.moveTo(x, underlineY);
+                    ctx.lineTo(x + textWidth, underlineY);
+                }
+                
+                if (this.textState.strikethrough) {
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + textWidth, y);
+                }
+                
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+    }
+
+    clearPreview() {
+        const ctx = this.paintBar.overlayCtx;
+        if (ctx) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        }
+    }
+
     onMouseDown(point) {
         super.onMouseDown(point);
         this.initializeTextTool(point.x, point.y);
@@ -396,8 +517,10 @@ export class TextTool extends GenericTool {
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
+        const textRotation = document.getElementById('textRotation');
+        const rotationValue = document.getElementById('rotationValue');
         
-        if (textModal && textInput && fontFamily && fontSize && textColor) {
+        if (textModal && textInput && fontFamily && fontSize && textColor && textRotation && rotationValue) {
             // Show modal
             textModal.classList.remove('hidden');
             
@@ -411,6 +534,20 @@ export class TextTool extends GenericTool {
             fontFamily.value = this.textState.fontFamily;
             fontSize.value = this.textState.fontSize;
             textColor.value = this.paintBar.currentColor;
+            textRotation.value = this.textState.rotation;
+            rotationValue.value = this.textState.rotation;
+            
+            // Reset style buttons
+            const boldBtn = document.getElementById('boldBtn');
+            const italicBtn = document.getElementById('italicBtn');
+            const underlineBtn = document.getElementById('underlineBtn');
+            const strikeBtn = document.getElementById('strikeBtn');
+            
+            // Update button states based on text state
+            if (boldBtn) boldBtn.classList.toggle('active', this.textState.bold);
+            if (italicBtn) italicBtn.classList.toggle('active', this.textState.italic);
+            if (underlineBtn) underlineBtn.classList.toggle('active', this.textState.underline);
+            if (strikeBtn) strikeBtn.classList.toggle('active', this.textState.strikethrough);
             
             // Focus text input
             textInput.focus();
@@ -420,65 +557,93 @@ export class TextTool extends GenericTool {
         }
     }
 
-    updatePreview(text, font, size, color) {
-        // Clear previous preview
-        this.clearPreview();
-
-        if (!text) return;
-
-        // Get overlay canvas context
-        const overlayCtx = this.paintBar.overlayCtx;
-        
-        // Set text properties
-        overlayCtx.font = `${size}px ${font}`;
-        overlayCtx.fillStyle = color;
-        overlayCtx.textBaseline = 'top';
-
-        // Draw preview text
-        overlayCtx.fillText(text, this.textState.x, this.textState.y);
-    }
-
-    clearPreview() {
-        const overlayCtx = this.paintBar.overlayCtx;
-        overlayCtx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
-    }
-
     applyText() {
         // Get form values
         const textInput = document.getElementById('textInput');
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
-        
-        if (textInput && fontFamily && fontSize && textColor) {
+        const textRotation = document.getElementById('textRotation');
+
+        if (textInput && fontFamily && fontSize && textColor && textRotation) {
             const text = textInput.value.trim();
             if (text === '') {
                 this.hideTextControls();
                 return;
             }
-            
-            // Update text state
-            this.textState = {
+
+            // Update text state (keep existing style states)
+            const newState = {
+                ...this.textState,  // Preserve existing states including style flags
                 text: text,
                 fontFamily: fontFamily.value,
                 fontSize: parseInt(fontSize.value),
                 color: textColor.value,
+                rotation: parseInt(textRotation.value),
                 x: this.textState.x,
                 y: this.textState.y
             };
-            
+            this.textState = newState;
+
             // Draw text on canvas
             const ctx = this.getContext();
-            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            ctx.save();
+            
+            // Set text properties
+            let fontStyle = '';
+            if (this.textState.bold) fontStyle += 'bold ';
+            if (this.textState.italic) fontStyle += 'italic ';
+            ctx.font = `${fontStyle}${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
-            ctx.textBaseline = 'top';  // Makes y coordinate the top of the text
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            ctx.textBaseline = 'middle';
+            
+            // Measure text to find center point
+            const metrics = ctx.measureText(this.textState.text);
+            const textWidth = metrics.width;
+            const textHeight = this.textState.fontSize;
+            
+            // Calculate center point
+            const centerX = this.textState.x + textWidth / 2;
+            const centerY = this.textState.y + textHeight / 2;
+            
+            // Apply rotation around center point
+            ctx.translate(centerX, centerY);
+            ctx.rotate(this.textState.rotation * Math.PI / 180);
+            ctx.translate(-centerX, -centerY);
+            
+            // Draw the text
+            const x = this.textState.x;
+            const y = this.textState.y + textHeight / 2;
+            
+            ctx.fillText(this.textState.text, x, y);
+            
+            // Draw underline and/or strikethrough
+            if (this.textState.underline || this.textState.strikethrough) {
+                ctx.beginPath();
+                const lineWidth = Math.max(1, this.textState.fontSize / 20);
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = this.textState.color;
+                
+                if (this.textState.underline) {
+                    // Position underline 1px below text bottom (half height from middle baseline + 1)
+                    const underlineY = y + (textHeight / 2) + 1;
+                    ctx.moveTo(x, underlineY);
+                    ctx.lineTo(x + textWidth, underlineY);
+                }
+                
+                if (this.textState.strikethrough) {
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + textWidth, y);
+                }
+                
+                ctx.stroke();
+            }
+            
+            ctx.restore();
             
             // Save state and cleanup
             this.paintBar.saveState();
             this.hideTextControls();
-            this.resetTextState();
-            this.clearPreview();
         }
     }
 
@@ -496,6 +661,11 @@ export class TextTool extends GenericTool {
             fontFamily: 'Arial',
             fontSize: 20,
             color: '#000000',
+            rotation: 0,
+            bold: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
             x: 0,
             y: 0
         };

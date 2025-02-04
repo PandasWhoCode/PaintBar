@@ -6,6 +6,25 @@
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <title>PaintBar</title>
     <link rel="stylesheet" href="styles/styles.css">
+    <style>
+        .style-btn {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            background: #f0f0f0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .style-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .style-btn.active {
+            background: cyan;
+            border-color: #009999;
+            color: black;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -150,12 +169,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="text-input-container">
-                        <textarea id="textInput" placeholder="Enter your text here"></textarea>
+                        <textarea id="textInput" placeholder="Enter your text here" style="width: 100%; min-height: 80px; resize: vertical;"></textarea>
                     </div>
                     <div class="text-options">
                         <div class="option-row">
                             <label for="fontFamily">Font:</label>
-                            <select id="fontFamily">
+                            <select id="fontFamily" style="width: 120px">
                                 <option value="Arial">Arial</option>
                                 <option value="Times New Roman">Times New Roman</option>
                                 <option value="Courier New">Courier New</option>
@@ -165,11 +184,28 @@
                         </div>
                         <div class="option-row">
                             <label for="fontSize">Size:</label>
-                            <input type="number" id="fontSize" min="8" max="72" value="20">
+                            <input type="number" id="fontSize" value="20" min="8" max="200">
+                        </div>
+                        <div class="option-row">
+                            <label>Style:</label>
+                            <div class="text-style-buttons" style="display: flex; gap: 4px;">
+                                <button id="boldBtn" class="style-btn" title="Bold" style="min-width: 30px;">B</button>
+                                <button id="italicBtn" class="style-btn" title="Italic" style="min-width: 30px; font-style: italic;">I</button>
+                                <button id="underlineBtn" class="style-btn" title="Underline" style="min-width: 30px; text-decoration: underline;">U</button>
+                                <button id="strikeBtn" class="style-btn" title="Strikethrough" style="min-width: 30px; text-decoration: line-through;">S</button>
+                            </div>
                         </div>
                         <div class="option-row">
                             <label for="textColor">Color:</label>
                             <input type="color" id="textColor" value="#000000">
+                        </div>
+                        <div class="option-row">
+                            <label for="textRotation">Rotation:</label>
+                            <input type="range" id="textRotation" min="0" max="360" value="0" step="1" style="accent-color: cyan; width: 100px">
+                            <div style="display: flex; align-items: center; gap: 2px">
+                                <input type="number" id="rotationValue" value="0" min="0" max="360" style="width: 7ch">
+                                <span>°</span>
+                            </div>
                         </div>
                     </div>
                 </div>
