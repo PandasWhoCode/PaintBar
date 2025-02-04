@@ -129,12 +129,22 @@ export class FillTool extends GenericTool {
 }
 
 export class TextTool extends GenericTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.textState = {
+            text: '',
+            fontFamily: 'Arial',
+            fontSize: 20,
+            color: '#000000',
+            x: 0,
+            y: 0,
+            isPreview: false
+        };
+    }
+
     onMouseDown(point) {
         super.onMouseDown(point);
-        this.paintBar.handleTextTool({
-            clientX: point.x,
-            clientY: point.y
-        });
+        this.initializeTextTool(point.x, point.y);
     }
 
     activate() {
@@ -142,7 +152,152 @@ export class TextTool extends GenericTool {
     }
 
     deactivate() {
-        this.paintBar.cancelText();
+        this.hideTextControls();
+        this.resetTextState();
+    }
+
+    initializeTextTool(x, y) {
+        this.textState.x = x;
+        this.textState.y = y;
+        
+        const textModal = document.getElementById('textModal');
+        const textInput = document.getElementById('textInput');
+        const fontSelect = document.getElementById('fontSelect');
+        const fontSizeInput = document.getElementById('fontSize');
+        const textColor = document.getElementById('textColor');
+        
+        if (textModal && textInput && fontSelect && fontSizeInput && textColor) {
+            textModal.classList.remove('hidden');
+            textInput.value = '';
+            fontSelect.value = this.textState.fontFamily;
+            fontSizeInput.value = this.textState.fontSize;
+            textColor.value = this.paintBar.currentColor;
+            textInput.focus();
+
+            // Set up preview button
+            const previewBtn = document.getElementById('previewTextBtn');
+            if (previewBtn) {
+                const newPreviewBtn = previewBtn.cloneNode(true);
+                previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
+                newPreviewBtn.addEventListener('click', () => this.previewText());
+            }
+        }
+    }
+
+    previewText() {
+        const textModal = document.getElementById('textModal');
+        const previewOverlay = document.getElementById('textPreviewOverlay');
+        const textInput = document.getElementById('textInput');
+        const fontSelect = document.getElementById('fontSelect');
+        const fontSizeInput = document.getElementById('fontSize');
+        const textColor = document.getElementById('textColor');
+        const applyBtn = document.getElementById('applyTextBtn');
+        const editBtn = document.getElementById('editTextBtn');
+        const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
+        
+        if (textModal && previewOverlay && textInput) {
+            const text = textInput.value.trim();
+            if (text === '') return;
+
+            // Store text properties
+            this.textState = {
+                text: text,
+                fontFamily: fontSelect.value,
+                fontSize: parseInt(fontSizeInput.value),
+                color: textColor.value,
+                x: this.textState.x,
+                y: this.textState.y,
+                isPreview: true
+            };
+
+            // Draw preview text
+            const ctx = this.getContext();
+            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            ctx.fillStyle = this.textState.color;
+            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+
+            // Hide text modal and show preview overlay
+            textModal.classList.add('hidden');
+            previewOverlay.classList.remove('hidden');
+
+            // Set up preview action buttons
+            if (applyBtn && editBtn && cancelPreviewBtn) {
+                const newApplyBtn = applyBtn.cloneNode(true);
+                const newEditBtn = editBtn.cloneNode(true);
+                const newCancelBtn = cancelPreviewBtn.cloneNode(true);
+
+                applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
+                editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+                cancelPreviewBtn.parentNode.replaceChild(newCancelBtn, cancelPreviewBtn);
+
+                newApplyBtn.addEventListener('click', () => this.applyText());
+                newEditBtn.addEventListener('click', () => this.editText());
+                newCancelBtn.addEventListener('click', () => this.cancelPreview());
+            }
+        }
+    }
+
+    applyText() {
+        if (this.textState.isPreview) {
+            this.paintBar.saveState();
+            this.hideTextControls();
+            this.resetTextState();
+        }
+    }
+
+    editText() {
+        if (!this.textState.isPreview) return;
+
+        // Clear the preview
+        const ctx = this.getContext();
+        ctx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
+
+        // Hide preview overlay and show text modal with current text state
+        const modal = document.getElementById('textModal');
+        const previewOverlay = document.getElementById('textPreviewOverlay');
+        const textInput = document.getElementById('textInput');
+        const fontSelect = document.getElementById('fontSelect');
+        const fontSizeInput = document.getElementById('fontSize');
+        const textColor = document.getElementById('textColor');
+
+        if (modal && previewOverlay && textInput && fontSelect && fontSizeInput && textColor) {
+            modal.classList.remove('hidden');
+            previewOverlay.classList.add('hidden');
+            textInput.value = this.textState.text;
+            fontSelect.value = this.textState.fontFamily;
+            fontSizeInput.value = this.textState.fontSize;
+            textColor.value = this.textState.color;
+            textInput.focus();
+        }
+    }
+
+    cancelPreview() {
+        // Clear the preview
+        const ctx = this.getContext();
+        ctx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
+
+        this.hideTextControls();
+        this.resetTextState();
+    }
+
+    hideTextControls() {
+        const modal = document.getElementById('textModal');
+        const previewOverlay = document.getElementById('textPreviewOverlay');
+        
+        if (modal) modal.classList.add('hidden');
+        if (previewOverlay) previewOverlay.classList.add('hidden');
+    }
+
+    resetTextState() {
+        this.textState = {
+            text: '',
+            fontFamily: 'Arial',
+            fontSize: 20,
+            color: this.paintBar.currentColor,
+            x: 0,
+            y: 0,
+            isPreview: false
+        };
     }
 }
 

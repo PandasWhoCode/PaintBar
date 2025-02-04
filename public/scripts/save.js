@@ -76,7 +76,7 @@ export class SaveManager {
         
         // Set up the file name
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-        const fileName = `paint-${timestamp}${transparent ? '-transparent' : ''}`;
+        const fileName = `paint-${timestamp}${transparent ? '-v' : ''}`;
 
         try {
             // Create a temporary canvas

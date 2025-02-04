@@ -37,17 +37,6 @@ class PaintBar {
         this.redoStack = [];
         this.maxUndoSteps = 50;
 
-        // Initialize text state
-        this.textState = {
-            text: '',
-            fontFamily: 'Arial',
-            fontSize: 20,
-            color: '#000000',
-            x: 0,
-            y: 0,
-            isPreview: false
-        };
-
         // Add throttle/debounce utilities
         this.throttle = (func, limit) => {
             let inThrottle;
@@ -154,7 +143,6 @@ class PaintBar {
         this.pencilBtn = document.getElementById('pencilBtn');
         this.eraserBtn = document.getElementById('eraserBtn');
         this.fillBtn = document.getElementById('fillBtn');
-        this.textBtn = document.getElementById('textBtn');
         this.selectBtn = document.getElementById('selectBtn');
         this.rectangleBtn = document.getElementById('rectangleBtn');
         this.circleBtn = document.getElementById('circleBtn');
@@ -315,7 +303,6 @@ class PaintBar {
             pencil: 'pencilBtn',
             eraser: 'eraserBtn',
             fill: 'fillBtn',
-            text: 'textBtn',
             select: 'selectBtn',
             rectangle: 'rectangleBtn',
             circle: 'circleBtn',
@@ -343,36 +330,6 @@ class PaintBar {
                 }
             });
         }
-
-        // Text tool events
-        const textButtons = {
-            preview: 'previewTextBtn',
-            accept: 'acceptTextBtn',
-            cancel: 'cancelTextBtn',
-            close: 'closeTextBtn'
-        };
-
-        Object.keys(textButtons).forEach(action => {
-            const button = document.getElementById(textButtons[action]);
-            if (button) {
-                button.addEventListener('click', () => {
-                    switch (action) {
-                        case 'preview':
-                            this.previewText();
-                            break;
-                        case 'accept':
-                            this.acceptText();
-                            break;
-                        case 'cancel':
-                            this.cancelText();
-                            break;
-                        case 'close':
-                            this.cancelText();
-                            break;
-                    }
-                });
-            }
-        });
 
         // Action button events
         const actionButtons = {
@@ -595,194 +552,80 @@ class PaintBar {
         this.redoStack = [];
     }
 
-    initializeTextTool(x, y) {
-        this.textX = x;
-        this.textY = y;
-        this.isAddingText = true;
-
-        const modal = document.getElementById('textModal');
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontFamily');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColor = document.getElementById('textColor');
-        const previewBtn = document.getElementById('previewTextBtn');
-        const cancelBtn = document.getElementById('cancelModalBtn');
-        const closeBtn = document.getElementById('closeTextBtn');
-
-        if (!modal || !textInput || !fontSelect || !fontSizeInput || !textColor || !previewBtn || !cancelBtn || !closeBtn) {
-            console.error('Text tool elements not found');
-            return;
+    // UI state management
+    toggleTransparency() {
+        this.isTransparent = !this.isTransparent;
+        
+        // Toggle visibility of background layers
+        if (this.isTransparent) {
+            this.transparentBgCanvas.style.display = 'block';
+            this.opaqueBgCanvas.style.display = 'none';
+        } else {
+            this.transparentBgCanvas.style.display = 'none';
+            this.opaqueBgCanvas.style.display = 'block';
         }
+        
+        // Update transparency button state if it exists
+        const transparencyBtn = document.getElementById('transparencyBtn');
+        if (transparencyBtn) {
+            transparencyBtn.classList.toggle('active', this.isTransparent);
+        }
+    }
 
-        // Show modal
-        modal.classList.remove('hidden');
-        textInput.value = '';
-        textColor.value = this.currentColor;
+    // History management
+    undo() {
+        if (this.undoStack.length === 0) return;
+        
+        const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.redoStack.push(currentState);
+        
+        const previousState = this.undoStack.pop();
+        this.ctx.putImageData(previousState, 0, 0);
+    }
 
-        // Remove old event listeners if they exist
-        const newPreviewBtn = previewBtn.cloneNode(true);
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        const newCloseBtn = closeBtn.cloneNode(true);
-        previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    redo() {
+        if (this.redoStack.length === 0) return;
+        
+        const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.undoStack.push(currentState);
+        
+        const nextState = this.redoStack.pop();
+        this.ctx.putImageData(nextState, 0, 0);
+    }
 
-        // Add new event listeners
-        newPreviewBtn.addEventListener('click', () => this.previewText());
-        newCancelBtn.addEventListener('click', () => this.cancelText());
-        newCloseBtn.addEventListener('click', () => this.cancelText());
-
-        // Handle Enter key
-        textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.previewText();
-            }
+    // Event handlers for touch devices
+    handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
         });
+        this.handleMouseDown(mouseEvent);
     }
 
-    previewText() {
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontFamily');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColor = document.getElementById('textColor');
-        const modal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        const applyBtn = document.getElementById('applyTextBtn');
-        const editBtn = document.getElementById('editTextBtn');
-        const cancelPreviewBtn = document.getElementById('cancelPreviewBtn');
-
-        if (modal && previewOverlay && this.textState) {
-            // Store text properties for later use
-            this.textState = {
-                text: textInput.value,
-                font: fontSelect.value,
-                size: fontSizeInput.value,
-                color: textColor.value,
-                x: this.textX,
-                y: this.textY
-            };
-
-            // Draw preview text
-            this.ctx.font = `${this.textState.size}px ${this.textState.font}`;
-            this.ctx.fillStyle = this.textState.color;
-            this.ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
-
-            // Hide text modal and show preview overlay
-            modal.classList.add('hidden');
-            previewOverlay.classList.remove('hidden');
-
-            // Remove old event listeners if they exist
-            const newApplyBtn = applyBtn.cloneNode(true);
-            const newEditBtn = editBtn.cloneNode(true);
-            const newCancelBtn = cancelPreviewBtn.cloneNode(true);
-            applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
-            editBtn.parentNode.replaceChild(newEditBtn, editBtn);
-            cancelPreviewBtn.parentNode.replaceChild(newCancelBtn, cancelPreviewBtn);
-
-            // Add new event listeners for preview actions
-            newApplyBtn.addEventListener('click', () => this.applyText());
-            newEditBtn.addEventListener('click', () => this.editText());
-            newCancelBtn.addEventListener('click', () => this.cancelPreview());
-        }
+    handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.handleMouseMove(mouseEvent);
     }
 
-    applyText() {
-        // Text is already drawn, just need to save state and clean up
-        this.saveState();
-        this.hideTextControls();
-        this.resetTextState();
+    handleTouchEnd(e) {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        this.handleMouseUp(mouseEvent);
     }
 
-    editText() {
-        // Restore canvas to state before preview
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Hide preview overlay and show text modal with current text state
-        const modal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontFamily');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColor = document.getElementById('textColor');
-        
-        if (modal && previewOverlay && this.textState) {
-            // Restore text input values
-            if (textInput) textInput.value = this.textState.text;
-            if (fontSelect) fontSelect.value = this.textState.font;
-            if (fontSizeInput) fontSizeInput.value = this.textState.size;
-            if (textColor) textColor.value = this.textState.color;
-
-            // Show modal and hide preview
-            previewOverlay.classList.add('hidden');
-            modal.classList.remove('hidden');
-        }
-    }
-
-    cancelPreview() {
-        // Restore canvas to state before preview
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.hideTextControls();
-        this.resetTextState();
-    }
-
-    hideTextControls() {
-        const modal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        const textInput = document.getElementById('textInput');
-        
-        if (modal) modal.classList.add('hidden');
-        if (previewOverlay) previewOverlay.classList.add('hidden');
-        if (textInput) textInput.value = '';
-    }
-
-    resetTextState() {
-        this.isAddingText = false;
-        this.textState = {
-            text: '',
-            font: 'Arial',
-            size: 20,
-            color: '#000000',
-            x: 0,
-            y: 0
-        };
-    }
-
-    drawFreehand(x, y) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
-        this.ctx.lineTo(x, y);
-        this.ctx.strokeStyle = this.currentColor;
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.stroke();
-        this.ctx.closePath();
-    }
-
-    getPointsBetween(x1, y1, x2, y2) {
-        const points = [];
-        const dx = Math.abs(x2 - x1);
-        const dy = Math.abs(y2 - y1);
-        const sx = x1 < x2 ? 1 : -1;
-        const sy = y1 < y2 ? 1 : -1;
-        let err = dx - dy;
-
-        while (true) {
-            points.push({ x: x1, y: y1 });
-            if (x1 === x2 && y1 === y2) break;
-            const e2 = 2 * err;
-            if (e2 > -dy) {
-                err -= dy;
-                x1 += sx;
-            }
-            if (e2 < dx) {
-                err += dx;
-                y1 += sy;
-            }
-        }
-        return points;
+    // Shape drawing utilities
+    applyCanvasStyle(ctx) {
+        ctx.save();
+        ctx.strokeStyle = this.currentColor;
+        ctx.lineWidth = this.lineWidth;
+        ctx.fillStyle = this.currentColor;
     }
 
     drawShape(ctx, points, shouldFill = false) {
@@ -1015,8 +858,6 @@ class PaintBar {
         if (this.toolManager.activeTool === 'fill') {
             this.floodFill(Math.round(pos.x), Math.round(pos.y), this.currentColor);
             this.saveState();
-        } else if (this.toolManager.activeTool === 'text') {
-            this.handleTextTool(e);
         }
     }
 
@@ -1191,399 +1032,6 @@ class PaintBar {
         }
     }
 
-    updateTextPreview() {
-        const textInput = document.getElementById('textInput');
-        const textPreview = document.getElementById('textPreview');
-        const fontSelect = document.getElementById('fontSelect');
-        const fontSizeInput = document.getElementById('fontSize');
-
-        if (textPreview && textInput) {
-            const text = textInput.value || 'Preview';
-            const font = fontSelect.value;
-            const fontSize = fontSizeInput.value;
-
-            textPreview.style.fontFamily = font;
-            textPreview.style.fontSize = `${fontSize}px`;
-            textPreview.style.color = this.currentColor;
-            textPreview.textContent = text;
-        }
-    }
-
-    addTextToCanvas() {
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontSelect');
-        const fontSizeInput = document.getElementById('fontSize');
-
-        const text = textInput.value;
-        const font = fontSelect.value;
-        const fontSize = fontSizeInput.value;
-
-        this.ctx.font = `${fontSize}px ${font}`;
-        this.ctx.fillStyle = this.currentColor;
-        this.ctx.fillText(text, this.textX, this.textY);
-
-        // Save state for undo
-        this.saveState();
-    }
-
-    // Shape drawing utilities
-    applyCanvasStyle(ctx) {
-        ctx.save();
-        ctx.strokeStyle = this.currentColor;
-        ctx.lineWidth = this.lineWidth;
-        ctx.fillStyle = this.currentColor;
-    }
-
-    drawShape(ctx, points, shouldFill = false) {
-        if (!ctx || !points || points.length < 2) return;
-
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        
-        for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
-        }
-        
-        ctx.closePath();
-        
-        if (shouldFill) {
-            ctx.fill();
-        }
-        ctx.stroke();
-    }
-
-    drawCircleShape(ctx, center, radius, shouldFill = false) {
-        ctx.beginPath();
-        ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-        if (shouldFill) {
-            ctx.fill();
-        }
-        ctx.stroke();
-    }
-
-    drawCircle(e) {
-        if (!this.isDrawing) return;
-        
-        const pos = this.getMousePos(e);
-        
-        // Clear overlay canvas
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-        
-        const { distance } = this.calculateDistance(
-            { x: this.startX, y: this.startY },
-            pos
-        );
-        
-        this.applyCanvasStyle(this.overlayCtx);
-        this.drawCircleShape(this.overlayCtx, pos, distance, this.fillShape);
-        this.overlayCtx.restore();
-    }
-
-    calculateTrianglePoints(pos, type) {
-        const metrics = this.calculateDistance(
-            { x: this.startX, y: this.startY },
-            pos
-        );
-        
-        switch (type) {
-            case 'equilateral': {
-                const angle60 = Math.PI / 3;
-                return [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x, y: pos.y },
-                    {
-                        x: this.startX + metrics.distance * Math.cos(metrics.angle + angle60),
-                        y: this.startY + metrics.distance * Math.sin(metrics.angle + angle60)
-                    }
-                ];
-            }
-            case 'isosceles': {
-                // Base follows cursor y position, width based on x distance
-                const halfBaseWidth = Math.abs(metrics.dx);
-                return [
-                    { x: this.startX, y: this.startY },  // Apex
-                    { x: pos.x - halfBaseWidth, y: pos.y }, // Left base point
-                    { x: pos.x + halfBaseWidth, y: pos.y }  // Right base point
-                ];
-            }
-            case 'right':
-            default: {
-                return [
-                    { x: this.startX, y: this.startY },
-                    { x: pos.x, y: this.startY },
-                    { x: pos.x, y: pos.y }
-                ];
-            }
-        }
-    }
-
-    drawTriangle(e) {
-        if (!this.isDrawing) return;
-        
-        const pos = this.getMousePos(e);
-        
-        // Clear overlay canvas
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-        
-        const points = this.calculateTrianglePoints(pos, this.triangleType);
-        
-        this.applyCanvasStyle(this.overlayCtx);
-        this.drawShape(this.overlayCtx, points, this.fillShape);
-        this.overlayCtx.restore();
-    }
-
-    handleMouseUp(e) {
-        if (this.toolManager.activeTool === 'select') {
-            if (this.isSelecting) {
-                this.isSelecting = false;
-                this.captureSelection();
-            } else if (this.isMovingSelection) {
-                this.isMovingSelection = false;
-                this.commitSelection();
-            }
-            return;
-        }
-
-        if (this.isDrawing) {
-            const point = this.getMousePos(e);
-
-            if (['rectangle', 'circle', 'line', 'triangle'].includes(this.toolManager.activeTool)) {
-                this.applyCanvasStyle(this.ctx);
-
-                switch (this.toolManager.activeTool) {
-                    case 'line': {
-                        this.drawShape(this.ctx, [
-                            { x: this.startX, y: this.startY },
-                            point
-                        ]);
-                        break;
-                    }
-                    case 'rectangle': {
-                        const width = point.x - this.startX;
-                        const height = point.y - this.startY;
-                        if (this.fillShape) {
-                            this.ctx.fillRect(this.startX, this.startY, width, height);
-                        }
-                        this.ctx.strokeRect(this.startX, this.startY, width, height);
-                        break;
-                    }
-                    case 'circle': {
-                        const { distance } = this.calculateDistance(
-                            { x: this.startX, y: this.startY },
-                            point
-                        );
-                        this.drawCircleShape(this.ctx, point, distance, this.fillShape);
-                        break;
-                    }
-                    case 'triangle': {
-                        const points = this.calculateTrianglePoints(point, this.triangleType);
-                        this.drawShape(this.ctx, points, this.fillShape);
-                        break;
-                    }
-                }
-                this.ctx.restore();
-                this.clearOverlay();
-            }
-
-            this.isDrawing = false;
-            this.saveState();
-        }
-    }
-
-    // Selection tool methods
-    captureSelection() {
-        const x = Math.min(this.selectionStart.x, this.selectionEnd.x);
-        const y = Math.min(this.selectionStart.y, this.selectionEnd.y);
-        const width = Math.abs(this.selectionEnd.x - this.selectionStart.x);
-        const height = Math.abs(this.selectionEnd.y - this.selectionStart.y);
-
-        if (width < 1 || height < 1) {
-            this.clearSelection();
-            return;
-        }
-
-        // Store the current drawing canvas state before any modifications
-        this.selectedArea = {
-            x, y, width, height,
-            backgroundState: this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-        };
-
-        // Create a temporary canvas to isolate drawing layer content
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        // Copy only the selected area from the drawing canvas
-        tempCtx.drawImage(
-            this.canvas,
-            x, y, width, height,  // Source coordinates
-            0, 0, width, height   // Destination coordinates
-        );
-
-        // Get the image data and process it to remove background
-        const imageData = tempCtx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        
-        // If background is opaque (white), make those pixels transparent
-        for (let i = 0; i < data.length; i += 4) {
-            const isWhite = data[i] === 255 && data[i + 1] === 255 && data[i + 2] === 255;
-            if (isWhite) {
-                data[i + 3] = 0; // Set alpha to 0 for white pixels
-            }
-        }
-        
-        // Store the processed image data
-        this.selectionImageData = imageData;
-
-        // Clear the selected area in the drawing canvas
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(0,0,0,1)';
-        this.ctx.fillRect(x, y, width, height);
-        this.ctx.restore();
-
-        // Draw the selection overlay
-        this.drawSelectionOverlay();
-
-        // Clean up
-        tempCanvas.remove();
-    }
-
-    moveSelection(dx, dy) {
-        if (!this.selectedArea || !this.selectionImageData) return;
-
-        // Calculate new position
-        const newX = this.selectedArea.x + dx;
-        const newY = this.selectedArea.y + dy;
-
-        // Restore the original background state
-        this.ctx.putImageData(this.selectedArea.backgroundState, 0, 0);
-
-        // Clear the area where we'll place the selection
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(0,0,0,1)';
-        this.ctx.fillRect(newX, newY, this.selectedArea.width, this.selectedArea.height);
-        this.ctx.restore();
-
-        // Draw the selection at the new position
-        this.ctx.putImageData(this.selectionImageData, newX, newY);
-
-        // Update the selection position
-        this.selectedArea.x = newX;
-        this.selectedArea.y = newY;
-
-        // Update selection coordinates
-        const dx2 = newX - this.selectedArea.x;
-        const dy2 = newY - this.selectedArea.y;
-        this.selectionStart.x += dx2;
-        this.selectionStart.y += dy2;
-        this.selectionEnd.x += dx2;
-        this.selectionEnd.y += dy2;
-
-        // Update the selection overlay
-        this.drawSelectionOverlay();
-    }
-
-    handleMouseMove(e) {
-        if (!this.isDrawing && !this.isSelecting && !this.isMovingSelection) return;
-
-        const point = this.getMousePos(e);
-
-        if (this.isMovingSelection) {
-            const dx = point.x - this.lastX;
-            const dy = point.y - this.lastY;
-            this.moveSelection(dx, dy);
-        } else if (this.isSelecting) {
-            this.selectionEnd = point;
-            this.clearOverlay();
-            this.drawSelectionBox();
-        } else {
-            if (this.toolManager.activeTool === 'pencil') {
-                this.drawFreehand(point.x, point.y);
-            } else if (this.toolManager.activeTool === 'eraser') {
-                this.erase(point.x, point.y);
-            } else if (['rectangle', 'circle', 'line', 'triangle'].includes(this.toolManager.activeTool)) {
-                // Clear previous preview
-                this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-
-                // Draw new preview
-                this.overlayCtx.save();
-                this.overlayCtx.strokeStyle = this.currentColor;
-                this.overlayCtx.fillStyle = this.currentColor;
-                this.overlayCtx.lineWidth = this.lineWidth;
-                this.overlayCtx.lineCap = 'round';
-                this.overlayCtx.lineJoin = 'round';
-
-                switch (this.toolManager.activeTool) {
-                    case 'line':
-                        this.drawShape(this.overlayCtx, [
-                            { x: this.startX, y: this.startY },
-                            point
-                        ]);
-                        break;
-                    case 'rectangle': {
-                        const width = point.x - this.startX;
-                        const height = point.y - this.startY;
-                        if (this.fillShape) {
-                            this.overlayCtx.globalAlpha = 0.5;
-                            this.overlayCtx.fillRect(this.startX, this.startY, width, height);
-                            this.overlayCtx.globalAlpha = 1;
-                        }
-                        this.overlayCtx.strokeRect(this.startX, this.startY, width, height);
-                        break;
-                    }
-                    case 'circle': {
-                        const { distance } = this.calculateDistance(
-                            { x: this.startX, y: this.startY },
-                            point
-                        );
-                        this.drawCircleShape(this.overlayCtx, point, distance, this.fillShape);
-                        break;
-                    }
-                    case 'triangle': {
-                        const points = this.calculateTrianglePoints(point, this.triangleType);
-                        this.drawShape(this.overlayCtx, points, this.fillShape);
-                        break;
-                    }
-                }
-
-                this.overlayCtx.restore();
-            }
-        }
-
-        this.lastX = point.x;
-        this.lastY = point.y;
-    }
-
-    isPointInSelection(x, y) {
-        if (!this.selectedArea) return false;
-
-        return (
-            x >= this.selectedArea.x &&
-            x <= this.selectedArea.x + this.selectedArea.width &&
-            y >= this.selectedArea.y &&
-            y <= this.selectedArea.y + this.selectedArea.height
-        );
-    }
-
-    finalizeSelection() {
-        if (this.selectedArea) {
-            this.commitSelection();
-        }
-    }
-
-    cancelText() {
-        if (this.textModal) {
-            this.textModal.classList.add('hidden');
-        }
-        if (this.activeTextArea) {
-            this.activeTextArea.remove();
-            this.activeTextArea = null;
-        }
-    }
-
     handleTriangleTypeChange(e) {
         this.triangleType = e.target.value;
     }
@@ -1657,8 +1105,6 @@ class PaintBar {
         if (this.toolManager.activeTool === 'fill') {
             this.floodFill(Math.round(pos.x), Math.round(pos.y), this.currentColor);
             this.saveState();
-        } else if (this.toolManager.activeTool === 'text') {
-            this.handleTextTool(e);
         }
     }
 
