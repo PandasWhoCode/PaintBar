@@ -48,6 +48,18 @@ class PaintBar {
             isPreview: false
         };
 
+        // Add throttle/debounce utilities
+        this.throttle = (func, limit) => {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        };
+
         // Initialize managers
         this.toolManager = new ToolManager(this);
         this.saveManager = new SaveManager(this);
@@ -314,7 +326,7 @@ class PaintBar {
         Object.keys(toolButtons).forEach(tool => {
             const button = document.getElementById(toolButtons[tool]);
             if (button) {
-                button.addEventListener('click', () => this.toolManager.setActiveTool(tool));
+                button.addEventListener('click', () => this.setActiveTool(tool));
             }
         });
 
@@ -538,9 +550,49 @@ class PaintBar {
         this.toolManager.handleMouseUp(point);
     }
 
-    handleTextTool(e) {
-        const point = this.getEventPoint(e);
-        this.initializeTextTool(point.x, point.y);
+    // Event handlers for touch devices
+    handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.handleMouseDown(mouseEvent);
+    }
+
+    handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this.handleMouseMove(mouseEvent);
+    }
+
+    handleTouchEnd(e) {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        this.handleMouseUp(mouseEvent);
+    }
+
+    // Helper methods used by tools
+    getMousePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    saveState() {
+        const state = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.undoStack.push(state);
+        if (this.undoStack.length > this.maxUndoSteps) {
+            this.undoStack.shift();
+        }
+        this.redoStack = [];
     }
 
     initializeTextTool(x, y) {
