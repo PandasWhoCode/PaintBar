@@ -409,17 +409,24 @@ export class TextTool extends GenericTool {
             // Set text properties
             ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
-            ctx.textBaseline = 'top';
+            ctx.textBaseline = 'middle';
             
-            // Apply rotation around text position
-            const centerX = this.textState.x;
-            const centerY = this.textState.y;
+            // Measure text to find center point
+            const metrics = ctx.measureText(this.textState.text);
+            const textWidth = metrics.width;
+            const textHeight = this.textState.fontSize;
+            
+            // Calculate center point
+            const centerX = this.textState.x + textWidth / 2;
+            const centerY = this.textState.y + textHeight / 2;
+            
+            // Apply rotation around center point
             ctx.translate(centerX, centerY);
             ctx.rotate(this.textState.rotation * Math.PI / 180);
             ctx.translate(-centerX, -centerY);
             
-            // Draw the text
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            // Draw the text with adjusted position for middle baseline
+            ctx.fillText(this.textState.text, this.textState.x, this.textState.y + textHeight / 2);
             
             ctx.restore();
         }
@@ -515,18 +522,29 @@ export class TextTool extends GenericTool {
             // Draw text on canvas
             const ctx = this.getContext();
             ctx.save();
+            
+            // Set text properties
             ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
-            ctx.textBaseline = 'top';  // Makes y coordinate the top of the text
+            ctx.textBaseline = 'middle';
             
-            // Apply rotation around text position
-            const centerX = this.textState.x;
-            const centerY = this.textState.y;
+            // Measure text to find center point
+            const metrics = ctx.measureText(this.textState.text);
+            const textWidth = metrics.width;
+            const textHeight = this.textState.fontSize;
+            
+            // Calculate center point
+            const centerX = this.textState.x + textWidth / 2;
+            const centerY = this.textState.y + textHeight / 2;
+            
+            // Apply rotation around center point
             ctx.translate(centerX, centerY);
             ctx.rotate(this.textState.rotation * Math.PI / 180);
             ctx.translate(-centerX, -centerY);
             
-            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            // Draw the text with adjusted position for middle baseline
+            ctx.fillText(this.textState.text, this.textState.x, this.textState.y + textHeight / 2);
+            
             ctx.restore();
             
             // Save state and cleanup
