@@ -2165,15 +2165,7 @@ class PaintBar {
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
         const fileName = `paint-${timestamp}${transparent ? '-transparent' : ''}`;
 
-        // Store current visibility states
-        const wasOpaqueBgVisible = this.opaqueBgCanvas.style.display;
-
         try {
-            // For transparent saves, hide the opaque background
-            if (transparent) {
-                this.opaqueBgCanvas.style.display = 'none';
-            }
-
             // Create a temporary canvas
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = this.canvas.width;
@@ -2183,7 +2175,11 @@ class PaintBar {
             switch (format.toLowerCase()) {
                 case 'png':
                     link.download = `${fileName}.png`;
-                    // For PNG, just copy the drawing canvas
+                    if (!transparent) {
+                        // For non-transparent PNG, include opaque background first
+                        tempCtx.drawImage(this.opaqueBgCanvas, 0, 0);
+                    }
+                    // Then draw the main canvas
                     tempCtx.drawImage(this.canvas, 0, 0);
                     link.href = tempCanvas.toDataURL('image/png');
                     break;
@@ -2216,7 +2212,14 @@ class PaintBar {
                     icoCtx.imageSmoothingEnabled = true;
                     icoCtx.imageSmoothingQuality = 'high';
                     
-                    // Draw the main canvas content
+                    if (!transparent) {
+                        // For non-transparent ICO, include opaque background first
+                        icoCtx.drawImage(this.opaqueBgCanvas,
+                            sourceX, sourceY, sourceWidth, sourceHeight,
+                            0, 0, 64, 64);
+                    }
+                    
+                    // Then draw the main canvas
                     icoCtx.drawImage(this.canvas,
                         sourceX, sourceY, sourceWidth, sourceHeight,
                         0, 0, 64, 64);
@@ -2237,9 +2240,6 @@ class PaintBar {
             this.hideSaveModal();
         } catch (error) {
             console.error('Error saving image:', error);
-        } finally {
-            // Restore original visibility states
-            this.opaqueBgCanvas.style.display = wasOpaqueBgVisible;
         }
     }
 }
