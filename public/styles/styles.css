@@ -564,26 +564,52 @@ button.active {
     border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.btn {
-    padding: 8px 16px;
+.modal-footer button {
+    padding: 8px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 50px;
+    font-weight: 500;
     cursor: pointer;
-    background: #4CAF50;
-    color: white;
-    font-weight: bold;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 14px;
+    background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+    color: #333 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    opacity: 0.7;
+    min-width: 100px;
 }
 
-.btn:hover {
-    background: #45a049;
+.modal-footer button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #00e5ff, #00b8d4);
+    color: white !important;
+    box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3);
+    opacity: 1;
 }
 
 #cancelTextBtn {
-    background-color: #f44336;
+    color: #333;
 }
 
 #cancelTextBtn:hover {
-    background-color: #da190b;
+    background: linear-gradient(135deg, #ff00ff, #d500f9);
+    color: white !important;
+    box-shadow: 0 6px 20px rgba(213, 0, 249, 0.3);
+    opacity: 1;
+}
+
+/* Add active state for button press */
+.modal-footer button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(0, 229, 255, 0.2);
+    opacity: 1;
+}
+
+#cancelTextBtn:active {
+    box-shadow: 0 2px 10px rgba(213, 0, 249, 0.2);
+    opacity: 1;
 }
 
 /* Mobile responsiveness */
