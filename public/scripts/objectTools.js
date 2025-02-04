@@ -9,7 +9,6 @@ class ShapeTool extends GenericTool {
     onMouseDown(point) {
         super.onMouseDown(point);
         this.startPoint = point;
-        this.applyBrushSettings(this.getOverlayContext());
     }
 
     onMouseMove(point) {
@@ -19,17 +18,34 @@ class ShapeTool extends GenericTool {
     }
 
     onMouseUp(point) {
-        if (!this.isDrawing) return;
+        if (!this.isDrawing || !this.startPoint) return;
         
         // Draw final shape on main canvas
-        this.applyBrushSettings(this.getContext());
-        this.drawShape(this.getContext(), point);
+        const mainCtx = this.getContext();
+        mainCtx.save();
+        
+        // Apply brush settings to main canvas
+        mainCtx.strokeStyle = this.paintBar.currentColor;
+        mainCtx.fillStyle = this.paintBar.currentColor;
+        mainCtx.lineWidth = this.paintBar.lineWidth;
+        mainCtx.lineCap = 'round';
+        mainCtx.lineJoin = 'round';
+        
+        // Draw the shape
+        this.drawShape(mainCtx, point);
+        
+        // Restore main canvas context
+        mainCtx.restore();
         
         // Clear overlay
         this.clearOverlay();
         
-        super.onMouseUp(point);
-        this.saveState();
+        // Save state after drawing final shape
+        this.paintBar.saveState();
+        
+        // Reset drawing state
+        this.isDrawing = false;
+        this.startPoint = null;
     }
 
     activate() {
@@ -40,10 +56,26 @@ class ShapeTool extends GenericTool {
     deactivate() {
         this.paintBar.overlayCanvas.style.pointerEvents = 'none';
         this.clearOverlay();
+        this.isDrawing = false;
+        this.startPoint = null;
     }
 
     drawPreview(point) {
-        this.drawShape(this.getOverlayContext(), point);
+        const overlayCtx = this.getOverlayContext();
+        overlayCtx.save();
+        
+        // Apply brush settings to overlay
+        overlayCtx.strokeStyle = this.paintBar.currentColor;
+        overlayCtx.fillStyle = this.paintBar.currentColor;
+        overlayCtx.lineWidth = this.paintBar.lineWidth;
+        overlayCtx.lineCap = 'round';
+        overlayCtx.lineJoin = 'round';
+        
+        // Draw preview
+        this.drawShape(overlayCtx, point);
+        
+        // Restore overlay context
+        overlayCtx.restore();
     }
 
     drawShape(ctx, point) {
@@ -53,14 +85,22 @@ class ShapeTool extends GenericTool {
 
 export class RectangleTool extends ShapeTool {
     drawShape(ctx, point) {
+        // Calculate rectangle dimensions
         const width = point.x - this.startPoint.x;
         const height = point.y - this.startPoint.y;
         
+        // Draw filled rectangle if fill is enabled
         if (this.paintBar.fillShape) {
-            ctx.globalAlpha = 0.5;
+            if (ctx === this.getOverlayContext()) {
+                ctx.globalAlpha = 0.5;
+            }
             ctx.fillRect(this.startPoint.x, this.startPoint.y, width, height);
-            ctx.globalAlpha = 1;
+            if (ctx === this.getOverlayContext()) {
+                ctx.globalAlpha = 1.0;
+            }
         }
+        
+        // Draw stroke
         ctx.strokeRect(this.startPoint.x, this.startPoint.y, width, height);
     }
 }
@@ -76,9 +116,13 @@ export class CircleTool extends ShapeTool {
         ctx.arc(this.startPoint.x, this.startPoint.y, radius, 0, Math.PI * 2);
         
         if (this.paintBar.fillShape) {
-            ctx.globalAlpha = 0.5;
+            if (ctx === this.getOverlayContext()) {
+                ctx.globalAlpha = 0.5;
+            }
             ctx.fill();
-            ctx.globalAlpha = 1;
+            if (ctx === this.getOverlayContext()) {
+                ctx.globalAlpha = 1.0;
+            }
         }
         ctx.stroke();
     }

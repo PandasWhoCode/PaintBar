@@ -108,4 +108,11 @@ export class ToolManager {
             this.activeTool.onMouseUp(point);
         }
     }
+
+    handleCanvasClick(point) {
+        if (this.activeTool) {
+            this.activeTool.onMouseDown(point);
+            this.activeTool.onMouseUp(point);
+        }
+    }
 }
