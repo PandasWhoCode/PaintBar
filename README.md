@@ -1,61 +1,80 @@
 # PaintBar
 
-A modern, web-based paint application that provides an intuitive drawing experience with a clean, minimalist interface. PaintBar combines the simplicity of traditional paint programs with modern web technologies.
+A modern, web-based drawing application that combines simplicity with powerful features.
 
 ## Features
 
-- **Drawing Tools**
-  - Pencil tool for freehand drawing
-  - Line tool for straight lines
-  - Rectangle and circle tools
-  - Text tool with preview functionality
-  - Color picker with eyedropper
+### Drawing Tools
+- ✏️ Pencil tool for freehand drawing
+- 🧹 Eraser tool
+- 🪣 Fill tool for coloring areas
+- T Text tool with rich formatting options
+- ◰ Selection tool for manipulating drawn elements
 
-- **Text Tool Features**
-  - Real-time text preview
-  - Font family selection
-  - Font size adjustment
-  - Color customization
-  - Edit/Cancel functionality
+### Text Features
+- Rich text formatting:
+  - Bold, Italic, Underline, and Strikethrough styles
+  - Multiple font families (Arial, Times New Roman, Courier New, Georgia, Verdana)
+  - Adjustable font size (8px to 200px)
+  - Custom text color
+  - Text rotation (0° to 360°)
+- Real-time text preview
+- Easy text editing and positioning
 
-- **Canvas Operations**
-  - Undo/Redo functionality
-  - Clear canvas
-  - Save artwork
-  - Transparency support
+### Shapes
+- ⬜ Rectangle tool
+- ⭕ Circle tool
+- 📏 Line tool
+- 📐 Triangle tool with multiple types:
+  - Right angle
+  - Isosceles
+  - Equilateral
+
+### Colors
+- 🎨 Advanced color picker
+- Recent colors palette
+- 🔍 Eyedropper tool for color sampling
+
+### Transform Tools
+- 🔄 Rotation
+- ↔️ Horizontal flip
+- ↕️ Vertical flip
+
+### View Options
+- 📏 Grid toggle
+- 🔍 Zoom in/out capabilities
+
+### File Operations
+- 💾 Multiple save formats:
+  - PNG (with/without transparency)
+  - JPG
+  - ICO (with/without transparency)
+- 📋 Copy/Paste support
+- 📐 Crop functionality
+  - Custom crop
+  - 1:1 (square) preset
+  - 9:16 (mobile) preset
 
 ## Getting Started
 
-1. Clone the repository:
-```bash
-git clone https://github.com/DJ-BBot/PaintBar.git
-```
+1. Clone the repository
+2. Open `index.html` in your web browser
+3. Start creating!
 
-2. Open `index.html` in a modern web browser
+## Browser Compatibility
 
-## Development
+PaintBar works best in modern browsers that support HTML5 Canvas and ES6+ JavaScript features.
 
-The project uses vanilla JavaScript with the following structure:
-- `index.html`: Main application structure and UI
-- `scripts/app.js`: Core application logic and drawing functionality
-- `styles/styles.css`: Application styling
+## Dependencies
 
-## Browser Support
-
-Tested and supported on modern browsers:
-- Chrome
-- Firefox
-- Safari
-- Edge
+- html2canvas (v1.4.1) - For image export functionality
+- iro.js (v5) - For the color picker interface
+- Firebase - For analytics
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Feel free to submit issues and enhancement requests!
 
 ## License
 
-This project is licensed under the MIT License
+This project is licensed under the MIT License - see the LICENSE file for details.
