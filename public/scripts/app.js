@@ -1539,7 +1539,7 @@ class PaintBar {
     }
 
     handleMouseUp(e) {
-        if (this.activeTool === 'selection') {
+        if (this.activeTool === 'select') {
             if (this.isSelecting) {
                 this.isSelecting = false;
                 this.captureSelection();
@@ -1988,7 +1988,7 @@ class PaintBar {
     }
 
     handleMouseUp(e) {
-        if (this.activeTool === 'selection') {
+        if (this.activeTool === 'select') {
             if (this.isSelecting) {
                 this.isSelecting = false;
                 this.captureSelection();
@@ -2175,87 +2175,87 @@ class PaintBar {
         tempCanvas.height = this.canvas.height;
         const tempCtx = tempCanvas.getContext('2d');
 
-        // Function to draw content with or without background
-        const drawContent = (ctx, size = null) => {
-            const targetWidth = size || tempCanvas.width;
-            const targetHeight = size || tempCanvas.height;
-            
-            if (!transparent) {
-                // Draw white background for non-transparent images
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, targetWidth, targetHeight);
-                
-                // Draw opaque background if it exists
-                if (this.opaqueBgCanvas) {
-                    ctx.drawImage(this.opaqueBgCanvas, 0, 0, targetWidth, targetHeight);
-                }
-            } else {
-                // For transparent images, only draw transparent background if it exists
-                if (this.transparentBgCanvas) {
-                    ctx.drawImage(this.transparentBgCanvas, 0, 0, targetWidth, targetHeight);
-                }
-            }
-            
-            // Draw the main canvas content
-            ctx.drawImage(this.canvas, 0, 0, targetWidth, targetHeight);
-        };
+        try {
+            switch (format.toLowerCase()) {
+                case 'png':
+                    link.download = `${fileName}.png`;
+                    // For transparent PNG, just use the drawing canvas
+                    tempCtx.drawImage(this.canvas, 0, 0);
+                    
+                    // Only add opaque background for non-transparent saves
+                    if (!transparent) {
+                        // Create another temp canvas to composite the layers
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = this.canvas.width;
+                        finalCanvas.height = this.canvas.height;
+                        const finalCtx = finalCanvas.getContext('2d');
+                        
+                        // Draw background first, then the content
+                        finalCtx.drawImage(this.opaqueBgCanvas, 0, 0);
+                        finalCtx.drawImage(tempCanvas, 0, 0);
+                        link.href = finalCanvas.toDataURL('image/png');
+                    } else {
+                        link.href = tempCanvas.toDataURL('image/png');
+                    }
+                    break;
 
-        // Handle different formats
-        switch (format.toLowerCase()) {
-            case 'png':
-                link.download = `${fileName}.png`;
-                drawContent(tempCtx);
-                link.href = tempCanvas.toDataURL('image/png');
-                break;
+                case 'jpg':
+                    link.download = `${fileName}.jpg`;
+                    // JPG doesn't support transparency, use white background
+                    tempCtx.fillStyle = 'white';
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tempCtx.drawImage(this.canvas, 0, 0);
+                    link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
+                    break;
 
-            case 'jpg':
-                link.download = `${fileName}.jpg`;
-                // JPG doesn't support transparency, always draw with background
-                tempCtx.fillStyle = 'white';
-                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-                if (this.opaqueBgCanvas) {
-                    tempCtx.drawImage(this.opaqueBgCanvas, 0, 0);
-                }
-                tempCtx.drawImage(this.canvas, 0, 0);
-                link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
-                break;
-
-            case 'ico':
-                link.download = `${fileName}.ico`;
-                // Create multiple ICO sizes
-                const sizes = [16, 32, 48, 64, 128, 256];
-                const icoCanvases = sizes.map(size => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
+                case 'ico':
+                    link.download = `${fileName}.ico`;
+                    
+                    // For ICO, we'll use 64x64 size centered on the canvas
+                    const icoCanvas = document.createElement('canvas');
+                    icoCanvas.width = 64;
+                    icoCanvas.height = 64;
+                    const icoCtx = icoCanvas.getContext('2d');
+                    
+                    // Calculate the center crop coordinates
+                    const sourceWidth = Math.min(this.canvas.width, this.canvas.height);
+                    const sourceHeight = sourceWidth;
+                    const sourceX = (this.canvas.width - sourceWidth) / 2;
+                    const sourceY = (this.canvas.height - sourceHeight) / 2;
                     
                     // Enable high-quality scaling
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
+                    icoCtx.imageSmoothingEnabled = true;
+                    icoCtx.imageSmoothingQuality = 'high';
                     
-                    // Draw content at the specific size
-                    drawContent(ctx, size);
+                    if (!transparent) {
+                        // For non-transparent ICO, include the opaque background
+                        icoCtx.drawImage(this.opaqueBgCanvas,
+                            sourceX, sourceY, sourceWidth, sourceHeight,
+                            0, 0, 64, 64);
+                    }
                     
-                    return canvas.toDataURL('image/png');
-                });
+                    // Draw the main canvas content
+                    icoCtx.drawImage(this.canvas,
+                        sourceX, sourceY, sourceWidth, sourceHeight,
+                        0, 0, 64, 64);
+                    
+                    link.href = icoCanvas.toDataURL('image/png');
+                    break;
 
-                // For now, we'll just use the 256x256 version
-                // TODO: Implement proper ICO format with multiple sizes
-                link.href = icoCanvases[icoCanvases.length - 1];
-                break;
+                default:
+                    console.error('Unsupported format:', format);
+                    return;
+            }
 
-            default:
-                console.error('Unsupported format:', format);
-                return;
+            // Trigger the download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            this.hideSaveModal();
+        } catch (error) {
+            console.error('Error saving image:', error);
         }
-
-        // Trigger the download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-        this.hideSaveModal();
     }
 }
 
