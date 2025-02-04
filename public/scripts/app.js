@@ -1,3 +1,5 @@
+import { SaveManager } from './save.js';
+
 class PaintBar {
     constructor() {
         // Canvas layers
@@ -74,50 +76,12 @@ class PaintBar {
         this.initializeCanvas();
         this.setupEventListeners();
         
+        // Initialize save manager
+        this.saveManager = new SaveManager(this);
+        
         // Debug logging
         console.log('Initial tool:', this.activeTool);
         console.log('Transparency button:', document.getElementById('transparencyBtn'));
-
-        // Save modal event listeners
-        if (this.saveBtn) {
-            this.saveBtn.addEventListener('click', () => this.showSaveModal());
-        }
-        if (this.closeSaveBtn) {
-            this.closeSaveBtn.addEventListener('click', () => this.hideSaveModal());
-        }
-        if (this.cancelSaveBtn) {
-            this.cancelSaveBtn.addEventListener('click', () => this.hideSaveModal());
-        }
-        if (this.savePngBtn) {
-            this.savePngBtn.addEventListener('click', () => {
-                this.saveImage('png', false);
-                this.hideSaveModal();
-            });
-        }
-        if (this.savePngTransparentBtn) {
-            this.savePngTransparentBtn.addEventListener('click', () => {
-                this.saveImage('png', true);
-                this.hideSaveModal();
-            });
-        }
-        if (this.saveJpgBtn) {
-            this.saveJpgBtn.addEventListener('click', () => {
-                this.saveImage('jpg', false);
-                this.hideSaveModal();
-            });
-        }
-        if (this.saveIcoBtn) {
-            this.saveIcoBtn.addEventListener('click', () => {
-                this.saveImage('ico', false);
-                this.hideSaveModal();
-            });
-        }
-        if (this.saveIcoTransparentBtn) {
-            this.saveIcoTransparentBtn.addEventListener('click', () => {
-                this.saveImage('ico', true);
-                this.hideSaveModal();
-            });
-        }
     }
 
     initializeState() {
@@ -211,7 +175,6 @@ class PaintBar {
         this.cropBtn = document.getElementById('cropBtn');
         this.pasteBtn = document.getElementById('pasteBtn');
         this.clearBtn = document.getElementById('clearBtn');
-        this.saveBtn = document.getElementById('saveBtn');
         
         // Initialize modals and their elements
         this.textModal = document.getElementById('textModal');
@@ -222,11 +185,6 @@ class PaintBar {
         
         this.saveModal = document.getElementById('saveModal');
         this.closeSaveBtn = document.getElementById('closeSaveBtn');
-        this.savePngBtn = document.getElementById('savePng');
-        this.savePngTransparentBtn = document.getElementById('savePngTransparent');
-        this.saveJpgBtn = document.getElementById('saveJpg');
-        this.saveIcoBtn = document.getElementById('saveIco');
-        this.saveIcoTransparentBtn = document.getElementById('saveIcoTransparent');
         this.cancelSaveBtn = document.getElementById('cancelSave');
 
         // Initialize brush size
@@ -433,29 +391,13 @@ class PaintBar {
         const actionButtons = {
             cropBtn: () => this.cropCanvas(),
             pasteBtn: () => this.pasteContent(),
-            clearBtn: () => this.clearCanvas(),
-            downloadBtn: () => this.showDownloadOptions()
+            clearBtn: () => this.clearCanvas()
         };
 
         Object.entries(actionButtons).forEach(([btnId, handler]) => {
             const button = document.getElementById(btnId);
             if (button) {
                 button.addEventListener('click', handler);
-            }
-        });
-
-        // Download format buttons
-        ['Png', 'Jpg', 'Ico'].forEach(format => {
-            const btn = document.getElementById(`download${format}`);
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    this.downloadImage(format.toLowerCase());
-                    // Close dropdown after selection
-                    const dropdown = document.querySelector('.dropdown-content');
-                    if (dropdown) {
-                        dropdown.classList.remove('active');
-                    }
-                });
             }
         });
 
@@ -2144,103 +2086,11 @@ class PaintBar {
     }
 
     showSaveModal() {
-        if (this.saveModal) {
-            this.saveModal.classList.remove('hidden');
-        }
+        this.saveManager.showSaveModal();
     }
 
     hideSaveModal() {
-        if (this.saveModal) {
-            this.saveModal.classList.add('hidden');
-        }
-    }
-
-    saveImage(format, transparent = false) {
-        if (!this.canvas) return;
-
-        // Create a temporary link element
-        const link = document.createElement('a');
-        
-        // Set up the file name
-        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-        const fileName = `paint-${timestamp}${transparent ? '-transparent' : ''}`;
-
-        try {
-            // Create a temporary canvas
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = this.canvas.width;
-            tempCanvas.height = this.canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-
-            switch (format.toLowerCase()) {
-                case 'png':
-                    link.download = `${fileName}.png`;
-                    if (!transparent) {
-                        // For non-transparent PNG, include opaque background first
-                        tempCtx.drawImage(this.opaqueBgCanvas, 0, 0);
-                    }
-                    // Then draw the main canvas
-                    tempCtx.drawImage(this.canvas, 0, 0);
-                    link.href = tempCanvas.toDataURL('image/png');
-                    break;
-
-                case 'jpg':
-                    link.download = `${fileName}.jpg`;
-                    // JPG doesn't support transparency, use white background
-                    tempCtx.fillStyle = 'white';
-                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-                    tempCtx.drawImage(this.canvas, 0, 0);
-                    link.href = tempCanvas.toDataURL('image/jpeg', 0.9);
-                    break;
-
-                case 'ico':
-                    link.download = `${fileName}.ico`;
-                    
-                    // For ICO, we'll use 64x64 size centered on the canvas
-                    const icoCanvas = document.createElement('canvas');
-                    icoCanvas.width = 64;
-                    icoCanvas.height = 64;
-                    const icoCtx = icoCanvas.getContext('2d');
-                    
-                    // Calculate the center crop coordinates
-                    const sourceWidth = Math.min(this.canvas.width, this.canvas.height);
-                    const sourceHeight = sourceWidth;
-                    const sourceX = (this.canvas.width - sourceWidth) / 2;
-                    const sourceY = (this.canvas.height - sourceHeight) / 2;
-                    
-                    // Enable high-quality scaling
-                    icoCtx.imageSmoothingEnabled = true;
-                    icoCtx.imageSmoothingQuality = 'high';
-                    
-                    if (!transparent) {
-                        // For non-transparent ICO, include opaque background first
-                        icoCtx.drawImage(this.opaqueBgCanvas,
-                            sourceX, sourceY, sourceWidth, sourceHeight,
-                            0, 0, 64, 64);
-                    }
-                    
-                    // Then draw the main canvas
-                    icoCtx.drawImage(this.canvas,
-                        sourceX, sourceY, sourceWidth, sourceHeight,
-                        0, 0, 64, 64);
-                    
-                    link.href = icoCanvas.toDataURL('image/png');
-                    break;
-
-                default:
-                    console.error('Unsupported format:', format);
-                    return;
-            }
-
-            // Trigger the download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-            this.hideSaveModal();
-        } catch (error) {
-            console.error('Error saving image:', error);
-        }
+        this.saveManager.hideSaveModal();
     }
 }
 
