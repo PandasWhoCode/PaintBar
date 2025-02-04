@@ -887,12 +887,32 @@ button.active {
 }
 
 .submenu-content {
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-    max-height: 500px;
-    opacity: 1;
-    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+}
+
+.submenu-content button {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.submenu-content button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.submenu-content button.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .submenu.collapsed .submenu-content {
@@ -909,125 +929,6 @@ button.active {
     padding: 0;
     gap: 0;
     z-index: 1000;
-}
-
-.submenu-content button {
-    display: block;
-    width: 100%;
-    padding: 8px;
-    margin: 5px 0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.submenu-content button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-.submenu-content button.active {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.submenu-content input[type="range"] {
-    width: 100%;
-    margin: 8px 0;
-}
-
-.submenu-content input[type="color"] {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.main-menu-items {
-    padding: 16px;
-    background: white;
-}
-
-.main-menu-items .tool-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px 0;
-}
-
-.main-menu-items .tool-group:not(:last-child) {
-    margin-bottom: 8px;
-}
-
-.main-menu-items label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #444;
-}
-
-.main-menu-items button {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 20px;
-}
-
-.main-menu-items button:hover {
-    background: #f0f0f0;
-    transform: translateY(-1px);
-}
-
-.menu-separator {
-    height: 2px;
-    background: #ddd;
-    margin: 0 16px 16px;
-}
-
-.submenu {
-    border-bottom: 1px solid #eee;
-}
-
-.submenu:last-child {
-    border-bottom: none;
-}
-
-.submenu-header {
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.submenu-header:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.submenu-content {
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-    max-height: 500px;
-    opacity: 1;
-    overflow: hidden;
-}
-
-.submenu.collapsed .submenu-content {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    pointer-events: none;
 }
 
 .toolbar-section {
@@ -1328,11 +1229,11 @@ button.active {
     background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: all 0.2s ease;
+    color: white;
 }
 
 .submenu-content button:hover {
     background: rgba(255, 255, 255, 0.2);
-    transform: translateX(5px);
 }
 
 .submenu-content button.active {
@@ -1608,4 +1509,118 @@ button.active {
 
 .settings-row input[type="number"] {
     width: 80px;
+}
+
+/* Tool group and submenu styles */
+.tool-group {
+    position: relative;
+    display: inline-block;
+}
+
+.tool-submenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 150px;
+    background: rgb(49, 35, 58);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 4px;
+}
+
+.tool-submenu.visible {
+    display: block;
+}
+
+.submenu-item {
+    padding: 8px;
+    color: white;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 2px 0;
+    transition: all 0.2s ease;
+}
+
+.submenu-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.submenu-item.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Triangle tool specific styles */
+.triangle-tool .tool-btn {
+    position: relative;
+}
+
+.triangle-submenu {
+    margin-left: 4px;
+}
+
+.triangle-option {
+    position: relative;
+}
+
+.triangle-option::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+}
+
+.triangle-option[data-type="right"]::before {
+    content: '📐';
+}
+
+.triangle-option[data-type="isosceles"]::before {
+    content: '△';
+}
+
+.triangle-option[data-type="equilateral"]::before {
+    content: '▲';
+}
+
+.tool-select {
+    display: inline-block;
+    padding: 4px 24px 4px 8px;
+    margin-left: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgb(49, 35, 58);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M2 4l4 4 4-4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    vertical-align: middle;
+}
+
+.tool-select:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.tool-select:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.tool-select option {
+    background: rgb(49, 35, 58);
+    color: white;
+    padding: 8px;
 }

@@ -148,7 +148,7 @@ class PaintBar {
         this.circleBtn = document.getElementById('circleBtn');
         this.lineBtn = document.getElementById('lineBtn');
         this.triangleBtn = document.getElementById('triangleBtn');
-        this.triangleOptions = document.getElementById('triangle-type');
+        this.triangleMenu = document.getElementById('triangle-menu');
         
         // Initialize action buttons
         this.cropBtn = document.getElementById('cropBtn');
@@ -434,10 +434,26 @@ class PaintBar {
             });
         });
 
-        // Triangle type change event
+        // Triangle button and type selection
+        const triangleBtn = document.getElementById('triangleBtn');
         const triangleTypeSelect = document.getElementById('triangle-type');
-        if (triangleTypeSelect) {
-            triangleTypeSelect.addEventListener('change', this.handleTriangleTypeChange.bind(this));
+        
+        if (triangleBtn && triangleTypeSelect) {
+            // Show/hide triangle type select when triangle tool is activated
+            this.toolManager.onToolChange = (tool) => {
+                const isTriangleTool = tool.constructor.name === 'TriangleTool';
+                triangleTypeSelect.style.display = isTriangleTool ? 'block' : 'none';
+            };
+
+            // Handle triangle type changes
+            triangleTypeSelect.addEventListener('change', (e) => {
+                this.triangleType = e.target.value;
+            });
+
+            // Set initial state
+            triangleTypeSelect.style.display = 'none';
+            this.triangleType = 'equilateral';
+            triangleTypeSelect.value = 'equilateral';
         }
 
         // Transparency checkbox

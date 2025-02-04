@@ -5,6 +5,7 @@ export class ToolManager {
     constructor(paintBar) {
         this.paintBar = paintBar;
         this.activeTool = null;
+        this.onToolChange = null; // Callback for tool changes
         
         // Initialize all tools
         this.tools = {
@@ -27,14 +28,16 @@ export class ToolManager {
     }
 
     setActiveTool(toolName) {
-        const prevTool = this.activeTool;
-        if (prevTool) {
-            prevTool.deactivate();
+        if (this.activeTool) {
+            this.activeTool.deactivate();
         }
-        
         this.activeTool = this.tools[toolName];
         if (this.activeTool) {
             this.activeTool.activate();
+        }
+        // Notify about tool change
+        if (this.onToolChange) {
+            this.onToolChange(this.activeTool);
         }
 
         // Update UI state

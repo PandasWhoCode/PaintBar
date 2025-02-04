@@ -159,6 +159,8 @@ export class TriangleTool extends ShapeTool {
         const type = this.paintBar.triangleType || 'equilateral';
         const dx = point.x - this.startPoint.x;
         const dy = point.y - this.startPoint.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
         
         switch (type) {
             case 'right':
@@ -169,26 +171,57 @@ export class TriangleTool extends ShapeTool {
                 ];
             
             case 'isosceles':
+                // Use the mouse distance for height and calculate base width
+                const baseWidth = distance * 0.8; // 80% of height for nice proportions
+                const baseAngle = angle + Math.PI/2; // Perpendicular to height
+                
+                // Calculate base points by rotating around apex (startPoint)
                 return [
-                    { x: this.startPoint.x - dx, y: point.y },
-                    { x: this.startPoint.x + dx, y: point.y },
-                    this.startPoint
+                    this.startPoint, // Apex
+                    { // Left base point
+                        x: point.x + baseWidth/2 * Math.cos(baseAngle),
+                        y: point.y + baseWidth/2 * Math.sin(baseAngle)
+                    },
+                    { // Right base point
+                        x: point.x - baseWidth/2 * Math.cos(baseAngle),
+                        y: point.y - baseWidth/2 * Math.sin(baseAngle)
+                    }
                 ];
             
             case 'equilateral':
             default:
-                const side = Math.sqrt(dx * dx + dy * dy);
+                // For a perfect equilateral triangle:
+                // 1. Use mouse point to determine size and orientation
+                // 2. Calculate other two points using 60° angles
+                
+                // The height of an equilateral triangle is: side * √3/2
+                // And the base points are ±(side/2) from the center
+                
+                // Let the mouse distance determine the side length
+                const side = distance;
                 const height = side * Math.sqrt(3) / 2;
-                const angle = Math.atan2(dy, dx);
+                
+                // Calculate the direction vector and its perpendicular
+                const dirX = dx / distance;
+                const dirY = dy / distance;
+                const perpX = -dirY;
+                const perpY = dirX;
+                
+                // Calculate the base center point
+                const baseCenterX = this.startPoint.x + dirX * height;
+                const baseCenterY = this.startPoint.y + dirY * height;
+                
+                // Calculate the two base points
+                const halfSide = side / 2;
                 return [
                     this.startPoint,
                     {
-                        x: this.startPoint.x + side * Math.cos(angle),
-                        y: this.startPoint.y + side * Math.sin(angle)
+                        x: baseCenterX + perpX * halfSide,
+                        y: baseCenterY + perpY * halfSide
                     },
                     {
-                        x: this.startPoint.x + side * Math.cos(angle - Math.PI / 3),
-                        y: this.startPoint.y + side * Math.sin(angle - Math.PI / 3)
+                        x: baseCenterX - perpX * halfSide,
+                        y: baseCenterY - perpY * halfSide
                     }
                 ];
         }
