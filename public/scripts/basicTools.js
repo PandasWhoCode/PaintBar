@@ -297,7 +297,7 @@ export class TextTool extends GenericTool {
             cancelBtn.onclick = () => this.hideTextControls();
         }
 
-        // Setup live preview listeners
+        // Get all the text input elements
         const textInput = document.getElementById('textInput');
         const fontFamily = document.getElementById('fontFamily');
         const fontSize = document.getElementById('fontSize');
@@ -306,13 +306,17 @@ export class TextTool extends GenericTool {
         const rotationValue = document.getElementById('rotationValue');
 
         const updatePreview = () => {
-            const text = textInput?.value.trim() || '';
-            const font = fontFamily?.value || 'Arial';
+            const text = textInput?.value || '';
+            const font = fontFamily?.value || this.textState.fontFamily;
             const size = parseInt(fontSize?.value || '20');
             const color = textColor?.value || '#000000';
             const rotation = parseInt(textRotation?.value || '0');
-
-            this.updatePreview(text, font, size, color, rotation);
+            this.textState.text = text;
+            this.textState.fontFamily = font;
+            this.textState.fontSize = size;
+            this.textState.color = color;
+            this.textState.rotation = rotation;
+            this.updatePreview();
         };
 
         // Add input event listeners for live preview
@@ -320,6 +324,7 @@ export class TextTool extends GenericTool {
         fontFamily?.addEventListener('change', updatePreview);
         fontSize?.addEventListener('input', updatePreview);
         textColor?.addEventListener('input', updatePreview);
+        
         textRotation?.addEventListener('input', () => {
             const rotation = parseInt(textRotation.value);
             rotationValue.value = rotation;
@@ -390,6 +395,43 @@ export class TextTool extends GenericTool {
         }
     }
 
+    updatePreview() {
+        // Get the preview canvas context
+        const ctx = this.paintBar.overlayCtx;
+        if (!ctx) return;
+
+        // Clear previous preview
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        if (this.textState.text) {
+            ctx.save();
+            
+            // Set text properties
+            ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
+            ctx.fillStyle = this.textState.color;
+            ctx.textBaseline = 'top';
+            
+            // Apply rotation around text position
+            const centerX = this.textState.x;
+            const centerY = this.textState.y;
+            ctx.translate(centerX, centerY);
+            ctx.rotate(this.textState.rotation * Math.PI / 180);
+            ctx.translate(-centerX, -centerY);
+            
+            // Draw the text
+            ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
+            
+            ctx.restore();
+        }
+    }
+
+    clearPreview() {
+        const ctx = this.paintBar.overlayCtx;
+        if (ctx) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        }
+    }
+
     onMouseDown(point) {
         super.onMouseDown(point);
         this.initializeTextTool(point.x, point.y);
@@ -442,47 +484,6 @@ export class TextTool extends GenericTool {
             // Clear any existing preview
             this.clearPreview();
         }
-    }
-
-    updatePreview(text, font, size, color, rotation) {
-        const ctx = this.paintBar.previewContext;
-        if (!ctx) return;
-
-        // Clear previous preview
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-        // Get current text state
-        const currentText = text || document.getElementById('textInput')?.value || this.textState.text;
-        const currentFont = font || document.getElementById('fontFamily')?.value || this.textState.fontFamily;
-        const currentSize = size || document.getElementById('fontSize')?.value || this.textState.fontSize;
-        const currentColor = color || document.getElementById('textColor')?.value || this.textState.color;
-        const currentRotation = rotation !== undefined ? rotation : this.textState.rotation;
-
-        if (currentText) {
-            ctx.save();
-            
-            // Set text properties
-            ctx.font = `${currentSize}px ${currentFont}`;
-            ctx.fillStyle = currentColor;
-            ctx.textBaseline = 'top';
-            
-            // Apply rotation around text position
-            const centerX = this.textState.x;
-            const centerY = this.textState.y;
-            ctx.translate(centerX, centerY);
-            ctx.rotate(currentRotation * Math.PI / 180);
-            ctx.translate(-centerX, -centerY);
-            
-            // Draw the text
-            ctx.fillText(currentText, this.textState.x, this.textState.y);
-            
-            ctx.restore();
-        }
-    }
-
-    clearPreview() {
-        const overlayCtx = this.paintBar.overlayCtx;
-        overlayCtx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
     }
 
     applyText() {
