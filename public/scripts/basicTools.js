@@ -251,9 +251,123 @@ export class TextTool extends GenericTool {
             fontSize: 20,
             color: '#000000',
             x: 0,
-            y: 0,
-            isPreview: false
+            y: 0
         };
+        this.modalDrag = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            offsetX: 0,
+            offsetY: 0
+        };
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Get modal elements
+        const textModal = document.getElementById('textModal');
+        const modalHeader = textModal?.querySelector('.modal-header');
+        const closeBtn = document.getElementById('closeTextBtn');
+        const applyBtn = document.getElementById('applyTextBtn');
+        const cancelBtn = document.getElementById('cancelTextBtn');
+        
+        // Setup modal drag
+        if (modalHeader) {
+            modalHeader.addEventListener('mousedown', (e) => this.startDragging(e));
+            modalHeader.addEventListener('touchstart', (e) => this.startDragging(e), { passive: false });
+            
+            // Add global move and end listeners
+            document.addEventListener('mousemove', (e) => this.drag(e));
+            document.addEventListener('touchmove', (e) => this.drag(e), { passive: false });
+            document.addEventListener('mouseup', () => this.stopDragging());
+            document.addEventListener('touchend', () => this.stopDragging());
+        }
+        
+        // Setup button listeners
+        if (closeBtn) {
+            closeBtn.onclick = () => this.hideTextControls();
+        }
+        
+        if (applyBtn) {
+            applyBtn.onclick = () => this.applyText();
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.onclick = () => this.hideTextControls();
+        }
+
+        // Setup live preview listeners
+        const textInput = document.getElementById('textInput');
+        const fontFamily = document.getElementById('fontFamily');
+        const fontSize = document.getElementById('fontSize');
+        const textColor = document.getElementById('textColor');
+
+        const updatePreview = () => {
+            const text = textInput?.value.trim() || '';
+            const font = fontFamily?.value || 'Arial';
+            const size = parseInt(fontSize?.value || '20');
+            const color = textColor?.value || '#000000';
+
+            this.updatePreview(text, font, size, color);
+        };
+
+        // Add input event listeners for live preview
+        textInput?.addEventListener('input', updatePreview);
+        fontFamily?.addEventListener('change', updatePreview);
+        fontSize?.addEventListener('input', updatePreview);
+        textColor?.addEventListener('input', updatePreview);
+    }
+
+    startDragging(e) {
+        e.preventDefault();
+        const textModal = document.getElementById('textModal');
+        if (!textModal) return;
+
+        // Get event coordinates (handle both mouse and touch)
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const rect = textModal.getBoundingClientRect();
+        
+        this.modalDrag = {
+            active: true,
+            startX: clientX,
+            startY: clientY,
+            offsetX: rect.left - clientX,
+            offsetY: rect.top - clientY
+        };
+        
+        // Add grabbing cursor
+        textModal.style.cursor = 'grabbing';
+    }
+
+    drag(e) {
+        if (!this.modalDrag.active) return;
+        e.preventDefault();
+        
+        const textModal = document.getElementById('textModal');
+        if (!textModal) return;
+
+        // Get event coordinates (handle both mouse and touch)
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        // Calculate new position
+        const left = clientX + this.modalDrag.offsetX;
+        const top = clientY + this.modalDrag.offsetY;
+
+        // Apply new position
+        textModal.style.left = left + 'px';
+        textModal.style.top = top + 'px';
+        textModal.style.transform = 'none';  // Remove default centering
+    }
+
+    stopDragging() {
+        const textModal = document.getElementById('textModal');
+        if (textModal && this.modalDrag.active) {
+            textModal.style.cursor = 'grab';
+            this.modalDrag.active = false;
+        }
     }
 
     onMouseDown(point) {
@@ -268,135 +382,112 @@ export class TextTool extends GenericTool {
     deactivate() {
         this.hideTextControls();
         this.resetTextState();
+        this.paintBar.canvas.style.cursor = 'default';
+        this.clearPreview();
     }
 
     initializeTextTool(x, y) {
         this.textState.x = x;
         this.textState.y = y;
         
+        // Get modal elements
         const textModal = document.getElementById('textModal');
         const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontSelect');
-        const fontSizeInput = document.getElementById('fontSize');
+        const fontFamily = document.getElementById('fontFamily');
+        const fontSize = document.getElementById('fontSize');
         const textColor = document.getElementById('textColor');
         
-        if (textModal && textInput && fontSelect && fontSizeInput && textColor) {
+        if (textModal && textInput && fontFamily && fontSize && textColor) {
+            // Show modal
             textModal.classList.remove('hidden');
+            
+            // Reset modal position to center
+            textModal.style.left = '50%';
+            textModal.style.top = '50%';
+            textModal.style.transform = 'translate(-50%, -50%)';
+            
+            // Set initial values
             textInput.value = '';
-            fontSelect.value = this.textState.fontFamily;
-            fontSizeInput.value = this.textState.fontSize;
+            fontFamily.value = this.textState.fontFamily;
+            fontSize.value = this.textState.fontSize;
             textColor.value = this.paintBar.currentColor;
+            
+            // Focus text input
             textInput.focus();
 
-            // Set up preview button
-            const previewBtn = document.getElementById('previewTextBtn');
-            if (previewBtn) {
-                previewBtn.onclick = () => this.previewText();
-            }
+            // Clear any existing preview
+            this.clearPreview();
         }
     }
 
-    previewText() {
-        const textModal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontSelect');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColor = document.getElementById('textColor');
+    updatePreview(text, font, size, color) {
+        // Clear previous preview
+        this.clearPreview();
+
+        if (!text) return;
+
+        // Get overlay canvas context
+        const overlayCtx = this.paintBar.overlayCtx;
         
-        if (textModal && previewOverlay && textInput && fontSelect && fontSizeInput && textColor) {
-            const text = textInput.value.trim();
-            if (text === '') return;
+        // Set text properties
+        overlayCtx.font = `${size}px ${font}`;
+        overlayCtx.fillStyle = color;
+        overlayCtx.textBaseline = 'top';
 
-            // Store text properties
-            this.textState = {
-                text: text,
-                fontFamily: fontSelect.value,
-                fontSize: parseInt(fontSizeInput.value),
-                color: textColor.value,
-                x: this.textState.x,
-                y: this.textState.y,
-                isPreview: true
-            };
+        // Draw preview text
+        overlayCtx.fillText(text, this.textState.x, this.textState.y);
+    }
 
-            // Draw preview text on overlay canvas
-            const overlayCtx = this.getOverlayContext();
-            this.clearOverlay();
-            overlayCtx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
-            overlayCtx.fillStyle = this.textState.color;
-            overlayCtx.fillText(this.textState.text, this.textState.x, this.textState.y);
-
-            // Hide text modal and show preview overlay
-            textModal.classList.add('hidden');
-            previewOverlay.classList.remove('hidden');
-
-            // Set up preview action buttons
-            const applyBtn = document.getElementById('applyTextBtn');
-            const editBtn = document.getElementById('editTextBtn');
-            const cancelBtn = document.getElementById('cancelPreviewBtn');
-
-            if (applyBtn && editBtn && cancelBtn) {
-                applyBtn.onclick = () => this.applyText();
-                editBtn.onclick = () => this.editText();
-                cancelBtn.onclick = () => this.cancelPreview();
-            }
-        }
+    clearPreview() {
+        const overlayCtx = this.paintBar.overlayCtx;
+        overlayCtx.clearRect(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
     }
 
     applyText() {
-        if (this.textState.isPreview) {
-            // Draw the text on the main canvas
+        // Get form values
+        const textInput = document.getElementById('textInput');
+        const fontFamily = document.getElementById('fontFamily');
+        const fontSize = document.getElementById('fontSize');
+        const textColor = document.getElementById('textColor');
+        
+        if (textInput && fontFamily && fontSize && textColor) {
+            const text = textInput.value.trim();
+            if (text === '') {
+                this.hideTextControls();
+                return;
+            }
+            
+            // Update text state
+            this.textState = {
+                text: text,
+                fontFamily: fontFamily.value,
+                fontSize: parseInt(fontSize.value),
+                color: textColor.value,
+                x: this.textState.x,
+                y: this.textState.y
+            };
+            
+            // Draw text on canvas
             const ctx = this.getContext();
             ctx.font = `${this.textState.fontSize}px ${this.textState.fontFamily}`;
             ctx.fillStyle = this.textState.color;
+            ctx.textBaseline = 'top';  // Makes y coordinate the top of the text
             ctx.fillText(this.textState.text, this.textState.x, this.textState.y);
             
-            this.clearOverlay();
+            // Save state and cleanup
             this.paintBar.saveState();
             this.hideTextControls();
             this.resetTextState();
+            this.clearPreview();
         }
-    }
-
-    editText() {
-        if (!this.textState.isPreview) return;
-
-        // Clear the preview
-        this.clearOverlay();
-
-        // Hide preview overlay and show text modal with current text state
-        const modal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        const textInput = document.getElementById('textInput');
-        const fontSelect = document.getElementById('fontSelect');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColor = document.getElementById('textColor');
-
-        if (modal && previewOverlay && textInput && fontSelect && fontSizeInput && textColor) {
-            modal.classList.remove('hidden');
-            previewOverlay.classList.add('hidden');
-            
-            textInput.value = this.textState.text;
-            fontSelect.value = this.textState.fontFamily;
-            fontSizeInput.value = this.textState.fontSize;
-            textColor.value = this.textState.color;
-            
-            textInput.focus();
-        }
-    }
-
-    cancelPreview() {
-        this.clearOverlay();
-        this.hideTextControls();
-        this.resetTextState();
     }
 
     hideTextControls() {
         const textModal = document.getElementById('textModal');
-        const previewOverlay = document.getElementById('textPreviewOverlay');
-        
-        if (textModal) textModal.classList.add('hidden');
-        if (previewOverlay) previewOverlay.classList.add('hidden');
+        if (textModal) {
+            textModal.classList.add('hidden');
+        }
+        this.clearPreview();
     }
 
     resetTextState() {
@@ -406,8 +497,7 @@ export class TextTool extends GenericTool {
             fontSize: 20,
             color: '#000000',
             x: 0,
-            y: 0,
-            isPreview: false
+            y: 0
         };
     }
 }

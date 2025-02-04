@@ -459,107 +459,144 @@ button.active {
 
 /* Modal dialog styles */
 .modal {
+    display: none;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+    z-index: 1000;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
 }
 
 .modal.hidden {
     display: none;
 }
 
+.modal:not(.hidden) {
+    display: block;
+}
+
 .modal-content {
-    background: white;
+    position: relative;
     padding: 20px;
-    border-radius: 8px;
-    min-width: 300px;
-    max-width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    cursor: move;
+    user-select: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.modal-close {
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.close-btn {
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
-    padding: 5px;
     color: #666;
+    padding: 0 5px;
 }
 
-.modal-close:hover {
-    color: #000;
+.close-btn:hover {
+    color: #333;
 }
 
-.modal .setting-item {
-    margin: 15px 0;
+.modal-body {
+    padding: 15px 0;
+}
+
+.text-input-container {
+    margin-bottom: 15px;
+}
+
+.text-input-container textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    min-height: 80px;
+    resize: vertical;
+}
+
+.text-options {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.modal .setting-item input[type="number"] {
-    width: 100px;
-    padding: 5px;
-    border: 1px solid #ddd;
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.option-row label {
+    min-width: 60px;
+    color: #333;
+}
+
+.option-row select,
+.option-row input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 4px;
 }
 
-.modal .setting-item input[type="checkbox"] {
-    margin-right: 5px;
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.apply-btn {
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
+.btn {
+    padding: 8px 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin-top: 15px;
+    background: #4CAF50;
+    color: white;
+    font-weight: bold;
 }
 
-.apply-btn:hover {
-    background-color: #45a049;
+.btn:hover {
+    background: #45a049;
 }
 
-.text-input {
-    position: absolute;
-    background: transparent;
-    border: 1px solid #000;
-    outline: none;
-    font-family: Arial, sans-serif;
-    z-index: 1000;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    padding: 2px;
-    margin: 0;
-    resize: both;
-    min-width: 50px;
-    min-height: 20px;
+#cancelTextBtn {
+    background: #f44336;
 }
 
-.text-input:focus {
-    border: 1px solid #007bff;
-    background-color: rgba(255, 255, 255, 0.1);
+#cancelTextBtn:hover {
+    background: #da190b;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+    .modal-content {
+        width: 90vw;
+        max-width: none;
+    }
+    
+    .modal {
+        top: 20px;
+        transform: translateX(-50%);
+    }
 }
 
 /* Text tool styles */
