@@ -148,6 +148,7 @@ class PaintBar {
         this.circleBtn = document.getElementById('circleBtn');
         this.lineBtn = document.getElementById('lineBtn');
         this.triangleBtn = document.getElementById('triangleBtn');
+        this.arcBtn = document.getElementById('arcBtn');
         this.triangleMenu = document.getElementById('triangle-menu');
         
         // Initialize action buttons
@@ -304,7 +305,8 @@ class PaintBar {
             rectangle: 'rectangleBtn',
             circle: 'circleBtn',
             line: 'lineBtn',
-            triangle: 'triangleBtn'
+            triangle: 'triangleBtn',
+            arc: 'arcBtn'
         };
 
         Object.keys(toolButtons).forEach(tool => {

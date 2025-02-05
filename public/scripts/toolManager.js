@@ -1,5 +1,5 @@
 import { PencilTool, EraserTool, FillTool, TextTool, SelectionTool } from './basicTools.js';
-import { RectangleTool, CircleTool, LineTool, TriangleTool } from './objectTools.js';
+import { RectangleTool, CircleTool, LineTool, TriangleTool, ArcTool } from './objectTools.js';
 
 export class ToolManager {
     constructor(paintBar) {
@@ -20,7 +20,8 @@ export class ToolManager {
             rectangle: new RectangleTool(paintBar),
             circle: new CircleTool(paintBar),
             line: new LineTool(paintBar),
-            triangle: new TriangleTool(paintBar)
+            triangle: new TriangleTool(paintBar),
+            arc: new ArcTool(paintBar)
         };
         
         // Set default tool
@@ -72,7 +73,7 @@ export class ToolManager {
 
     updateOverlayVisibility(toolName) {
         const overlayCanvas = this.paintBar.overlayCanvas;
-        const isShapeTool = ['rectangle', 'circle', 'line', 'triangle'].includes(toolName);
+        const isShapeTool = ['rectangle', 'circle', 'line', 'triangle', 'arc'].includes(toolName);
         
         if (toolName === 'select' || isShapeTool) {
             overlayCanvas.classList.add('active');
