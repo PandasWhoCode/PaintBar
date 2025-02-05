@@ -1,5 +1,6 @@
-import { PencilTool, EraserTool, FillTool, TextTool, SelectionTool } from './basicTools.js';
+import { PencilTool, EraserTool, FillTool, TextTool } from './basicTools.js';
 import { RectangleTool, CircleTool, LineTool, TriangleTool, ArcTool } from './objectTools.js';
+import { SelectionTool } from './actionTools.js';
 
 export class ToolManager {
     constructor(paintBar) {

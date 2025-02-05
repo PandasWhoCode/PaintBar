@@ -1824,3 +1824,74 @@ button.active {
     text-shadow: 0 0 12px rgba(255, 0, 255, 0.6);
     transform: scale(0.98);
 }
+
+/* Save Modal Styles */
+#saveModal .modal-content {
+    background: rgba(49, 35, 58, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    color: white;
+}
+
+.save-option {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.save-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.save-details {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.save-name {
+    font-weight: bold;
+    color: white;
+}
+
+.save-desc {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+#saveModal .modal-footer button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    color: white !important;
+    transition: all 0.2s ease;
+}
+
+#saveModal .modal-footer button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#saveModal .close-btn {
+    color: white;
+    opacity: 0.8;
+}
+
+#saveModal .close-btn:hover {
+    opacity: 1;
+}
+
+#saveModal .modal-header h3 {
+    color: white;
+}
