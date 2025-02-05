@@ -243,3 +243,96 @@ export class TriangleTool extends ShapeTool {
         }
     }
 }
+
+export class ArcTool extends ShapeTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.midPoint = null;
+        this.endPoint = null;
+        this.arcPhase = 'line'; // 'line' or 'arc'
+    }
+
+    onMouseDown(point) {
+        if (this.arcPhase === 'line') {
+            super.onMouseDown(point);
+        } else if (this.arcPhase === 'arc' && this.startPoint && this.endPoint) {
+            this.midPoint = point;
+            this.isDrawing = true;
+        }
+    }
+
+    onMouseMove(point) {
+        if (!this.isDrawing) return;
+        this.clearOverlay();
+        
+        if (this.arcPhase === 'line') {
+            // Draw straight line preview
+            this.drawPreview(point);
+        } else if (this.arcPhase === 'arc' && this.startPoint && this.endPoint) {
+            // Draw arc preview with current point as control point
+            this.midPoint = point;
+            this.drawPreview(point);
+        }
+    }
+
+    onMouseUp(point) {
+        if (!this.isDrawing) return;
+
+        if (this.arcPhase === 'line') {
+            this.endPoint = point;
+            this.arcPhase = 'arc';
+            this.isDrawing = false;
+        } else if (this.arcPhase === 'arc') {
+            // Draw final arc
+            const mainCtx = this.getContext();
+            mainCtx.save();
+            
+            mainCtx.strokeStyle = this.paintBar.currentColor;
+            mainCtx.fillStyle = this.paintBar.currentColor;
+            mainCtx.lineWidth = this.paintBar.lineWidth;
+            mainCtx.lineCap = 'round';
+            mainCtx.lineJoin = 'round';
+            
+            this.drawShape(mainCtx, point);
+            
+            mainCtx.restore();
+            this.clearOverlay();
+            this.paintBar.saveState();
+            
+            // Reset for next arc
+            this.isDrawing = false;
+            this.startPoint = null;
+            this.endPoint = null;
+            this.midPoint = null;
+            this.arcPhase = 'line';
+        }
+    }
+
+    drawShape(ctx, point) {
+        if (this.arcPhase === 'line' && this.startPoint) {
+            // Draw straight line preview
+            ctx.beginPath();
+            ctx.moveTo(this.startPoint.x, this.startPoint.y);
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+        } else if (this.arcPhase === 'arc' && this.startPoint && this.endPoint) {
+            // Draw arc using quadratic curve with cursor position as direct control point
+            const controlPoint = point;
+            
+            ctx.beginPath();
+            ctx.moveTo(this.startPoint.x, this.startPoint.y);
+            ctx.quadraticCurveTo(
+                controlPoint.x, controlPoint.y, // Use cursor position directly as control point
+                this.endPoint.x, this.endPoint.y
+            );
+            ctx.stroke();
+        }
+    }
+
+    deactivate() {
+        super.deactivate();
+        this.arcPhase = 'line';
+        this.endPoint = null;
+        this.midPoint = null;
+    }
+}
