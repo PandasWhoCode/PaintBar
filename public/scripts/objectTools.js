@@ -89,19 +89,13 @@ export class RectangleTool extends ShapeTool {
         const width = point.x - this.startPoint.x;
         const height = point.y - this.startPoint.y;
         
+        // Draw stroke first to create solid boundary
+        ctx.strokeRect(this.startPoint.x, this.startPoint.y, width, height);
+        
         // Draw filled rectangle if fill is enabled
         if (this.paintBar.fillShape) {
-            if (ctx === this.getOverlayContext()) {
-                ctx.globalAlpha = 0.5;
-            }
             ctx.fillRect(this.startPoint.x, this.startPoint.y, width, height);
-            if (ctx === this.getOverlayContext()) {
-                ctx.globalAlpha = 1.0;
-            }
         }
-        
-        // Draw stroke
-        ctx.strokeRect(this.startPoint.x, this.startPoint.y, width, height);
     }
 }
 
@@ -115,16 +109,12 @@ export class CircleTool extends ShapeTool {
         ctx.beginPath();
         ctx.arc(this.startPoint.x, this.startPoint.y, radius, 0, Math.PI * 2);
         
-        if (this.paintBar.fillShape) {
-            if (ctx === this.getOverlayContext()) {
-                ctx.globalAlpha = 0.5;
-            }
-            ctx.fill();
-            if (ctx === this.getOverlayContext()) {
-                ctx.globalAlpha = 1.0;
-            }
-        }
+        // Draw stroke first to create solid boundary
         ctx.stroke();
+        
+        if (this.paintBar.fillShape) {
+            ctx.fill();
+        }
     }
 }
 
@@ -147,12 +137,12 @@ export class TriangleTool extends ShapeTool {
         ctx.lineTo(points[2].x, points[2].y);
         ctx.closePath();
         
-        if (this.paintBar.fillShape) {
-            ctx.globalAlpha = 0.5;
-            ctx.fill();
-            ctx.globalAlpha = 1;
-        }
+        // Draw stroke first to create solid boundary
         ctx.stroke();
+        
+        if (this.paintBar.fillShape) {
+            ctx.fill();
+        }
     }
 
     calculateTrianglePoints(point) {
