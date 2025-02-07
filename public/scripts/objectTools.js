@@ -120,10 +120,19 @@ export class CircleTool extends ShapeTool {
 
 export class LineTool extends ShapeTool {
     drawShape(ctx, point) {
+        // Save current line cap
+        const oldLineCap = ctx.lineCap;
+        
+        // Use butt line cap for crisp lines
+        ctx.lineCap = 'butt';
+        
         ctx.beginPath();
         ctx.moveTo(this.startPoint.x, this.startPoint.y);
         ctx.lineTo(point.x, point.y);
         ctx.stroke();
+        
+        // Restore original line cap
+        ctx.lineCap = oldLineCap;
     }
 }
 
