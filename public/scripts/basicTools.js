@@ -86,12 +86,9 @@ export class EraserTool extends GenericTool {
 export class FillTool extends GenericTool {
     constructor(paintBar) {
         super(paintBar);
-        console.log('FillTool constructed');
     }
 
     onMouseDown(point) {
-        console.log('FillTool onMouseDown', point);
-        // Don't call super.onMouseDown to avoid setting isDrawing
         this.fill(point);
     }
 
@@ -104,43 +101,21 @@ export class FillTool extends GenericTool {
     }
 
     fill(point) {
-        console.log('FillTool fill starting', point);
         const ctx = this.getContext();
-        console.log('Got context:', ctx);
-        
         const imageData = ctx.getImageData(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
-        console.log('Got imageData:', {
-            width: imageData.width,
-            height: imageData.height,
-            dataLength: imageData.data.length
-        });
-        
         const pixels = imageData.data;
         
         // Convert floating point coordinates to integers
         const x = Math.round(point.x);
         const y = Math.round(point.y);
-        console.log('Rounded coordinates:', {x, y});
         
         // Ensure point is within bounds
-        if (x < 0 || x >= imageData.width || 
-            y < 0 || y >= imageData.height) {
-            console.log('Point out of bounds:', {x, y});
+        if (x < 0 || x >= imageData.width || y < 0 || y >= imageData.height) {
             return;
         }
         
         // Calculate pixel position
         const startPos = (y * imageData.width + x) * 4;
-        console.log('Start position:', startPos);
-        
-        // Debug pixel data
-        console.log('Pixel data at position:', {
-            pos: startPos,
-            r: pixels[startPos],
-            g: pixels[startPos + 1],
-            b: pixels[startPos + 2],
-            a: pixels[startPos + 3]
-        });
         
         const startColor = {
             r: pixels[startPos],
@@ -148,27 +123,27 @@ export class FillTool extends GenericTool {
             b: pixels[startPos + 2],
             a: pixels[startPos + 3]
         };
-        console.log('Start color:', startColor);
         
         const fillColor = this.hexToRGBA(this.paintBar.currentColor);
-        console.log('Fill color:', fillColor);
-        if (!fillColor) {
-            console.log('Invalid fill color');
-            return;
-        }
+        if (!fillColor) return;
 
-        // If starting on a transparent pixel, we'll fill all connected transparent pixels
-        const isStartTransparent = startColor.a === 0;
-        console.log('Starting on transparent pixel:', isStartTransparent);
-        
         // Start with the integer coordinates
         const stack = [[x, y]];
         const width = imageData.width;
         const height = imageData.height;
-        console.log('Canvas dimensions:', {width, height});
-        
         const visited = new Set();
-        let pixelsFilled = 0;
+        
+        // Function to check if a pixel is similar enough to the start color
+        const isSimilarColor = (pos) => {
+            // Get the squared differences
+            const dr = pixels[pos] - startColor.r;
+            const dg = pixels[pos + 1] - startColor.g;
+            const db = pixels[pos + 2] - startColor.b;
+            const da = pixels[pos + 3] - startColor.a;
+            
+            // Use squared distance - faster than sqrt and works just as well
+            return (dr * dr + dg * dg + db * db + da * da) <= 62500; // 250^2
+        };
         
         while (stack.length > 0) {
             const [px, py] = stack.pop();
@@ -180,55 +155,31 @@ export class FillTool extends GenericTool {
             if (visited.has(key)) continue;
             
             const pos = (py * width + px) * 4;
-            const currentAlpha = pixels[pos + 3];
-            
-            // If we started on a transparent pixel, only fill transparent pixels
-            // If we started on an opaque pixel, match all color components
-            if (isStartTransparent) {
-                if (currentAlpha !== 0) continue;
-            } else {
-                if (!this.colorsMatch(
-                    [pixels[pos], pixels[pos + 1], pixels[pos + 2], pixels[pos + 3]],
-                    [startColor.r, startColor.g, startColor.b, startColor.a]
-                )) continue;
-            }
+            if (!isSimilarColor(pos)) continue;
             
             visited.add(key);
-            pixelsFilled++;
             
-            // Fill the pixel
+            // Fill with the actual fill color
             pixels[pos] = fillColor.r;
             pixels[pos + 1] = fillColor.g;
             pixels[pos + 2] = fillColor.b;
             pixels[pos + 3] = fillColor.a * 255;
             
-            // Add unvisited neighbors to stack
-            const neighbors = [
+            // Add all 8 neighboring pixels
+            stack.push(
                 [px + 1, py],
                 [px - 1, py],
                 [px, py + 1],
-                [px, py - 1]
-            ];
-            
-            for (const [nx, ny] of neighbors) {
-                const neighborKey = `${nx},${ny}`;
-                if (!visited.has(neighborKey)) {
-                    stack.push([nx, ny]);
-                }
-            }
+                [px, py - 1],
+                [px + 1, py + 1],
+                [px - 1, py - 1],
+                [px + 1, py - 1],
+                [px - 1, py + 1]
+            );
         }
         
-        console.log(`Filled ${pixelsFilled} pixels`);
         ctx.putImageData(imageData, 0, 0);
         this.paintBar.saveState();
-        console.log('Fill operation complete');
-    }
-
-    colorsMatch(color1, color2, tolerance = 1) {
-        return Math.abs(color1[0] - color2[0]) <= tolerance &&
-               Math.abs(color1[1] - color2[1]) <= tolerance &&
-               Math.abs(color1[2] - color2[2]) <= tolerance &&
-               Math.abs(color1[3] - color2[3]) <= tolerance;
     }
 
     hexToRGBA(hex) {
@@ -542,7 +493,7 @@ export class TextTool extends GenericTool {
             const italicBtn = document.getElementById('italicBtn');
             const underlineBtn = document.getElementById('underlineBtn');
             const strikeBtn = document.getElementById('strikeBtn');
-            
+
             // Update button states based on text state
             if (boldBtn) boldBtn.classList.toggle('active', this.textState.bold);
             if (italicBtn) italicBtn.classList.toggle('active', this.textState.italic);
