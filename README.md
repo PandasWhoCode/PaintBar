@@ -55,6 +55,10 @@ A modern, web-based drawing application that combines simplicity with powerful f
   - 1:1 (square) preset
   - 9:16 (mobile) preset
 
+## Documentation
+
+Detailed documentation for all menus and features can be found in the [Menu Documentation](docs/menus.md) file.
+
 ## Getting Started
 
 1. Clone the repository
@@ -64,6 +68,8 @@ A modern, web-based drawing application that combines simplicity with powerful f
 ## Browser Compatibility
 
 PaintBar works best in modern browsers that support HTML5 Canvas and ES6+ JavaScript features.
+
+PaintBar is not compatible with mobile web browsers at this time.
 
 ## Dependencies
 
@@ -77,4 +83,4 @@ Feel free to submit issues and enhancement requests!
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
