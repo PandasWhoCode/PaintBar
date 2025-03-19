@@ -976,254 +976,6 @@ button.active {
     margin-bottom: 10px;
 }
 
-.recent-colors-section {
-    margin-top: 16px;
-    border-top: 1px solid #ddd;
-    padding-top: 12px;
-}
-
-.recent-colors-section label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #666;
-}
-
-.action-group {
-    display: flex;
-    gap: 8px;
-    padding: 4px 0;
-}
-
-.action-group:not(:last-child) {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-}
-
-.color-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.recent-colors-section {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #eee;
-}
-
-.recent-colors-section label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: #666;
-}
-
-.recent-colors {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-}
-
-.size-control {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#brushSizeLabel {
-    min-width: 45px;
-    font-size: 13px;
-    color: #666;
-}
-
-/* Save Options Styles */
-.save-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-}
-
-.save-option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-    text-align: left;
-}
-
-.save-option:hover {
-    background: #f5f5f5;
-    border-color: #999;
-}
-
-.save-icon {
-    font-size: 24px;
-}
-
-.save-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.save-name {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.save-desc {
-    font-size: 14px;
-    color: #666;
-}
-
-/* Color Picker Styles */
-.color-picker-container {
-    padding: 10px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.color-picker-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-.color-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    width: 100%;
-}
-
-.color-preview {
-    width: 30px;
-    height: 30px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    background-color: #000000;
-}
-
-.color-value {
-    font-family: monospace;
-    padding: 4px 8px;
-    background: #f5f5f5;
-    border-radius: 4px;
-    flex-grow: 1;
-    text-align: center;
-    min-width: 70px;
-}
-
-#eyedropperBtn {
-    padding: 4px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-/* Preview Button Style */
-.preview-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.floating-crop-controls {
-    position: fixed;
-    display: none;
-    gap: 8px;
-    padding: 12px;
-    background: rgba(30, 30, 30, 0.95);
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    transition: opacity 0.2s ease-out;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.floating-crop-controls.active {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 1;
-    pointer-events: all;
-}
-
-.floating-crop-controls .crop-size {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: white;
-    margin-bottom: 8px;
-    width: 100%;
-}
-
-.floating-crop-controls .crop-size input[type="range"] {
-    flex: 1;
-    width: 100px;
-}
-
-.floating-crop-controls .crop-size span {
-    min-width: 3em;
-    text-align: right;
-}
-
-.floating-crop-controls button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    background: #fff;
-    color: #000;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-    white-space: nowrap;
-    width: 100%;
-}
-
-.floating-crop-controls button:hover {
-    transform: translateY(-1px);
-}
-
-.floating-crop-controls button.save-btn {
-    background: #4CAF50;
-    color: white;
-}
-
-.floating-crop-controls button.save-btn:hover {
-    background: #45a049;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.floating-crop-controls button.cancel-btn {
-    background: #f44336;
-    color: white;
-}
-
-.floating-crop-controls button.cancel-btn:hover {
-    background: #da190b;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.toolbar-section {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 10px;
-}
-
 .submenu-header {
     display: flex;
     justify-content: space-between;
@@ -1894,4 +1646,40 @@ button.active {
 
 #saveModal .modal-header h3 {
     color: white;
+}
+
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    pointer-events: none; /* Ensures clicks go to the button */
+    filter: brightness(1.2) contrast(1.1); /* Brighten icons slightly */
+}
+
+/* Make shapes icons even brighter */
+.toolbar-section:has([class*="submenu-header"] span:contains("Shapes")) .menu-icon {
+    filter: brightness(1.4) contrast(1.2);
+}
+
+button {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.action-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.action-group button {
+    width: 100%;
+    margin: 5px 0;
 }
