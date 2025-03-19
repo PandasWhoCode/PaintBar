@@ -1672,3 +1672,14 @@ button {
     transition: all 0.2s ease;
     font-size: 14px;
 }
+
+.action-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.action-group button {
+    width: 100%;
+    margin: 5px 0;
+}
