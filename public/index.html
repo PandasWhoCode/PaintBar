@@ -10,10 +10,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="toolbar-toggle" id="toolbarToggle">
+        <div class="toolbar-toggle active" id="toolbarToggle">
             <img src="images/paintbar.logo.png" alt="PaintBar Logo" class="toggle-icon">
         </div>
-        <div class="toolbar" id="toolbar">
+        <div class="toolbar expanded" id="toolbar">
             <div class="toolbar-handle" id="toolbarHandle">
                 <span class="handle-icon">⋮</span>
             </div>
@@ -147,7 +147,7 @@
             </div>
 
         </div>
-        <div class="canvas-container">
+        <div class="canvas-container toolbar-visible">
             <div class="canvas-wrapper">
                 <canvas id="transparentBackgroundCanvas" class="canvas-layer"></canvas>
                 <canvas id="opaqueBackgroundCanvas" class="canvas-layer"></canvas>
