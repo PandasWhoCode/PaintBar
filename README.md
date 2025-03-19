@@ -5,13 +5,13 @@ A modern, web-based drawing application that combines simplicity with powerful f
 ## Features
 
 ### Drawing Tools
-- ✏️ Pencil tool for freehand drawing
-- 🧹 Eraser tool
-- 🪣 Fill tool for coloring areas
-- T Text tool with rich formatting options
+- <img src="public/images/menus/tools_pencil.png" height="16"/> Pencil tool for freehand drawing
+- <img src="public/images/menus/tools_eraser.png" height="16"/> Eraser tool
+- <img src="public/images/menus/tools_fill.png" height="16"/> Fill tool for coloring areas
+- <img src="public/images/menus/tools_text.png" height="16"/> Text tool with rich formatting options
 - ◰ Selection tool for manipulating drawn elements
 
-### Text Features
+### Text Features <img src="public/images/menus/tools_text.png" height="16"/>
 - Rich text formatting:
   - Bold, Italic, Underline, and Strikethrough styles
   - Multiple font families (Arial, Times New Roman, Courier New, Georgia, Verdana)
@@ -22,10 +22,10 @@ A modern, web-based drawing application that combines simplicity with powerful f
 - Easy text editing and positioning
 
 ### Shapes
-- ⬜ Rectangle tool
-- ⭕ Circle tool
-- 📏 Line tool
-- 📐 Triangle tool with multiple types:
+- <img src="public/images/menus/shapes_rectangle.png" height="16"/> Rectangle tool
+- <img src="public/images/menus/shapes_circle.png" height="16"/> Circle tool
+- <img src="public/images/menus/shapes_line.png" height="16"/> Line tool
+- <img src="public/images/menus/shapes_triangle.png" height="16"/> Triangle tool with multiple types:
   - Right angle
   - Isosceles
   - Equilateral
@@ -35,12 +35,11 @@ A modern, web-based drawing application that combines simplicity with powerful f
 - Recent colors palette
 - 🔍 Eyedropper tool for color sampling
 
-### Transform Tools
+### Paintbar Actions
+- <img src="public/images/menus/actions_clear.png" height="16"/> Clear canvas
 - 🔄 Rotation
 - ↔️ Horizontal flip
 - ↕️ Vertical flip
-
-### View Options
 - 📏 Grid toggle
 - 🔍 Zoom in/out capabilities
 

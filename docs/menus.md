@@ -8,22 +8,22 @@ The Tools menu provides essential drawing and manipulation tools for creating ar
 
 ### Available Tools
 
-#### ✏️ Pencil
+#### <img src="../public/images/menus/tools_pencil.png" height="16"/> Pencil
 - Primary drawing tool for freehand sketching
 - Adjustable line weight using the Size menu
 - Pressure sensitivity supported on compatible devices
 
-#### 🧹 Eraser
+#### <img src="../public/images/menus/tools_eraser.png" height="16"/> Eraser
 - Removes drawn content
 - Size adjustable through the Size menu
 - Works on all layers
 
-#### 🪣 Fill
+#### <img src="../public/images/menus/tools_fill.png" height="16"/> Fill
 - Floods an enclosed area with the selected color
 - Works with both simple and complex shapes
 - Respects canvas boundaries and shape edges
 
-#### T Text
+#### <img src="../public/images/menus/tools_text.png" height="16"/> Text
 - Adds text to the canvas
 - Rich formatting options:
   - Multiple font families (Arial, Times New Roman, Courier New, Georgia, Verdana)
@@ -39,29 +39,29 @@ The Shapes menu provides a collection of geometric tools for creating precise sh
 
 ### Available Shapes
 
-#### ⬜ Rectangle
+#### <img src="../public/images/menus/shapes_rectangle.png" height="16"/> Rectangle
 - Creates rectangular or square shapes
 - Click and drag to define dimensions
 - Hold Shift for perfect squares
 
-#### ⭕ Circle
+#### <img src="../public/images/menus/shapes_circle.png" height="16"/> Circle
 - Creates circular or elliptical shapes
 - Click and drag to define dimensions
 - Hold Shift for perfect circles
 
-#### 📏 Line
+#### <img src="../public/images/menus/shapes_line.png" height="16"/> Line
 - Draws straight lines
 - Click and drag to define length and angle
 - Hold Shift for horizontal, vertical, or 45-degree angles
 
-#### 📐 Triangle
+#### <img src="../public/images/menus/shapes_triangle.png" height="16"/> Triangle
 - Creates triangular shapes with three types:
   - Right Angle: Creates a triangle with one 90-degree angle
   - Isosceles: Creates a triangle with two equal sides
   - Equilateral: Creates a triangle with all sides equal
 - Select triangle type from the dropdown menu
 
-#### ⌒ Arc
+#### <img src="../public/images/menus/shapes_arc.png" height="16"/> Arc
 - Draws curved lines or partial circles
 - Click to set center point
 - Drag to define radius and arc length
@@ -89,7 +89,7 @@ The Actions menu provides tools for manipulating and editing content on the canv
 - Supports system clipboard content
 - Maintains original formatting
 
-#### 🧹 Clear
+#### <img src="../public/images/menus/actions_clear.png" height="16"/> Clear
 - Clears the entire canvas
 - Warning: This action cannot be undone
 
@@ -153,8 +153,8 @@ The View menu provides tools for adjusting the canvas display and workspace visu
 - Does not appear in exported images
 
 #### Zoom Controls
-- 🔍+ Zoom In: Increases canvas view size
-- 🔍- Zoom Out: Decreases canvas view size
+- 🔍 Zoom In: Increases canvas view size
+- 🔎 Zoom Out: Decreases canvas view size
 - Maintains image quality at all zoom levels
 - Helpful for detailed work and overall composition view
 
