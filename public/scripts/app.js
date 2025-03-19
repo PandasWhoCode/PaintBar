@@ -467,6 +467,18 @@ class PaintBar {
                 }
             });
         }
+        
+        // Mouse event listeners for drawing
+        this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
+        this.canvas.addEventListener('mousemove', this.draw.bind(this));
+        this.canvas.addEventListener('mouseup', this.finishDrawing.bind(this));
+        this.canvas.addEventListener('mouseout', this.finishDrawing.bind(this));
+
+        // Clear button
+        const clearBtn = document.getElementById('clearBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearCanvas());
+        }
     }
 
     setActiveTool(tool) {
@@ -1338,6 +1350,11 @@ class PaintBar {
 
     hideSaveModal() {
         this.saveManager.hideSaveModal();
+    }
+
+    clearCanvas() {
+        // Clear the entire drawing canvas by setting all pixels to transparent
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 }
 
