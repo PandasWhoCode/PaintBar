@@ -84,7 +84,6 @@ class PaintBar {
         this.initializeState();
         this.initializeElements();
         this.initializeUI();
-        this.toggleToolbar();
         this.initializeCanvas();  // Initialize canvas after all UI elements are set
         this.setupEventListeners();
     }
@@ -909,18 +908,6 @@ class PaintBar {
         
         // Restore context settings
         this.ctx.restore();
-    }
-
-    /**
-     * Handle canvas click event
-     * @param {MouseEvent} e - Mouse event
-     */
-    handleCanvasClick(e) {
-        const pos = this.getEventPoint(e);
-        if (this.toolManager.activeTool === 'fill') {
-            this.floodFill(Math.round(pos.x), Math.round(pos.y), this.currentColor);
-            this.saveState();
-        }
     }
 
     /**
