@@ -131,7 +131,6 @@ class PaintBar {
         // Initialize color elements
         this.colorButtons = document.querySelectorAll('.color-btn');
         this.colorPreview = document.getElementById('color-preview');
-        this.colorValue = document.getElementById('color-value');
         this.eyedropperBtn = document.getElementById('eyedropperBtn');
         this.recentColors = [];
         this.maxRecentColors = 10;
@@ -139,8 +138,8 @@ class PaintBar {
 
         // Initialize color picker
         this.colorPicker = new iro.ColorPicker('#color-picker', {
-            width: 75,
-            color: '#000000',
+            width: 100,
+            color: this.currentColor,
             layout: [
                 { 
                     component: iro.ui.Wheel,
@@ -149,10 +148,20 @@ class PaintBar {
                 { 
                     component: iro.ui.Slider,
                     options: {
-                        sliderType: 'value'
+                        sliderType: 'value',
+                        width: 120,
+                        height: 36
+                    }
+                },
+                {
+                    component: iro.ui.Box,
+                    options: {
+                        width: 120,
+                        height: 36
                     }
                 }
-            ]
+            ],
+            display: 'inline-block'
         });
 
         // Set initial color
@@ -163,7 +172,75 @@ class PaintBar {
         this.colorPicker.on('color:change', (color) => {
             this.currentColor = color.hexString;
             this.updateColorPreview(this.currentColor);
+            
+            // Update hex input when color picker changes
+            const hexInput = document.getElementById('hexInput');
+            if (hexInput) {
+                hexInput.value = color.hexString;
+            }
         });
+
+        // Add mouse up event to track recent colors
+        const colorPickerEl = document.getElementById('color-picker');
+        if (colorPickerEl) {
+            colorPickerEl.addEventListener('mouseup', () => {
+                this.addRecentColor(this.currentColor);
+            });
+            colorPickerEl.addEventListener('touchend', () => {
+                this.addRecentColor(this.currentColor);
+            });
+        }
+
+        // Initialize hex input
+        const hexInput = document.getElementById('hexInput');
+        if (hexInput) {
+            // Set initial value
+            hexInput.value = this.currentColor;
+            
+            // Add input event listener
+            hexInput.addEventListener('input', (e) => {
+                let value = e.target.value;
+                
+                // Add # if missing
+                if (value[0] !== '#') {
+                    value = '#' + value;
+                    e.target.value = value;
+                }
+                
+                // Validate hex color format
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    this.currentColor = value;
+                    this.colorPicker.color.hexString = value;
+                    this.updateColorPreview(value);
+                }
+            });
+
+            // Add blur event to format incomplete values
+            hexInput.addEventListener('blur', (e) => {
+                let value = e.target.value;
+                
+                // Add # if missing
+                if (value[0] !== '#') {
+                    value = '#' + value;
+                }
+                
+                // Pad with zeros if needed
+                while (value.length < 7) {
+                    value += '0';
+                }
+                
+                // Update if valid
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    e.target.value = value;
+                    this.currentColor = value;
+                    this.colorPicker.color.hexString = value;
+                    this.updateColorPreview(value);
+                } else {
+                    // Reset to current color if invalid
+                    e.target.value = this.currentColor;
+                }
+            });
+        }
 
         // Initialize brush size
         this.brushSize = document.getElementById('brushSize');
@@ -414,11 +491,11 @@ class PaintBar {
         });
 
         // Color picker events
-        this.colorPicker.on('color:change', (color) => {
-            const hexColor = color.hexString;
-            this.updateColor(hexColor);
-            this.updateColorPreview(hexColor);
-        });
+        // this.colorPicker.on('color:change', (color) => {
+        //     const hexColor = color.hexString;
+        //     this.updateColor(hexColor);
+        //     this.updateColorPreview(hexColor);
+        // });
 
         // Eyedropper button
         if (this.eyedropperBtn) {
@@ -445,7 +522,6 @@ class PaintBar {
                     this.pickColor(e);
                 }
             });
-
             this.canvas.addEventListener('mousemove', (e) => {
                 if (this.isPickingColor) {
                     this.showColorPreview(e);
@@ -1092,14 +1168,13 @@ class PaintBar {
         this.currentColor = color;
         this.ctx.strokeStyle = color;
         this.ctx.fillStyle = color;
-        this.updateRecentColors(color);
     }
 
     /**
-     * Update recent colors
+     * Add recent color
      * @param {string} color - Color
      */
-    updateRecentColors(color) {
+    addRecentColor(color) {
         // Don't add if it's the same as the most recent color
         if (this.recentColors[0] === color) return;
         
@@ -1153,11 +1228,9 @@ class PaintBar {
      * @param {string} color - Color
      */
     updateColorPreview(color) {
-        if (this.colorPreview) {
-            this.colorPreview.style.backgroundColor = color;
-        }
-        if (this.colorValue) {
-            this.colorValue.textContent = color;
+        const preview = document.getElementById('color-preview');
+        if (preview) {
+            preview.style.backgroundColor = color;
         }
     }
 
@@ -1177,15 +1250,17 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     pickColor(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const pixel = this.ctx.getImageData(x, y, 1, 1).data;
-        const color = `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+        const pos = this.getMousePos(e);
+        const pixel = this.ctx.getImageData(pos.x, pos.y, 1, 1).data;
+        
+        // If pixel is transparent (alpha = 0), use white
+        const color = pixel[3] === 0 ? '#FFFFFF' : 
+            `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
         
         this.currentColor = color;
         this.colorPicker.color.hexString = color;
         this.updateColorPreview(color);
+        this.addRecentColor(color);
         this.stopColorPicking();
     }
 
@@ -1205,11 +1280,14 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     showColorPreview(e) {
-        const pos = this.getEventPoint(e);
+        const pos = this.getMousePos(e);
         const pixel = this.ctx.getImageData(pos.x, pos.y, 1, 1).data;
-        const color = `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
         
-        // Update color picker preview
+        // If pixel is transparent (alpha = 0), use white
+        const color = pixel[3] === 0 ? '#FFFFFF' : 
+            `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+        
+        // Only preview the color
         if (this.colorPicker) {
             this.colorPicker.color.hexString = color;
         }

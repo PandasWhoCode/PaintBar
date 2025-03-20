@@ -934,9 +934,10 @@ button.active {
 
 .submenu-content {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
 }
 
 .submenu-content button {
@@ -1688,4 +1689,74 @@ button {
 .action-group button {
     width: 100%;
     margin: 5px 0;
+}
+
+.color-input-wrapper {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.hex-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #fff;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 8px;
+    width: 120px;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.hex-input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.hex-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.color-picker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+#eyedropperBtn {
+    width: 120px;
+    height: 36px;
+    padding: 8px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#eyedropperBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.IroWheel {
+    margin: 0 auto;
 }
