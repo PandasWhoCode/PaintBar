@@ -262,6 +262,8 @@ class PaintBar {
         this.cropBtn = document.getElementById('cropBtn');
         this.pasteBtn = document.getElementById('pasteBtn');
         this.clearBtn = document.getElementById('clearBtn');
+        this.undoBtn = document.getElementById('undoBtn');
+        this.redoBtn = document.getElementById('redoBtn');
         
         // Initialize modals and their elements
         this.textModal = document.getElementById('textModal');
@@ -469,7 +471,9 @@ class PaintBar {
         const actionButtons = {
             cropBtn: () => this.cropCanvas(),
             pasteBtn: () => this.pasteContent(),
-            clearBtn: () => this.clearCanvas()
+            clearBtn: () => this.clearCanvas(),
+            undoBtn: () => this.undo(),
+            redoBtn: () => this.redo()
         };
 
         Object.entries(actionButtons).forEach(([btnId, handler]) => {
