@@ -85,6 +85,7 @@ export class FillTool extends GenericTool {
     }
 
     onMouseDown(point) {
+        // Don't call super since fill is instant and doesn't use drawing state
         this.fill(point);
     }
 
@@ -93,7 +94,7 @@ export class FillTool extends GenericTool {
     }
 
     onMouseUp(point) {
-        // Don't call super.onMouseUp since we're not using isDrawing
+        // Fill tool doesn't need mouse up handling
     }
 
     fill(point) {
@@ -175,7 +176,6 @@ export class FillTool extends GenericTool {
         }
         
         ctx.putImageData(imageData, 0, 0);
-        this.paintBar.saveState();
     }
 
     hexToRGBA(hex) {
