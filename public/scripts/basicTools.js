@@ -588,8 +588,7 @@ export class TextTool extends GenericTool {
             
             ctx.restore();
             
-            // Save state and cleanup
-            this.paintBar.saveState();
+            // Cleanup
             this.hideTextControls();
         }
     }
