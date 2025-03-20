@@ -138,7 +138,7 @@ class PaintBar {
 
         // Initialize color picker
         this.colorPicker = new iro.ColorPicker('#color-picker', {
-            width: 150,
+            width: 100,
             color: this.currentColor,
             layout: [
                 { 
@@ -148,13 +148,16 @@ class PaintBar {
                 { 
                     component: iro.ui.Slider,
                     options: {
-                        sliderType: 'value'
+                        sliderType: 'value',
+                        width: 120,
+                        height: 36
                     }
                 },
                 {
                     component: iro.ui.Box,
                     options: {
-                        boxHeight: 30
+                        width: 120,
+                        height: 36
                     }
                 }
             ],
