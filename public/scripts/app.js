@@ -59,10 +59,10 @@ class PaintBar {
         // Shape properties
         this.triangleType = 'equilateral'; // Type of triangle to draw
 
-        // Initialize undo/redo stacks for state management
-        this.undoStack = [];
-        this.redoStack = [];
-        this.maxUndoSteps = 50;  // Limit stack size to prevent memory issues
+        // State management for undo/redo
+        this.undoStack = [];             // Stack of canvas states for undo
+        this.redoStack = [];             // Stack of canvas states for redo
+        this.maxUndoStates = 20;         // Maximum number of states to keep
 
         // Utility function for throttling frequent events
         this.throttle = (func, limit) => {
@@ -613,6 +613,20 @@ class PaintBar {
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearCanvas());
         }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Undo: Cmd/Ctrl + Z
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            }
+            // Redo: Cmd/Ctrl + Shift + Z
+            else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && e.shiftKey) {
+                e.preventDefault();
+                this.redo();
+            }
+        });
     }
 
     /**
@@ -732,7 +746,8 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     handleMouseDown(e) {
-        const point = this.getMousePos(e);
+        const pos = this.getMousePos(e);
+        
         // Set isDrawing for all tools except fill and text
         if (this.toolManager.activeTool) {
             const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
@@ -740,7 +755,18 @@ class PaintBar {
                 this.isDrawing = true;
             }
         }
-        this.toolManager.handleMouseDown(point);
+        
+        // Start position for drawing
+        this.startX = pos.x;
+        this.startY = pos.y;
+        this.lastX = pos.x;
+        this.lastY = pos.y;
+        
+        // Save state before any drawing occurs
+        this.saveState();
+        
+        // Handle the tool action
+        this.toolManager.handleMouseDown(pos);
     }
 
     /**
@@ -759,34 +785,22 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     handleMouseUp(e) {
+        if (!this.isDrawing) return;
+        
         const point = this.getMousePos(e);
         const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
         
         if (toolName === 'select') {
             if (this.isSelecting) {
+                // Handle selection completion
                 this.isSelecting = false;
-                this.captureSelection();
-            } else if (this.isMovingSelection) {
-                this.isMovingSelection = false;
-                this.commitSelection();
+                this.selectionEnd = point;
+                this.createSelectionFromPoints();
             }
-            return;
         }
-
-        if (this.isDrawing) {
-            this.toolManager.handleMouseUp(point);
-            this.isDrawing = false;
-        }
-    }
-
-    /**
-     * Handle canvas click event
-     * @param {MouseEvent} e - Mouse event
-     */
-    handleCanvasClick(e) {
-        const pos = this.getMousePos(e);
-        this.toolManager.handleMouseDown(pos);
-        this.toolManager.handleMouseUp(pos);
+        
+        this.toolManager.handleMouseUp(point);
+        this.isDrawing = false;
     }
 
     /**
@@ -808,12 +822,49 @@ class PaintBar {
      * Save the current state
      */
     saveState() {
+        // Get the current canvas state
         const state = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Add to undo stack
         this.undoStack.push(state);
-        if (this.undoStack.length > this.maxUndoSteps) {
+        
+        // Remove oldest state if we exceed max
+        if (this.undoStack.length > this.maxUndoStates) {
             this.undoStack.shift();
         }
+
+        // Clear redo stack since we're on a new path
         this.redoStack = [];
+    }
+
+    /**
+     * Restore the last saved state (undo)
+     */
+    undo() {
+        if (this.undoStack.length > 0) {
+            // Save current state for redo
+            const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            this.redoStack.push(currentState);
+
+            // Get and apply the last state
+            const lastState = this.undoStack.pop();
+            this.ctx.putImageData(lastState, 0, 0);
+        }
+    }
+
+    /**
+     * Restore the last undone state (redo)
+     */
+    redo() {
+        if (this.redoStack.length > 0) {
+            // Save current state for undo
+            const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            this.undoStack.push(currentState);
+
+            // Get and apply the next state
+            const nextState = this.redoStack.pop();
+            this.ctx.putImageData(nextState, 0, 0);
+        }
     }
 
     /**
@@ -1321,32 +1372,6 @@ class PaintBar {
         if (transparencyBtn) {
             transparencyBtn.classList.toggle('active', this.isTransparent);
         }
-    }
-
-    /**
-     * Undo
-     */
-    undo() {
-        if (this.undoStack.length === 0) return;
-        
-        const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.redoStack.push(currentState);
-        
-        const previousState = this.undoStack.pop();
-        this.ctx.putImageData(previousState, 0, 0);
-    }
-
-    /**
-     * Redo
-     */
-    redo() {
-        if (this.redoStack.length === 0) return;
-        
-        const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.undoStack.push(currentState);
-        
-        const nextState = this.redoStack.pop();
-        this.ctx.putImageData(nextState, 0, 0);
     }
 
     /**

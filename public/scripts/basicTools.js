@@ -11,7 +11,6 @@ export class PencilTool extends GenericTool {
         super.onMouseDown(point);
         this.lastX = point.x;
         this.lastY = point.y;
-        this.draw(point);
     }
 
     onMouseMove(point) {
@@ -24,7 +23,6 @@ export class PencilTool extends GenericTool {
     onMouseUp(point) {
         if (!this.isDrawing) return;
         this.draw(point);
-        this.paintBar.saveState();
         super.onMouseUp(point);
     }
 
