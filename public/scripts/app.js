@@ -131,7 +131,6 @@ class PaintBar {
         // Initialize color elements
         this.colorButtons = document.querySelectorAll('.color-btn');
         this.colorPreview = document.getElementById('color-preview');
-        this.colorValue = document.getElementById('color-value');
         this.eyedropperBtn = document.getElementById('eyedropperBtn');
         this.recentColors = [];
         this.maxRecentColors = 10;
@@ -139,8 +138,8 @@ class PaintBar {
 
         // Initialize color picker
         this.colorPicker = new iro.ColorPicker('#color-picker', {
-            width: 75,
-            color: '#000000',
+            width: 150,
+            color: this.currentColor,
             layout: [
                 { 
                     component: iro.ui.Wheel,
@@ -151,8 +150,15 @@ class PaintBar {
                     options: {
                         sliderType: 'value'
                     }
+                },
+                {
+                    component: iro.ui.Box,
+                    options: {
+                        boxHeight: 30
+                    }
                 }
-            ]
+            ],
+            display: 'inline-block'
         });
 
         // Set initial color
@@ -163,7 +169,64 @@ class PaintBar {
         this.colorPicker.on('color:change', (color) => {
             this.currentColor = color.hexString;
             this.updateColorPreview(this.currentColor);
+            
+            // Update hex input when color picker changes
+            const hexInput = document.getElementById('hexInput');
+            if (hexInput) {
+                hexInput.value = color.hexString;
+            }
         });
+
+        // Initialize hex input
+        const hexInput = document.getElementById('hexInput');
+        if (hexInput) {
+            // Set initial value
+            hexInput.value = this.currentColor;
+            
+            // Add input event listener
+            hexInput.addEventListener('input', (e) => {
+                let value = e.target.value;
+                
+                // Add # if missing
+                if (value[0] !== '#') {
+                    value = '#' + value;
+                    e.target.value = value;
+                }
+                
+                // Validate hex color format
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    this.currentColor = value;
+                    this.colorPicker.color.hexString = value;
+                    this.updateColorPreview(value);
+                }
+            });
+
+            // Add blur event to format incomplete values
+            hexInput.addEventListener('blur', (e) => {
+                let value = e.target.value;
+                
+                // Add # if missing
+                if (value[0] !== '#') {
+                    value = '#' + value;
+                }
+                
+                // Pad with zeros if needed
+                while (value.length < 7) {
+                    value += '0';
+                }
+                
+                // Update if valid
+                if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    e.target.value = value;
+                    this.currentColor = value;
+                    this.colorPicker.color.hexString = value;
+                    this.updateColorPreview(value);
+                } else {
+                    // Reset to current color if invalid
+                    e.target.value = this.currentColor;
+                }
+            });
+        }
 
         // Initialize brush size
         this.brushSize = document.getElementById('brushSize');
@@ -1153,11 +1216,9 @@ class PaintBar {
      * @param {string} color - Color
      */
     updateColorPreview(color) {
-        if (this.colorPreview) {
-            this.colorPreview.style.backgroundColor = color;
-        }
-        if (this.colorValue) {
-            this.colorValue.textContent = color;
+        const preview = document.getElementById('color-preview');
+        if (preview) {
+            preview.style.backgroundColor = color;
         }
     }
 
