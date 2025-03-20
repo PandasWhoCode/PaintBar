@@ -208,25 +208,34 @@ class PaintBar {
     initializeUI() {
         // Initialize canvas settings
         this.canvasSettingsBtn = document.getElementById('canvasSettingsBtn');
-        this.canvasSettingsBtn.addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.remove('hidden');
-        });
+        if (this.canvasSettingsBtn) {
+            this.canvasSettingsBtn.addEventListener('click', () => {
+                const settingsModal = document.getElementById('settingsModal');
+                if (settingsModal) {
+                    settingsModal.classList.remove('hidden');
+                }
+            });
+        }
 
         // Fix text tool cursor and selection
         this.textBtn = document.getElementById('textBtn');
-        this.textBtn.addEventListener('click', () => {
-            if (this.toolManager.activeTool === 'text') {
-                this.canvas.style.cursor = 'text';
-                this.textBtn.classList.add('active');
-            }
-        });
+        if (this.textBtn) {
+            this.textBtn.addEventListener('click', () => {
+                if (this.toolManager.activeTool === 'text') {
+                    this.canvas.style.cursor = 'text';
+                    this.textBtn.classList.add('active');
+                }
+            });
+        }
 
         // Fix fill tool
         this.fillBtn = document.getElementById('fillBtn');
-        this.fillBtn.addEventListener('click', () => {
-            this.toolManager.setActiveTool('fill');
-            this.updateActiveButton(this.fillBtn);
-        });
+        if (this.fillBtn) {
+            this.fillBtn.addEventListener('click', () => {
+                this.toolManager.setActiveTool('fill');
+                this.updateActiveButton(this.fillBtn);
+            });
+        }
     }
 
     /**
@@ -361,7 +370,10 @@ class PaintBar {
         Object.keys(toolButtons).forEach(tool => {
             const button = document.getElementById(toolButtons[tool]);
             if (button) {
-                button.addEventListener('click', () => this.setActiveTool(tool));
+                button.addEventListener('click', () => {
+                    this.setActiveTool(tool);
+                    this.updateActiveButton(button);
+                });
             }
         });
 
@@ -539,6 +551,21 @@ class PaintBar {
     }
 
     /**
+     * Update the active button state in the toolbar
+     * @param {HTMLElement} activeButton - The button to set as active
+     */
+    updateActiveButton(activeButton) {
+        // Remove active class from all tool buttons
+        const toolButtons = document.querySelectorAll('.tool-button');
+        toolButtons.forEach(button => button.classList.remove('active'));
+        
+        // Add active class to the clicked button
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
+    }
+
+    /**
      * Handle mouse down event
      * @param {MouseEvent} e - Mouse event
      */
@@ -595,7 +622,7 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     handleCanvasClick(e) {
-        const pos = this.getEventPoint(e);
+        const pos = this.getMousePos(e);
         this.toolManager.handleMouseDown(pos);
         this.toolManager.handleMouseUp(pos);
     }
