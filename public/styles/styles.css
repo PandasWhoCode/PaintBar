@@ -934,9 +934,10 @@ button.active {
 
 .submenu-content {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
 }
 
 .submenu-content button {
@@ -1716,4 +1717,19 @@ button {
 
 .hex-input::placeholder {
     color: rgba(255, 255, 255, 0.5);
+}
+
+.color-picker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
 }
