@@ -748,11 +748,11 @@ class PaintBar {
     handleMouseDown(e) {
         const pos = this.getMousePos(e);
         
-        // Save state before any operation begins
-        this.saveState();
-        
-        // Set isDrawing for tools that use continuous drawing
         if (this.toolManager.activeTool) {
+            // Save state before any operation begins
+            this.saveState();
+            
+            // Set isDrawing for tools that use continuous drawing
             const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
             if (!['fill', 'text'].includes(toolName)) {
                 this.isDrawing = true;

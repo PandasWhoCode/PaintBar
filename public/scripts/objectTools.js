@@ -293,7 +293,6 @@ export class ArcTool extends ShapeTool {
             
             mainCtx.restore();
             this.clearOverlay();
-            this.paintBar.saveState();
             
             // Reset for next arc
             this.isDrawing = false;
