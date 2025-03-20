@@ -241,17 +241,12 @@ class PaintBar {
      * Toggle toolbar visibility
      */
     toggleToolbar() {
-        if (!this.toolbar) return;
-        
+        this.toolbarToggle.classList.toggle('active');
         this.toolbar.classList.toggle('expanded');
-        if (this.toolbarToggle) {
-            this.toolbarToggle.classList.toggle('active');
-        }
+        this.canvasContainer.classList.toggle('toolbar-visible');
         
-        // Update canvas container margin
-        if (this.canvasContainer) {
-            this.canvasContainer.classList.toggle('toolbar-visible');
-        }
+        // Reset position when toggling
+        this.toolbarToggle.style.transform = 'translate3d(0px, 0px, 0)';
     }
 
     /**
@@ -336,6 +331,9 @@ class PaintBar {
      * Set up event listeners for the application
      */
     setupEventListeners() {
+        // Initialize drag functionality
+        this.initializeDrag();
+
         // Create throttled versions of event handlers
         this.throttledMouseMove = this.throttle((e) => this.handleMouseMove(e), 16);
 
@@ -539,6 +537,95 @@ class PaintBar {
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearCanvas());
         }
+    }
+
+    /**
+     * Initialize drag functionality for toolbar toggle
+     */
+    initializeDrag() {
+        if (!this.toolbarToggle) return;
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        const getTransformOffset = () => {
+            const transform = window.getComputedStyle(this.toolbarToggle).transform;
+            if (transform === 'none') return { x: 0, y: 0 };
+            
+            const matrix = new DOMMatrix(transform);
+            return { x: matrix.m41, y: matrix.m42 };
+        };
+
+        const dragStart = (e) => {
+            // Get current transform position
+            const currentTransform = getTransformOffset();
+            xOffset = currentTransform.x;
+            yOffset = currentTransform.y;
+
+            if (e.type === "touchstart") {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+            
+            if (e.target === this.toolbarToggle) {
+                isDragging = true;
+                this.toolbarToggle.classList.add('dragging');
+            }
+        };
+
+        const dragEnd = () => {
+            if (!isDragging) return;
+            
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+            this.toolbarToggle.classList.remove('dragging');
+        };
+
+        const drag = (e) => {
+            if (!isDragging) return;
+            
+            e.preventDefault();
+
+            if (e.type === "touchmove") {
+                currentX = e.touches[0].clientX - initialX;
+                currentY = e.touches[0].clientY - initialY;
+            } else {
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+            }
+
+            xOffset = currentX;
+            yOffset = currentY;
+
+            // Keep the button within the window bounds
+            const bounds = this.toolbarToggle.getBoundingClientRect();
+            const maxX = window.innerWidth - bounds.width;
+            const maxY = window.innerHeight - bounds.height;
+            
+            currentX = Math.min(Math.max(currentX, 0), maxX);
+            currentY = Math.min(Math.max(currentY, 0), maxY);
+
+            this.toolbarToggle.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+        };
+
+        // Mouse events
+        this.toolbarToggle.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Touch events
+        this.toolbarToggle.addEventListener('touchstart', dragStart);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', dragEnd);
     }
 
     /**
