@@ -180,6 +180,17 @@ class PaintBar {
             }
         });
 
+        // Add mouse up event to track recent colors
+        const colorPickerEl = document.getElementById('color-picker');
+        if (colorPickerEl) {
+            colorPickerEl.addEventListener('mouseup', () => {
+                this.addRecentColor(this.currentColor);
+            });
+            colorPickerEl.addEventListener('touchend', () => {
+                this.addRecentColor(this.currentColor);
+            });
+        }
+
         // Initialize hex input
         const hexInput = document.getElementById('hexInput');
         if (hexInput) {
@@ -480,11 +491,11 @@ class PaintBar {
         });
 
         // Color picker events
-        this.colorPicker.on('color:change', (color) => {
-            const hexColor = color.hexString;
-            this.updateColor(hexColor);
-            this.updateColorPreview(hexColor);
-        });
+        // this.colorPicker.on('color:change', (color) => {
+        //     const hexColor = color.hexString;
+        //     this.updateColor(hexColor);
+        //     this.updateColorPreview(hexColor);
+        // });
 
         // Eyedropper button
         if (this.eyedropperBtn) {
@@ -1158,14 +1169,13 @@ class PaintBar {
         this.currentColor = color;
         this.ctx.strokeStyle = color;
         this.ctx.fillStyle = color;
-        this.updateRecentColors(color);
     }
 
     /**
-     * Update recent colors
+     * Add recent color
      * @param {string} color - Color
      */
-    updateRecentColors(color) {
+    addRecentColor(color) {
         // Don't add if it's the same as the most recent color
         if (this.recentColors[0] === color) return;
         
