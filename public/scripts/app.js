@@ -861,13 +861,12 @@ class PaintBar {
      */
     redo() {
         if (this.redoStack.length > 0) {
-            // Save current state for undo
-            const currentState = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            this.undoStack.push(currentState);
-
             // Get and apply the next state
             const nextState = this.redoStack.pop();
             this.ctx.putImageData(nextState, 0, 0);
+            
+            // Save the redone state to undo stack
+            this.undoStack.push(nextState);
         }
     }
 
