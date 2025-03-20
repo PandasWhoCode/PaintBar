@@ -77,13 +77,6 @@ The Actions menu provides tools for manipulating and editing content on the canv
 - Click and drag to create selection area
 - Move, resize, or delete selected content
 
-#### 📐 Crop
-- Trims the canvas to a selected area
-- Supports preset ratios:
-  - 1:1 (square)
-  - 9:16 (mobile)
-- Custom crop dimensions available
-
 #### 📋 Paste
 - Pastes copied or cut content
 - Supports system clipboard content
@@ -102,10 +95,18 @@ The Actions menu provides tools for manipulating and editing content on the canv
 - Available after using undo
 - Keyboard shortcut: Cmd/Ctrl+Shift+Z
 
-#### Transform Tools
-- 🔄 Rotate: Rotates selected content
-- ↔️ Flip Horizontal: Mirrors content horizontally
-- ↕️ Flip Vertical: Mirrors content vertically
+#### 📏 Grid Toggle
+- Shows/hides alignment grid
+- Helps with precise drawing and alignment
+- Adjustable grid size
+
+#### 🔍 Zoom Controls
+- Zoom in/out of canvas
+- Maintains drawing quality at all zoom levels
+- Keyboard shortcuts:
+  - Zoom In: Cmd/Ctrl++
+  - Zoom Out: Cmd/Ctrl+-
+  - Reset Zoom: Cmd/Ctrl+0
 
 ## Colors Menu
 

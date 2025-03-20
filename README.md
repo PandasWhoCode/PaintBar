@@ -39,9 +39,7 @@ A modern, web-based drawing application that combines simplicity with powerful f
 - <img src="public/images/menus/actions_clear.png" height="16"/> Clear canvas
 - <img src="public/images/menus/actions_undo.png" height="16"/> Undo (Cmd/Ctrl+Z)
 - <img src="public/images/menus/actions_redo.png" height="16"/> Redo (Cmd/Ctrl+Shift+Z)
-- 🔄 Rotation
-- ↔️ Horizontal flip
-- ↕️ Vertical flip
+- ◰ Select and manipulate content
 - 📏 Grid toggle
 - 🔍 Zoom in/out capabilities
 
@@ -51,10 +49,6 @@ A modern, web-based drawing application that combines simplicity with powerful f
   - JPG
   - ICO (with/without transparency)
 - 📋 Copy/Paste support
-- 📐 Crop functionality
-  - Custom crop
-  - 1:1 (square) preset
-  - 9:16 (mobile) preset
 
 ## Documentation
 

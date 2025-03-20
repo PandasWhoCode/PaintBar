@@ -250,6 +250,7 @@ class PaintBar {
         this.pencilBtn = document.getElementById('pencilBtn');
         this.eraserBtn = document.getElementById('eraserBtn');
         this.fillBtn = document.getElementById('fillBtn');
+        this.textBtn = document.getElementById('textBtn');
         this.selectBtn = document.getElementById('selectBtn');
         this.rectangleBtn = document.getElementById('rectangleBtn');
         this.circleBtn = document.getElementById('circleBtn');
@@ -259,7 +260,6 @@ class PaintBar {
         this.triangleMenu = document.getElementById('triangle-menu');
         
         // Initialize action buttons
-        this.cropBtn = document.getElementById('cropBtn');
         this.pasteBtn = document.getElementById('pasteBtn');
         this.clearBtn = document.getElementById('clearBtn');
         this.undoBtn = document.getElementById('undoBtn');
@@ -469,7 +469,6 @@ class PaintBar {
 
         // Action button events
         const actionButtons = {
-            cropBtn: () => this.cropCanvas(),
             pasteBtn: () => this.pasteContent(),
             clearBtn: () => this.clearCanvas(),
             undoBtn: () => this.undo(),
