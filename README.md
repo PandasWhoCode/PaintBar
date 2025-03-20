@@ -37,6 +37,8 @@ A modern, web-based drawing application that combines simplicity with powerful f
 
 ### Paintbar Actions
 - <img src="public/images/menus/actions_clear.png" height="16"/> Clear canvas
+- <img src="public/images/menus/actions_undo.png" height="16"/> Undo (Cmd/Ctrl+Z)
+- <img src="public/images/menus/actions_redo.png" height="16"/> Redo (Cmd/Ctrl+Shift+Z)
 - 🔄 Rotation
 - ↔️ Horizontal flip
 - ↕️ Vertical flip
