@@ -25,7 +25,7 @@ export class SelectionTool extends GenericTool {
     }
 
     onMouseUp(point) {
-        if (!this.isSelecting) return;
+        if (!this.isSelecting || !this.startPoint) return;
 
         this.endPoint = point;
         this.isSelecting = false;
