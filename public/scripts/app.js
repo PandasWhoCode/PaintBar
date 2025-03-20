@@ -296,7 +296,6 @@ class PaintBar {
         }
 
         // Fix text tool cursor and selection
-        this.textBtn = document.getElementById('textBtn');
         if (this.textBtn) {
             this.textBtn.addEventListener('click', () => {
                 if (this.toolManager.activeTool === 'text') {
@@ -307,7 +306,6 @@ class PaintBar {
         }
 
         // Fix fill tool
-        this.fillBtn = document.getElementById('fillBtn');
         if (this.fillBtn) {
             this.fillBtn.addEventListener('click', () => {
                 this.toolManager.setActiveTool('fill');
