@@ -40,9 +40,6 @@ class ShapeTool extends GenericTool {
         // Clear overlay
         this.clearOverlay();
         
-        // Save state after drawing final shape
-        this.paintBar.saveState();
-        
         // Reset drawing state
         this.isDrawing = false;
         this.startPoint = null;
@@ -296,7 +293,6 @@ export class ArcTool extends ShapeTool {
             
             mainCtx.restore();
             this.clearOverlay();
-            this.paintBar.saveState();
             
             // Reset for next arc
             this.isDrawing = false;

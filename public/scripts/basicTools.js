@@ -11,7 +11,6 @@ export class PencilTool extends GenericTool {
         super.onMouseDown(point);
         this.lastX = point.x;
         this.lastY = point.y;
-        this.draw(point);
     }
 
     onMouseMove(point) {
@@ -24,7 +23,6 @@ export class PencilTool extends GenericTool {
     onMouseUp(point) {
         if (!this.isDrawing) return;
         this.draw(point);
-        this.paintBar.saveState();
         super.onMouseUp(point);
     }
 
@@ -50,7 +48,6 @@ export class EraserTool extends GenericTool {
         super.onMouseDown(point);
         this.lastX = point.x;
         this.lastY = point.y;
-        this.erase(point);
     }
 
     onMouseMove(point) {
@@ -63,7 +60,6 @@ export class EraserTool extends GenericTool {
     onMouseUp(point) {
         if (!this.isDrawing) return;
         this.erase(point);
-        this.paintBar.saveState();
         super.onMouseUp(point);
     }
 
@@ -89,6 +85,7 @@ export class FillTool extends GenericTool {
     }
 
     onMouseDown(point) {
+        // Don't call super since fill is instant and doesn't use drawing state
         this.fill(point);
     }
 
@@ -97,7 +94,7 @@ export class FillTool extends GenericTool {
     }
 
     onMouseUp(point) {
-        // Don't call super.onMouseUp since we're not using isDrawing
+        // Fill tool doesn't need mouse up handling
     }
 
     fill(point) {
@@ -179,7 +176,6 @@ export class FillTool extends GenericTool {
         }
         
         ctx.putImageData(imageData, 0, 0);
-        this.paintBar.saveState();
     }
 
     hexToRGBA(hex) {
@@ -592,8 +588,7 @@ export class TextTool extends GenericTool {
             
             ctx.restore();
             
-            // Save state and cleanup
-            this.paintBar.saveState();
+            // Cleanup
             this.hideTextControls();
         }
     }
