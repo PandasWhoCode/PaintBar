@@ -280,19 +280,19 @@ class PaintBar {
 
     setupEventListeners() {
         // Create throttled versions of event handlers
-        const throttledMouseMove = this.throttle((e) => this.handleMouseMove(e), 16);
+        this.throttledMouseMove = this.throttle((e) => this.handleMouseMove(e), 16);
 
         // Add event listeners to both main canvas and overlay canvas
         [this.canvas, this.overlayCanvas].forEach(canvas => {
-            canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-            canvas.addEventListener('mousemove', throttledMouseMove.bind(this));
-            canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-            canvas.addEventListener('mouseleave', this.handleMouseUp.bind(this));
+            canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+            canvas.addEventListener('mousemove', this.throttledMouseMove);
+            canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+            canvas.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
 
             // Touch events for mobile support
-            canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-            canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
-            canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
+            canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+            canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+            canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
         });
 
         // Tool buttons
@@ -469,10 +469,10 @@ class PaintBar {
         }
         
         // Mouse event listeners for drawing
-        this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
-        this.canvas.addEventListener('mousemove', this.draw.bind(this));
-        this.canvas.addEventListener('mouseup', this.finishDrawing.bind(this));
-        this.canvas.addEventListener('mouseout', this.finishDrawing.bind(this));
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', this.throttledMouseMove);
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        this.canvas.addEventListener('mouseout', (e) => this.handleMouseUp(e));
 
         // Clear button
         const clearBtn = document.getElementById('clearBtn');
@@ -534,9 +534,11 @@ class PaintBar {
     // Helper methods used by tools
     getMousePos(e) {
         const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
         return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
         };
     }
 
@@ -1102,199 +1104,6 @@ class PaintBar {
         
         const points = this.calculateTrianglePoints(pos, this.triangleType);
         
-        this.applyCanvasStyle(this.overlayCtx);
-        this.drawShape(this.overlayCtx, points, this.fillShape);
-        this.overlayCtx.restore();
-    }
-
-    handleMouseUp(e) {
-        const point = this.getMousePos(e);
-        const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
-        
-        if (toolName === 'select') {
-            if (this.isSelecting) {
-                this.isSelecting = false;
-                this.captureSelection();
-            } else if (this.isMovingSelection) {
-                this.isMovingSelection = false;
-                this.commitSelection();
-            }
-            return;
-        }
-
-        if (this.isDrawing) {
-            this.toolManager.handleMouseUp(point);
-            this.isDrawing = false;
-        }
-    }
-
-    moveSelection(dx, dy) {
-        if (!this.selectedArea || !this.selectionImageData) return;
-
-        // Calculate new position with bounds checking
-        const newX = Math.max(0, Math.min(this.canvas.width - this.selectedArea.width, this.selectedArea.x + dx));
-        const newY = Math.max(0, Math.min(this.canvas.height - this.selectedArea.height, this.selectedArea.y + dy));
-
-        if (newX === this.selectedArea.x && newY === this.selectedArea.y) return;
-
-        // Restore the original background state
-        if (this.selectedArea.backgroundState) {
-            this.ctx.putImageData(this.selectedArea.backgroundState, 0, 0);
-        }
-
-        // Draw the selection at the new position
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = this.selectedArea.width;
-        tempCanvas.height = this.selectedArea.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(this.selectionImageData, 0, 0);
-
-        // Clear the area where we'll place the selection
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(0,0,0,1)';
-        this.ctx.fillRect(newX, newY, this.selectedArea.width, this.selectedArea.height);
-        this.ctx.restore();
-
-        // Draw the selection
-        this.ctx.drawImage(tempCanvas, newX, newY);
-
-        // Update selection coordinates
-        this.selectedArea.x = newX;
-        this.selectedArea.y = newY;
-        this.selectionStart = { x: newX, y: newY };
-        this.selectionEnd = { 
-            x: newX + this.selectedArea.width, 
-            y: newY + this.selectedArea.height 
-        };
-
-        // Update overlay
-        this.drawSelectionOverlay();
-
-        // Cleanup
-        tempCanvas.remove();
-    }
-
-    erase(x, y) {
-        // Save current context settings
-        this.ctx.save();
-        
-        // Set composite operation to clear pixels
-        this.ctx.globalCompositeOperation = 'destination-out';
-        
-        // Draw a line from last position to current position
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
-        this.ctx.lineTo(x, y);
-        this.ctx.strokeStyle = '#000';  // Color doesn't matter due to composite operation
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.stroke();
-        this.ctx.closePath();
-        
-        // Restore context settings
-        this.ctx.restore();
-    }
-
-    handleCanvasClick(e) {
-        const pos = this.getEventPoint(e);
-        if (this.toolManager.activeTool === 'fill') {
-            this.floodFill(Math.round(pos.x), Math.round(pos.y), this.currentColor);
-            this.saveState();
-        }
-    }
-
-    getEventPoint(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const point = e.touches ? e.touches[0] : e;
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-
-        return {
-            x: (point.clientX - rect.left) * scaleX,
-            y: (point.clientY - rect.top) * scaleY
-        };
-    }
-
-    getMousePos(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-
-        return {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY
-        };
-    }
-
-    handleTouch(e) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousemove', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        this.handleMouseMove(mouseEvent);
-    }
-
-    handleTouchStart(e) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousedown', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        this.handleMouseDown(mouseEvent);
-    }
-
-    startDrawing(event) {
-        if (this.toolManager.activeTool === 'text') return;
-
-        this.isDrawing = true;
-        const pos = this.getEventPoint(event);
-        this.lastX = pos.x;
-        this.lastY = pos.y;
-        this.startX = pos.x;  // Store start position for shapes
-        this.startY = pos.y;
-    }
-
-    stopDrawing() {
-        if (this.isDrawing) {
-            this.isDrawing = false;
-            // Save state after completing a drawing action
-            this.saveState();
-        }
-    }
-
-    drawCircle(e) {
-        if (!this.isDrawing) return;
-
-        const pos = this.getMousePos(e);
-
-        // Clear overlay canvas
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-
-        const { distance } = this.calculateDistance(
-            { x: this.startX, y: this.startY },
-            pos
-        );
-
-        this.applyCanvasStyle(this.overlayCtx);
-        this.drawCircleShape(this.overlayCtx, pos, distance, this.fillShape);
-        this.overlayCtx.restore();
-    }
-
-    drawTriangle(e) {
-        if (!this.isDrawing) return;
-
-        const pos = this.getMousePos(e);
-
-        // Clear overlay canvas
-        this.overlayCtx.clearRect(0, 0, this.overlayCanvas.width, this.overlayCanvas.height);
-
-        const points = this.calculateTrianglePoints(pos, this.triangleType);
-
         this.applyCanvasStyle(this.overlayCtx);
         this.drawShape(this.overlayCtx, points, this.fillShape);
         this.overlayCtx.restore();
