@@ -48,7 +48,6 @@ export class EraserTool extends GenericTool {
         super.onMouseDown(point);
         this.lastX = point.x;
         this.lastY = point.y;
-        this.erase(point);
     }
 
     onMouseMove(point) {
@@ -61,7 +60,6 @@ export class EraserTool extends GenericTool {
     onMouseUp(point) {
         if (!this.isDrawing) return;
         this.erase(point);
-        this.paintBar.saveState();
         super.onMouseUp(point);
     }
 
