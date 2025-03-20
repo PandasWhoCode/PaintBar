@@ -93,6 +93,15 @@ The Actions menu provides tools for manipulating and editing content on the canv
 - Clears the entire canvas
 - Warning: This action cannot be undone
 
+#### <img src="../public/images/menus/actions_undo.png" height="16"/> Undo
+- Reverts the last action performed
+- Keyboard shortcut: Cmd/Ctrl+Z
+
+#### <img src="../public/images/menus/actions_redo.png" height="16"/> Redo
+- Restores previously undone actions
+- Available after using undo
+- Keyboard shortcut: Cmd/Ctrl+Shift+Z
+
 #### Transform Tools
 - 🔄 Rotate: Rotates selected content
 - ↔️ Flip Horizontal: Mirrors content horizontally
