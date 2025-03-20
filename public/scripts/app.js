@@ -522,7 +522,6 @@ class PaintBar {
                     this.pickColor(e);
                 }
             });
-
             this.canvas.addEventListener('mousemove', (e) => {
                 if (this.isPickingColor) {
                     this.showColorPreview(e);
@@ -1251,15 +1250,17 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     pickColor(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const pixel = this.ctx.getImageData(x, y, 1, 1).data;
-        const color = `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+        const pos = this.getMousePos(e);
+        const pixel = this.ctx.getImageData(pos.x, pos.y, 1, 1).data;
+        
+        // If pixel is transparent (alpha = 0), use white
+        const color = pixel[3] === 0 ? '#FFFFFF' : 
+            `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
         
         this.currentColor = color;
         this.colorPicker.color.hexString = color;
         this.updateColorPreview(color);
+        this.addRecentColor(color);
         this.stopColorPicking();
     }
 
@@ -1279,11 +1280,14 @@ class PaintBar {
      * @param {MouseEvent} e - Mouse event
      */
     showColorPreview(e) {
-        const pos = this.getEventPoint(e);
+        const pos = this.getMousePos(e);
         const pixel = this.ctx.getImageData(pos.x, pos.y, 1, 1).data;
-        const color = `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
         
-        // Update color picker preview
+        // If pixel is transparent (alpha = 0), use white
+        const color = pixel[3] === 0 ? '#FFFFFF' : 
+            `#${[pixel[0], pixel[1], pixel[2]].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+        
+        // Only preview the color
         if (this.colorPicker) {
             this.colorPicker.color.hexString = color;
         }
