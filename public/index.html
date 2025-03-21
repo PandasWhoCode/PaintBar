@@ -9,6 +9,64 @@
     <script src="scripts/errors.js"></script>
 </head>
 <body>
+    <!-- Canvas Settings Modal - Shown by default -->
+    <div id="canvasSettingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Canvas Settings</h3>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <h4>Canvas Size</h4>
+                    <div class="setting-option">
+                        <label for="canvasWidth">Width:</label>
+                        <input type="number" id="canvasWidth" min="300" max="4096" value="800">
+                        <span>px</span>
+                    </div>
+                    <div class="setting-option">
+                        <label for="canvasHeight">Height:</label>
+                        <input type="number" id="canvasHeight" min="200" max="4096" value="600">
+                        <span>px</span>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h4>Responsive Behavior</h4>
+                    <div class="setting-option">
+                        <label>
+                            <input type="checkbox" id="responsiveCanvas" checked>
+                            Enable responsive canvas
+                        </label>
+                    </div>
+                    <div id="responsiveLimits" class="nested-settings">
+                        <div class="setting-option">
+                            <label for="minWidth">Min Width:</label>
+                            <input type="number" id="minWidth" min="100" max="4096" value="250">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="minHeight">Min Height:</label>
+                            <input type="number" id="minHeight" min="100" max="4096" value="250">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="maxWidth">Max Width:</label>
+                            <input type="number" id="maxWidth" min="300" max="8192" value="4096">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="maxHeight">Max Height:</label>
+                            <input type="number" id="maxHeight" min="200" max="8192" value="4096">
+                            <span>px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="startPaintBarBtn" class="primary-btn">Start PaintBar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="toolbar-toggle active" id="toolbarToggle">
             <img src="images/paintbar.logo.png" alt="PaintBar Logo" class="toggle-icon">
@@ -75,8 +133,8 @@
                 </div>
                 <div class="submenu-content">
                     <div class="action-group">
-                        <button id="selectBtn" title="Select Area">◰</button>
-                        <button id="pasteBtn" title="Paste Image">📋</button>
+                        <button id="selectBtn" title="Select Area" disabled>◰</button>
+                        <button id="pasteBtn" title="Paste Image" disabled>📋</button>
                         <button id="clearBtn" title="Clear Canvas">
                             <img src="images/menus/actions_clear.png" alt="Clear Canvas" class="menu-icon">
                         </button>
@@ -86,6 +144,7 @@
                         <button id="redoBtn" title="Redo (Cmd/Ctrl+Shift+Z)">
                             <img src="images/menus/actions_redo.png" alt="Redo" class="menu-icon">
                         </button>
+                        <button id="gridBtn" title="Toggle Grid" disabled>📏</button>
                     </div>
                 </div>
             </div>
@@ -125,18 +184,6 @@
                 <div class="submenu-content">
                     <span title="Line Weight">↔️</span>
                     <input type="range" id="brushSize" min="1" max="100" value="25" title="Line Weight">
-                </div>
-            </div>
-
-            <div class="toolbar-section">
-                <div class="submenu-header">
-                    <span>View</span>
-                    <span class="submenu-toggle">▼</span>
-                </div>
-                <div class="submenu-content">
-                    <button id="gridBtn" title="Toggle Grid">📏</button>
-                    <button id="zoomInBtn" title="Zoom In">🔍+</button>
-                    <button id="zoomOutBtn" title="Zoom Out">🔍-</button>
                 </div>
             </div>
 
@@ -227,7 +274,7 @@
                                 <div class="save-details">
                                     <span class="save-name">PNG</span>
                                     <span class="save-desc">Standard image format</span>
-                                </div>
+                        </div>
                             </button>
                         </div>
                         <div class="option-row">
@@ -236,7 +283,7 @@
                                 <div class="save-details">
                                     <span class="save-name">Transparency (PNG)</span>
                                     <span class="save-desc">Best for images with transparency</span>
-                                </div>
+                </div>
                             </button>
                         </div>
                         <div class="option-row">
@@ -254,7 +301,7 @@
                                 <div class="save-details">
                                     <span class="save-name">ICO</span>
                                     <span class="save-desc">Windows icon format</span>
-                                </div>
+                    </div>
                             </button>
                         </div>
                         <div class="option-row">
@@ -263,7 +310,7 @@
                                 <div class="save-details">
                                     <span class="save-name">Transparency (ICO)</span>
                                     <span class="save-desc">Windows icon with transparency</span>
-                                </div>
+                            </div>
                             </button>
                         </div>
                     </div>
@@ -273,6 +320,7 @@
                 </div>
             </div>
         </div>
+
         <div id="textPreviewOverlay" class="text-preview-overlay hidden">
             <div class="preview-actions">
                 <button id="applyTextBtn" class="action-btn apply-btn">Apply Text</button>
@@ -294,7 +342,7 @@
                 <button id="cancelCropBtn">❌</button>
             </div>
         </div>
-    </div>
+    </div><!-- end of container -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";

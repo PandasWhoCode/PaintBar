@@ -10,6 +10,7 @@
 
 import { SaveManager } from './save.js';
 import { ToolManager } from './toolManager.js';
+import { CanvasManager } from './canvasManager.js';
 
 /**
  * PaintBar class representing the drawing application
@@ -17,8 +18,17 @@ import { ToolManager } from './toolManager.js';
 class PaintBar {
     /**
      * Constructor to initialize the application
+     * @param {Object} options - Configuration options
+     * @param {number} options.width - Canvas width (default: 800)
+     * @param {number} options.height - Canvas height (default: 600)
+     * @param {boolean} options.responsive - Enable responsive canvas (default: true)
+     * @param {number} options.minWidth - Minimum canvas width (default: 300)
+     * @param {number} options.minHeight - Minimum canvas height (default: 200)
+     * @param {number} options.maxWidth - Maximum canvas width (default: 4096)
+     * @param {number} options.maxHeight - Maximum canvas height (default: 4096)
+     * @param {boolean} options.isSquare - Whether the canvas is locked to square dimensions (default: false)
      */
-    constructor() {
+    constructor(options = {}) {
         // Initialize multiple canvas layers for different purposes
         // 1. transparentBgCanvas: Shows transparency grid
         // 2. opaqueBgCanvas: Solid background when transparency is off
@@ -37,6 +47,32 @@ class PaintBar {
         this.overlayCanvas = document.getElementById('selectionOverlay');
         this.overlayCtx = this.overlayCanvas.getContext('2d');
 
+        // Store square state
+        this.isSquare = options.isSquare || false;
+
+        // If square is enabled, make sure width and height are equal
+        if (this.isSquare) {
+            const size = Math.min(options.width || 800, options.height || 600);
+            options.width = size;
+            options.height = size;
+        }
+
+        // Initialize canvas dimensions
+        this.canvasWidth = options.width || 800;
+        this.canvasHeight = options.height || 600;
+        this.minWidth = options.minWidth || 300;
+        this.minHeight = options.minHeight || 200;
+        this.maxWidth = options.maxWidth || 4096;
+        this.maxHeight = options.maxHeight || 4096;
+
+        // If square, adjust min/max dimensions to be equal
+        if (this.isSquare) {
+            const minSize = Math.max(this.minWidth, this.minHeight);
+            const maxSize = Math.min(this.maxWidth, this.maxHeight);
+            this.minWidth = this.minHeight = minSize;
+            this.maxWidth = this.maxHeight = maxSize;
+        }
+
         // Drawing state properties
         this.isDrawing = false;          // Whether user is currently drawing
         this.currentColor = '#000000';   // Active color (default: black)
@@ -48,8 +84,8 @@ class PaintBar {
         this.lastY = 0;                  // Last Y position for continuous drawing
         
         // Canvas properties
-        this.defaultWidth = 800;         // Default canvas width
-        this.defaultHeight = 600;        // Default canvas height
+        this.defaultWidth = options.width || 800;         // Default canvas width
+        this.defaultHeight = options.height || 600;        // Default canvas height
         this.isTransparent = false;      // Transparency mode
         
         // Color management
@@ -76,9 +112,18 @@ class PaintBar {
             }
         };
 
-        // Initialize tool and save managers
+        // Initialize tool, save, and canvas managers
         this.toolManager = new ToolManager(this);
         this.saveManager = new SaveManager(this);
+        this.canvasManager = new CanvasManager(this, {
+            width: this.defaultWidth,
+            height: this.defaultHeight,
+            responsive: options.responsive,
+            minWidth: this.minWidth,
+            minHeight: this.minHeight,
+            maxWidth: this.maxWidth,
+            maxHeight: this.maxHeight
+        });
 
         // Set up the application
         this.initializeState();
@@ -330,44 +375,14 @@ class PaintBar {
      * Initialize the canvas
      */
     initializeCanvas() {
-        // Set canvas sizes
-        const canvasContainer = document.querySelector('.canvas-container');
-        if (!canvasContainer) return;
-
-        // Set size for all canvas layers
-        [this.transparentBgCanvas, this.opaqueBgCanvas, this.canvas, this.overlayCanvas].forEach(canvas => {
-            canvas.width = this.defaultWidth;
-            canvas.height = this.defaultHeight;
-        });
-
-        // Initialize transparent background
-        this.drawTransparentBackground();
-
-        // Initialize opaque background
-        this.opaqueBgCtx.fillStyle = '#ffffff';
-        this.opaqueBgCtx.fillRect(0, 0, this.opaqueBgCanvas.width, this.opaqueBgCanvas.height);
-
-        // Initialize drawing canvas
-        this.ctx.strokeStyle = this.currentColor;
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-
-        // Initialize overlay canvas
-        this.overlayCtx.strokeStyle = this.currentColor;
-        this.overlayCtx.fillStyle = this.currentColor;
-        this.overlayCtx.lineWidth = this.lineWidth;
-        this.overlayCtx.lineCap = 'round';
-        this.overlayCtx.lineJoin = 'round';
+        // Initialize canvases through the canvas manager
+        this.canvasManager.initializeCanvases();
 
         // Set initial transparency state
         const wrapper = this.canvas.parentElement;
-        if (this.isTransparent) {
-            wrapper.classList.add('transparent-mode');
+        if (wrapper) {
+            wrapper.classList.toggle('transparent', this.isTransparent);
         }
-        
-        // Save initial state
-        this.saveState();
     }
 
     /**
@@ -750,11 +765,14 @@ class PaintBar {
         const pos = this.getMousePos(e);
         
         if (this.toolManager.activeTool) {
-            // Save state before any operation begins
-            this.saveState();
+            const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
+            
+            // Save state before any operation begins, except for fill tool which handles its own state
+            if (toolName !== 'fill') {
+                this.saveState();
+            }
             
             // Set isDrawing for tools that use continuous drawing
-            const toolName = this.toolManager.activeTool.constructor.name.toLowerCase().replace('tool', '');
             if (!['fill', 'text'].includes(toolName)) {
                 this.isDrawing = true;
             }
@@ -1454,5 +1472,113 @@ class PaintBar {
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const paintBar = new PaintBar();
+    const canvasSettingsModal = document.getElementById('canvasSettingsModal');
+    const startPaintBarBtn = document.getElementById('startPaintBarBtn');
+    const responsiveCanvas = document.getElementById('responsiveCanvas');
+    const responsiveLimits = document.getElementById('responsiveLimits');
+    const widthInput = document.getElementById('canvasWidth');
+    const heightInput = document.getElementById('canvasHeight');
+    
+    let isSquareLocked = false;
+    
+    // Show/hide responsive limits based on checkbox
+    responsiveCanvas.addEventListener('change', () => {
+        responsiveLimits.style.display = responsiveCanvas.checked ? 'block' : 'none';
+        validateCanvasSettings();
+    });
+    
+    // Handle square locking
+    const updateSquareLock = () => {
+        const width = parseInt(widthInput.value, 10);
+        const height = parseInt(heightInput.value, 10);
+        
+        if (width === height && !isSquareLocked) {
+            isSquareLocked = true;
+            widthInput.dataset.squareLocked = 'true';
+            heightInput.dataset.squareLocked = 'true';
+        } else if (width !== height && isSquareLocked) {
+            isSquareLocked = false;
+            delete widthInput.dataset.squareLocked;
+            delete heightInput.dataset.squareLocked;
+        }
+    };
+    
+    // Maintain square dimensions when locked
+    const handleDimensionChange = (changedInput, otherInput) => {
+        if (isSquareLocked) {
+            otherInput.value = changedInput.value;
+        }
+        updateSquareLock();
+        validateCanvasSettings();
+    };
+    
+    // Add input event listeners for width/height
+    widthInput.addEventListener('input', () => handleDimensionChange(widthInput, heightInput));
+    heightInput.addEventListener('input', () => handleDimensionChange(heightInput, widthInput));
+    
+    // Validate canvas settings and show warnings if needed
+    const validateCanvasSettings = () => {
+        const width = parseInt(widthInput.value, 10);
+        const height = parseInt(heightInput.value, 10);
+        const isResponsive = responsiveCanvas.checked;
+        const minDimension = 250;
+        
+        // Show warning if fill tool will be disabled
+        const warningElement = document.getElementById('fillToolWarning') || (() => {
+            const warning = document.createElement('div');
+            warning.id = 'fillToolWarning';
+            warning.style.color = '#FFFFFF';
+            warning.style.marginTop = '12px';
+            warning.style.fontSize = '14px';
+            document.querySelector('.modal-body').appendChild(warning);
+            return warning;
+        })();
+        
+        let warnings = [];
+        
+        if ((width < minDimension || height < minDimension) && !isResponsive) {
+            warnings.push('Fill tool will be disabled due to small canvas size.');
+        }
+        
+        if (isSquareLocked) {
+            warnings.push('Canvas is locked to square dimensions.');
+        }
+        
+        warningElement.textContent = warnings.length ? 'Note: ' + warnings.join(' ') : '';
+    };
+    
+    // Run initial validation and square lock check
+    updateSquareLock();
+    validateCanvasSettings();
+    
+    // Initialize PaintBar when settings are confirmed
+    startPaintBarBtn.addEventListener('click', () => {
+        const options = {
+            width: parseInt(widthInput.value, 10),
+            height: parseInt(heightInput.value, 10),
+            responsive: responsiveCanvas.checked,
+            minWidth: parseInt(document.getElementById('minWidth').value, 10),
+            minHeight: parseInt(document.getElementById('minHeight').value, 10),
+            maxWidth: parseInt(document.getElementById('maxWidth').value, 10),
+            maxHeight: parseInt(document.getElementById('maxHeight').value, 10),
+            isSquare: isSquareLocked
+        };
+        
+        // Hide modal
+        canvasSettingsModal.classList.add('hidden');
+        
+        // Initialize PaintBar with settings
+        const paintBar = new PaintBar(options);
+        
+        // Disable fill tool if canvas is too small and not responsive
+        if ((options.width < 250 || options.height < 250) && !options.responsive) {
+            const fillBtn = document.getElementById('fillBtn');
+            if (fillBtn) {
+                fillBtn.disabled = true;
+                fillBtn.title = 'Fill tool disabled: Canvas too small';
+                fillBtn.style.opacity = '0.5';
+                fillBtn.style.cursor = 'not-allowed';
+            }
+        }
+    });
 });

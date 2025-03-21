@@ -4,10 +4,19 @@ A modern, web-based drawing application that combines simplicity with powerful f
 
 ## Features
 
+### Canvas Settings
+- Configurable canvas dimensions
+- Responsive canvas support
+  - Auto-resize while maintaining aspect ratio
+  - Configurable minimum and maximum dimensions
+  - Enable/disable responsive behavior
+- Smart tool availability based on canvas size
+
 ### Drawing Tools
 - <img src="public/images/menus/tools_pencil.png" height="16"/> Pencil tool for freehand drawing
 - <img src="public/images/menus/tools_eraser.png" height="16"/> Eraser tool
 - <img src="public/images/menus/tools_fill.png" height="16"/> Fill tool for coloring areas
+  - Note: Fill tool requires minimum canvas dimensions (250x250) when responsive mode is disabled
 - <img src="public/images/menus/tools_text.png" height="16"/> Text tool with rich formatting options
 - ◰ Selection tool for manipulating drawn elements
 
@@ -58,7 +67,11 @@ Detailed documentation for all menus and features can be found in the [Menu Docu
 
 1. Clone the repository
 2. Open `index.html` in your web browser
-3. Start creating!
+3. Configure your canvas settings:
+   - Set desired canvas dimensions
+   - Enable/disable responsive mode
+   - Configure min/max dimensions if using responsive mode
+4. Start creating!
 
 ## Browser Compatibility
 
