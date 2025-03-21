@@ -1453,7 +1453,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show/hide responsive limits based on checkbox
     responsiveCanvas.addEventListener('change', () => {
         responsiveLimits.style.display = responsiveCanvas.checked ? 'block' : 'none';
+        validateCanvasSettings();
     });
+    
+    // Validate canvas settings and show warnings if needed
+    const validateCanvasSettings = () => {
+        const width = parseInt(document.getElementById('canvasWidth').value, 10);
+        const height = parseInt(document.getElementById('canvasHeight').value, 10);
+        const isResponsive = document.getElementById('responsiveCanvas').checked;
+        const minDimension = 250;
+        
+        // Show warning if fill tool will be disabled
+        const warningElement = document.getElementById('fillToolWarning') || (() => {
+            const warning = document.createElement('div');
+            warning.id = 'fillToolWarning';
+            warning.style.color = '#ff6b6b';
+            warning.style.marginTop = '12px';
+            warning.style.fontSize = '14px';
+            document.querySelector('.modal-body').appendChild(warning);
+            return warning;
+        })();
+        
+        if ((width < minDimension || height < minDimension) && !isResponsive) {
+            warningElement.textContent = 'Note: Fill tool will be disabled due to small canvas size. Enable responsive canvas or increase dimensions to use the fill tool.';
+        } else {
+            warningElement.textContent = '';
+        }
+    };
+    
+    // Add validation to width/height inputs
+    ['canvasWidth', 'canvasHeight'].forEach(id => {
+        document.getElementById(id).addEventListener('input', validateCanvasSettings);
+    });
+    
+    // Run initial validation
+    validateCanvasSettings();
     
     // Initialize PaintBar when settings are confirmed
     startPaintBarBtn.addEventListener('click', () => {
@@ -1472,5 +1506,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Initialize PaintBar with settings
         const paintBar = new PaintBar(options);
+        
+        // Disable fill tool if canvas is too small and not responsive
+        if ((options.width < 250 || options.height < 250) && !options.responsive) {
+            const fillBtn = document.getElementById('fillBtn');
+            if (fillBtn) {
+                fillBtn.disabled = true;
+                fillBtn.title = 'Fill tool disabled: Canvas too small';
+                fillBtn.style.opacity = '0.5';
+                fillBtn.style.cursor = 'not-allowed';
+            }
+        }
     });
 });
