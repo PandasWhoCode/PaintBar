@@ -161,16 +161,6 @@ body {
     pointer-events: auto;
 }
 
-.zoom-controls {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: white;
-    padding: 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
 .settings-menu {
     right: auto; /* Override right alignment for settings */
     left: 50%;   /* Center horizontally */

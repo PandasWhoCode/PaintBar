@@ -1527,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const warningElement = document.getElementById('fillToolWarning') || (() => {
             const warning = document.createElement('div');
             warning.id = 'fillToolWarning';
-            warning.style.color = '#ff6b6b';
+            warning.style.color = '#FFFFFF';
             warning.style.marginTop = '12px';
             warning.style.fontSize = '14px';
             document.querySelector('.modal-body').appendChild(warning);
@@ -1538,10 +1538,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if ((width < minDimension || height < minDimension) && !isResponsive) {
             warnings.push('Fill tool will be disabled due to small canvas size.');
-        }
-        
-        if (isResponsive) {
-            warnings.push('Zoom controls will be disabled when responsive canvas is enabled.');
         }
         
         if (isSquareLocked) {
@@ -1583,21 +1579,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 fillBtn.style.opacity = '0.5';
                 fillBtn.style.cursor = 'not-allowed';
             }
-        }
-        
-        // Disable zoom buttons if responsive canvas is enabled
-        if (options.responsive) {
-            const zoomInBtn = document.getElementById('zoomInBtn');
-            const zoomOutBtn = document.getElementById('zoomOutBtn');
-            
-            [zoomInBtn, zoomOutBtn].forEach(btn => {
-                if (btn) {
-                    btn.disabled = true;
-                    btn.title = 'Zoom disabled in responsive mode';
-                    btn.style.opacity = '0.5';
-                    btn.style.cursor = 'not-allowed';
-                }
-            });
         }
     });
 });
