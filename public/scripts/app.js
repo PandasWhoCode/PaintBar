@@ -18,8 +18,16 @@ import { CanvasManager } from './canvasManager.js';
 class PaintBar {
     /**
      * Constructor to initialize the application
+     * @param {Object} options - Configuration options
+     * @param {number} options.width - Canvas width (default: 800)
+     * @param {number} options.height - Canvas height (default: 600)
+     * @param {boolean} options.responsive - Enable responsive canvas (default: true)
+     * @param {number} options.minWidth - Minimum canvas width (default: 300)
+     * @param {number} options.minHeight - Minimum canvas height (default: 200)
+     * @param {number} options.maxWidth - Maximum canvas width (default: 4096)
+     * @param {number} options.maxHeight - Maximum canvas height (default: 4096)
      */
-    constructor() {
+    constructor(options = {}) {
         // Initialize multiple canvas layers for different purposes
         // 1. transparentBgCanvas: Shows transparency grid
         // 2. opaqueBgCanvas: Solid background when transparency is off
@@ -49,8 +57,8 @@ class PaintBar {
         this.lastY = 0;                  // Last Y position for continuous drawing
         
         // Canvas properties
-        this.defaultWidth = 800;         // Default canvas width
-        this.defaultHeight = 600;        // Default canvas height
+        this.defaultWidth = options.width || 800;         // Default canvas width
+        this.defaultHeight = options.height || 600;        // Default canvas height
         this.isTransparent = false;      // Transparency mode
         
         // Color management
@@ -80,7 +88,15 @@ class PaintBar {
         // Initialize tool, save, and canvas managers
         this.toolManager = new ToolManager(this);
         this.saveManager = new SaveManager(this);
-        this.canvasManager = new CanvasManager(this);
+        this.canvasManager = new CanvasManager(this, {
+            width: this.defaultWidth,
+            height: this.defaultHeight,
+            responsive: options.responsive,
+            minWidth: options.minWidth,
+            minHeight: options.minHeight,
+            maxWidth: options.maxWidth,
+            maxHeight: options.maxHeight
+        });
 
         // Set up the application
         this.initializeState();
@@ -1429,5 +1445,13 @@ class PaintBar {
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const paintBar = new PaintBar();
+    const paintBar = new PaintBar({
+        width: 800,
+        height: 600,
+        responsive: true,
+        minWidth: 300,
+        minHeight: 200,
+        maxWidth: 4096,
+        maxHeight: 4096
+    });
 });

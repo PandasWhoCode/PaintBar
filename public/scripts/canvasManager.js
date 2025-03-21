@@ -1,10 +1,16 @@
 export class CanvasManager {
-    constructor(paintBar) {
+    constructor(paintBar, options = {}) {
         this.paintBar = paintBar;
         this.canvasStyle = 'rectangle';
-        this.canvasWidth = 800;
-        this.canvasHeight = 600;
-        this.responsiveCanvas = true;
+        
+        // Canvas dimensions with defaults
+        this.canvasWidth = options.width || 800;
+        this.canvasHeight = options.height || 600;
+        this.responsiveCanvas = options.responsive !== undefined ? options.responsive : true;
+        this.minWidth = options.minWidth || 300;
+        this.minHeight = options.minHeight || 200;
+        this.maxWidth = options.maxWidth || 4096;
+        this.maxHeight = options.maxHeight || 4096;
         
         // Store references to all canvases
         this.canvases = {
@@ -66,37 +72,62 @@ export class CanvasManager {
     }
 
     setupResizeListener() {
+        // Throttle resize events for better performance
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            this.handleResize();
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout);
+            }
+            resizeTimeout = setTimeout(() => {
+                this.handleResize();
+            }, 100);
         });
     }
 
     handleResize() {
         if (!this.responsiveCanvas) return;
 
-        const container = document.querySelector('.canvas-container');
+        const container = this.canvases.drawing.parentElement;
         if (!container) return;
 
-        // Calculate new dimensions based on container size
-        // while maintaining aspect ratio
+        // Get container dimensions
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-        const aspectRatio = this.canvasWidth / this.canvasHeight;
 
-        let newWidth, newHeight;
-        if (containerWidth / containerHeight > aspectRatio) {
-            newHeight = containerHeight;
-            newWidth = containerHeight * aspectRatio;
-        } else {
-            newWidth = containerWidth;
-            newHeight = containerWidth / aspectRatio;
-        }
+        // Calculate new dimensions while maintaining aspect ratio
+        let newWidth = containerWidth;
+        let newHeight = (containerWidth * this.canvasHeight) / this.canvasWidth;
 
-        // Update canvas CSS dimensions
+        // Ensure dimensions are within bounds
+        newWidth = Math.max(this.minWidth, Math.min(this.maxWidth, newWidth));
+        newHeight = Math.max(this.minHeight, Math.min(this.maxHeight, newHeight));
+
+        // Update canvas dimensions
+        this.canvasWidth = newWidth;
+        this.canvasHeight = newHeight;
+
+        // Resize all canvases
         Object.values(this.canvases).forEach(canvas => {
-            canvas.style.width = `${newWidth}px`;
-            canvas.style.height = `${newHeight}px`;
+            this.setCanvasSize(canvas);
         });
+
+        // Redraw canvas contents
+        this.redrawCanvases();
+    }
+
+    redrawCanvases() {
+        // Save current drawing canvas state
+        const drawingState = this.canvases.drawing.getContext('2d').getImageData(0, 0, this.canvasWidth, this.canvasHeight);
+        
+        // Reinitialize backgrounds
+        this.initializeTransparentBackground();
+        this.initializeOpaqueBackground();
+        
+        // Restore drawing canvas state
+        this.canvases.drawing.getContext('2d').putImageData(drawingState, 0, 0);
+        
+        // Clear and resize overlay
+        this.initializeOverlayCanvas();
     }
 
     updateCanvasSettings(settings) {
