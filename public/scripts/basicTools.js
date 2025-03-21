@@ -132,14 +132,25 @@ export class FillTool extends GenericTool {
         
         // Function to check if a pixel is similar enough to the start color
         const isSimilarColor = (pos) => {
-            // Get the squared differences
-            const dr = pixels[pos] - startColor.r;
-            const dg = pixels[pos + 1] - startColor.g;
-            const db = pixels[pos + 2] - startColor.b;
-            const da = pixels[pos + 3] - startColor.a;
+            const targetAlpha = pixels[pos + 3];
             
-            // Use squared distance - faster than sqrt and works just as well
-            return (dr * dr + dg * dg + db * db + da * da) <= 62500; // 250^2
+            // If we're starting from a transparent area (alpha < 128)
+            if (startColor.a < 128) {
+                // Only fill transparent and semi-transparent pixels
+                return targetAlpha < 128;
+            }
+            
+            // For solid colors, check RGB similarity only if the target pixel is mostly opaque
+            if (targetAlpha >= 128) {
+                const dr = pixels[pos] - startColor.r;
+                const dg = pixels[pos + 1] - startColor.g;
+                const db = pixels[pos + 2] - startColor.b;
+                
+                return (dr * dr + dg * dg + db * db) <= 1600; // 40^2
+            }
+            
+            // Don't fill semi-transparent pixels when starting from a solid color
+            return false;
         };
         
         while (stack.length > 0) {
