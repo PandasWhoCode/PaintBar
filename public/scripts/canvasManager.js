@@ -1,24 +1,37 @@
 export class CanvasManager {
     constructor(paintBar, options = {}) {
         this.paintBar = paintBar;
-        this.canvasStyle = 'rectangle';
-        
-        // Canvas dimensions with defaults
-        this.canvasWidth = options.width || 800;
-        this.canvasHeight = options.height || 600;
-        this.responsiveCanvas = options.responsive !== undefined ? options.responsive : true;
-        this.minWidth = options.minWidth || 300;
-        this.minHeight = options.minHeight || 200;
-        this.maxWidth = options.maxWidth || 4096;
-        this.maxHeight = options.maxHeight || 4096;
-        
-        // Store references to all canvases
         this.canvases = {
             transparentBg: paintBar.transparentBgCanvas,
             opaqueBg: paintBar.opaqueBgCanvas,
             drawing: paintBar.canvas,
             overlay: paintBar.overlayCanvas
         };
+
+        // Initialize dimensions
+        this.canvasWidth = options.width || 800;
+        this.canvasHeight = options.height || 600;
+        this.minWidth = options.minWidth || 300;
+        this.minHeight = options.minHeight || 200;
+        this.maxWidth = options.maxWidth || 4096;
+        this.maxHeight = options.maxHeight || 4096;
+        this.responsiveCanvas = options.responsive !== undefined ? options.responsive : true;
+
+        // If square, ensure dimensions are equal
+        if (this.paintBar.isSquare) {
+            const size = Math.min(this.canvasWidth, this.canvasHeight);
+            this.canvasWidth = size;
+            this.canvasHeight = size;
+            
+            // Also ensure min/max dimensions are equal
+            const minSize = Math.max(this.minWidth, this.minHeight);
+            const maxSize = Math.min(this.maxWidth, this.maxHeight);
+            this.minWidth = this.minHeight = minSize;
+            this.maxWidth = this.maxHeight = maxSize;
+        }
+
+        // Initialize canvases with the correct dimensions
+        this.initializeCanvases();
     }
 
     initializeCanvases() {
@@ -26,6 +39,16 @@ export class CanvasManager {
         Object.values(this.canvases).forEach(canvas => {
             this.setCanvasSize(canvas);
         });
+        
+        // Update container class if square locked
+        const container = this.canvases.drawing.parentElement;
+        if (container) {
+            if (this.paintBar.isSquare) {
+                container.classList.add('square-locked');
+            } else {
+                container.classList.remove('square-locked');
+            }
+        }
 
         // Initialize specific canvas properties
         this.initializeTransparentBackground();
@@ -39,8 +62,20 @@ export class CanvasManager {
     }
 
     setCanvasSize(canvas) {
-        canvas.width = this.canvasWidth;
-        canvas.height = this.canvasHeight;
+        if (this.paintBar.isSquare) {
+            // For square canvases, ensure width and height are equal
+            const size = Math.min(this.canvasWidth, this.canvasHeight);
+            canvas.width = size;
+            canvas.height = size;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+        } else {
+            // For rectangular canvases
+            canvas.width = this.canvasWidth;
+            canvas.height = this.canvasHeight;
+            canvas.style.width = this.canvasWidth + 'px';
+            canvas.style.height = this.canvasHeight + 'px';
+        }
     }
 
     initializeTransparentBackground() {
@@ -94,13 +129,32 @@ export class CanvasManager {
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
 
-        // Calculate new dimensions while maintaining aspect ratio
-        let newWidth = containerWidth;
-        let newHeight = (containerWidth * this.canvasHeight) / this.canvasWidth;
+        // Calculate new dimensions
+        let newWidth, newHeight;
+        
+        if (this.paintBar.isSquare) {
+            // For square canvases, use the smaller container dimension
+            const size = Math.min(containerWidth, containerHeight);
+            newWidth = size;
+            newHeight = size;
+            container.classList.add('square-locked');
+        } else {
+            // For rectangular canvases, maintain aspect ratio
+            newWidth = containerWidth;
+            newHeight = (containerWidth * this.canvasHeight) / this.canvasWidth;
+            container.classList.remove('square-locked');
+        }
 
         // Ensure dimensions are within bounds
         newWidth = Math.max(this.minWidth, Math.min(this.maxWidth, newWidth));
         newHeight = Math.max(this.minHeight, Math.min(this.maxHeight, newHeight));
+        
+        // If square, ensure both dimensions are equal after bounds checking
+        if (this.paintBar.isSquare) {
+            const size = Math.min(newWidth, newHeight);
+            newWidth = size;
+            newHeight = size;
+        }
 
         // Update canvas dimensions
         this.canvasWidth = newWidth;

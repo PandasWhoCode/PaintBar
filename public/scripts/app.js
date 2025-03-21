@@ -26,6 +26,7 @@ class PaintBar {
      * @param {number} options.minHeight - Minimum canvas height (default: 200)
      * @param {number} options.maxWidth - Maximum canvas width (default: 4096)
      * @param {number} options.maxHeight - Maximum canvas height (default: 4096)
+     * @param {boolean} options.isSquare - Whether the canvas is locked to square dimensions (default: false)
      */
     constructor(options = {}) {
         // Initialize multiple canvas layers for different purposes
@@ -45,6 +46,32 @@ class PaintBar {
         
         this.overlayCanvas = document.getElementById('selectionOverlay');
         this.overlayCtx = this.overlayCanvas.getContext('2d');
+
+        // Store square state
+        this.isSquare = options.isSquare || false;
+
+        // If square is enabled, make sure width and height are equal
+        if (this.isSquare) {
+            const size = Math.min(options.width || 800, options.height || 600);
+            options.width = size;
+            options.height = size;
+        }
+
+        // Initialize canvas dimensions
+        this.canvasWidth = options.width || 800;
+        this.canvasHeight = options.height || 600;
+        this.minWidth = options.minWidth || 300;
+        this.minHeight = options.minHeight || 200;
+        this.maxWidth = options.maxWidth || 4096;
+        this.maxHeight = options.maxHeight || 4096;
+
+        // If square, adjust min/max dimensions to be equal
+        if (this.isSquare) {
+            const minSize = Math.max(this.minWidth, this.minHeight);
+            const maxSize = Math.min(this.maxWidth, this.maxHeight);
+            this.minWidth = this.minHeight = minSize;
+            this.maxWidth = this.maxHeight = maxSize;
+        }
 
         // Drawing state properties
         this.isDrawing = false;          // Whether user is currently drawing
@@ -92,10 +119,10 @@ class PaintBar {
             width: this.defaultWidth,
             height: this.defaultHeight,
             responsive: options.responsive,
-            minWidth: options.minWidth,
-            minHeight: options.minHeight,
-            maxWidth: options.maxWidth,
-            maxHeight: options.maxHeight
+            minWidth: this.minWidth,
+            minHeight: this.minHeight,
+            maxWidth: this.maxWidth,
+            maxHeight: this.maxHeight
         });
 
         // Set up the application
@@ -1449,6 +1476,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const startPaintBarBtn = document.getElementById('startPaintBarBtn');
     const responsiveCanvas = document.getElementById('responsiveCanvas');
     const responsiveLimits = document.getElementById('responsiveLimits');
+    const widthInput = document.getElementById('canvasWidth');
+    const heightInput = document.getElementById('canvasHeight');
+    
+    let isSquareLocked = false;
     
     // Show/hide responsive limits based on checkbox
     responsiveCanvas.addEventListener('change', () => {
@@ -1456,11 +1487,40 @@ document.addEventListener('DOMContentLoaded', () => {
         validateCanvasSettings();
     });
     
+    // Handle square locking
+    const updateSquareLock = () => {
+        const width = parseInt(widthInput.value, 10);
+        const height = parseInt(heightInput.value, 10);
+        
+        if (width === height && !isSquareLocked) {
+            isSquareLocked = true;
+            widthInput.dataset.squareLocked = 'true';
+            heightInput.dataset.squareLocked = 'true';
+        } else if (width !== height && isSquareLocked) {
+            isSquareLocked = false;
+            delete widthInput.dataset.squareLocked;
+            delete heightInput.dataset.squareLocked;
+        }
+    };
+    
+    // Maintain square dimensions when locked
+    const handleDimensionChange = (changedInput, otherInput) => {
+        if (isSquareLocked) {
+            otherInput.value = changedInput.value;
+        }
+        updateSquareLock();
+        validateCanvasSettings();
+    };
+    
+    // Add input event listeners for width/height
+    widthInput.addEventListener('input', () => handleDimensionChange(widthInput, heightInput));
+    heightInput.addEventListener('input', () => handleDimensionChange(heightInput, widthInput));
+    
     // Validate canvas settings and show warnings if needed
     const validateCanvasSettings = () => {
-        const width = parseInt(document.getElementById('canvasWidth').value, 10);
-        const height = parseInt(document.getElementById('canvasHeight').value, 10);
-        const isResponsive = document.getElementById('responsiveCanvas').checked;
+        const width = parseInt(widthInput.value, 10);
+        const height = parseInt(heightInput.value, 10);
+        const isResponsive = responsiveCanvas.checked;
         const minDimension = 250;
         
         // Show warning if fill tool will be disabled
@@ -1474,31 +1534,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return warning;
         })();
         
+        let warnings = [];
+        
         if ((width < minDimension || height < minDimension) && !isResponsive) {
-            warningElement.textContent = 'Note: Fill tool will be disabled due to small canvas size. Enable responsive canvas or increase dimensions to use the fill tool.';
-        } else {
-            warningElement.textContent = '';
+            warnings.push('Fill tool will be disabled due to small canvas size.');
         }
+        
+        if (isResponsive) {
+            warnings.push('Zoom controls will be disabled when responsive canvas is enabled.');
+        }
+        
+        if (isSquareLocked) {
+            warnings.push('Canvas is locked to square dimensions.');
+        }
+        
+        warningElement.textContent = warnings.length ? 'Note: ' + warnings.join(' ') : '';
     };
     
-    // Add validation to width/height inputs
-    ['canvasWidth', 'canvasHeight'].forEach(id => {
-        document.getElementById(id).addEventListener('input', validateCanvasSettings);
-    });
-    
-    // Run initial validation
+    // Run initial validation and square lock check
+    updateSquareLock();
     validateCanvasSettings();
     
     // Initialize PaintBar when settings are confirmed
     startPaintBarBtn.addEventListener('click', () => {
         const options = {
-            width: parseInt(document.getElementById('canvasWidth').value, 10),
-            height: parseInt(document.getElementById('canvasHeight').value, 10),
-            responsive: document.getElementById('responsiveCanvas').checked,
+            width: parseInt(widthInput.value, 10),
+            height: parseInt(heightInput.value, 10),
+            responsive: responsiveCanvas.checked,
             minWidth: parseInt(document.getElementById('minWidth').value, 10),
             minHeight: parseInt(document.getElementById('minHeight').value, 10),
             maxWidth: parseInt(document.getElementById('maxWidth').value, 10),
-            maxHeight: parseInt(document.getElementById('maxHeight').value, 10)
+            maxHeight: parseInt(document.getElementById('maxHeight').value, 10),
+            isSquare: isSquareLocked
         };
         
         // Hide modal
@@ -1516,6 +1583,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 fillBtn.style.opacity = '0.5';
                 fillBtn.style.cursor = 'not-allowed';
             }
+        }
+        
+        // Disable zoom buttons if responsive canvas is enabled
+        if (options.responsive) {
+            const zoomInBtn = document.getElementById('zoomInBtn');
+            const zoomOutBtn = document.getElementById('zoomOutBtn');
+            
+            [zoomInBtn, zoomOutBtn].forEach(btn => {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.title = 'Zoom disabled in responsive mode';
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                }
+            });
         }
     });
 });

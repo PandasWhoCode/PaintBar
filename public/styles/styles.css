@@ -110,6 +110,40 @@ body {
     margin-left: 300px;
 }
 
+.canvas-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+    overflow: hidden;
+    min-height: 200px;
+    padding: 20px;
+}
+
+.canvas-container.square-locked {
+    aspect-ratio: 1/1;
+    width: auto;
+    max-width: calc(100% - 40px);
+    max-height: calc(100vh - 40px);
+}
+
+.canvas-container canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.canvas-container.square-locked canvas {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1/1;
+}
+
 .canvas-wrapper {
     position: relative;
     width: 100%;
@@ -530,6 +564,17 @@ button.active {
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.setting-option input[type="number"][data-square-locked="true"] {
+    border-color: #6c5ce7;
+    background-color: rgba(108, 92, 231, 0.1);
+}
+
+.setting-option input[type="number"][data-square-locked="true"]:hover {
+    border-color: #8075e9;
+    background-color: rgba(108, 92, 231, 0.15);
 }
 
 .setting-option input[type="checkbox"] {
@@ -1756,6 +1801,17 @@ button {
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#canvasSettingsModal input[type="number"][data-square-locked="true"] {
+    border-color: #6c5ce7;
+    background-color: rgba(108, 92, 231, 0.1);
+}
+
+#canvasSettingsModal input[type="number"][data-square-locked="true"]:hover {
+    border-color: #8075e9;
+    background-color: rgba(108, 92, 231, 0.15);
 }
 
 #canvasSettingsModal input[type="checkbox"] {
