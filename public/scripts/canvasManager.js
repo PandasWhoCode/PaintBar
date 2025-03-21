@@ -66,27 +66,36 @@ export class CanvasManager {
         canvas.height = this.canvasHeight;
         
         // Initial display size
+        const wrapper = canvas.parentElement;
+        if (!wrapper) return;
+
+        const container = wrapper.parentElement;
+        const availableWidth = container.clientWidth - 40;
+        const availableHeight = container.clientHeight - 40;
+        
         if (this.paintBar.isSquare) {
+            const size = Math.min(availableWidth, availableHeight);
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+        } else {
+            // For rectangular, let the wrapper handle the sizing
             canvas.style.width = '100%';
             canvas.style.height = '100%';
-        } else {
-            // For rectangular, maintain aspect ratio
-            const wrapper = canvas.parentElement;
-            if (wrapper) {
-                const container = wrapper.parentElement;
-                const availableWidth = container.clientWidth - 40;
-                const availableHeight = container.clientHeight - 40;
-                
-                const canvasAspectRatio = this.canvasWidth / this.canvasHeight;
-                const containerAspectRatio = availableWidth / availableHeight;
-                
-                if (containerAspectRatio > canvasAspectRatio) {
-                    canvas.style.height = `${availableHeight}px`;
-                    canvas.style.width = `${availableHeight * canvasAspectRatio}px`;
-                } else {
-                    canvas.style.width = `${availableWidth}px`;
-                    canvas.style.height = `${availableWidth / canvasAspectRatio}px`;
-                }
+            
+            // Set wrapper size to maintain aspect ratio
+            const canvasAspectRatio = this.canvasWidth / this.canvasHeight;
+            const containerAspectRatio = availableWidth / availableHeight;
+            
+            if (containerAspectRatio > canvasAspectRatio) {
+                // Container is wider than needed, fit to height
+                const width = availableHeight * canvasAspectRatio;
+                wrapper.style.width = `${width}px`;
+                wrapper.style.height = `${availableHeight}px`;
+            } else {
+                // Container is taller than needed, fit to width
+                const height = availableWidth / canvasAspectRatio;
+                wrapper.style.width = `${availableWidth}px`;
+                wrapper.style.height = `${height}px`;
             }
         }
     }
