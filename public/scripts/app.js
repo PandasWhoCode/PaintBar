@@ -10,6 +10,7 @@
 
 import { SaveManager } from './save.js';
 import { ToolManager } from './toolManager.js';
+import { CanvasManager } from './canvasManager.js';
 
 /**
  * PaintBar class representing the drawing application
@@ -76,9 +77,10 @@ class PaintBar {
             }
         };
 
-        // Initialize tool and save managers
+        // Initialize tool, save, and canvas managers
         this.toolManager = new ToolManager(this);
         this.saveManager = new SaveManager(this);
+        this.canvasManager = new CanvasManager(this);
 
         // Set up the application
         this.initializeState();
@@ -330,44 +332,14 @@ class PaintBar {
      * Initialize the canvas
      */
     initializeCanvas() {
-        // Set canvas sizes
-        const canvasContainer = document.querySelector('.canvas-container');
-        if (!canvasContainer) return;
-
-        // Set size for all canvas layers
-        [this.transparentBgCanvas, this.opaqueBgCanvas, this.canvas, this.overlayCanvas].forEach(canvas => {
-            canvas.width = this.defaultWidth;
-            canvas.height = this.defaultHeight;
-        });
-
-        // Initialize transparent background
-        this.drawTransparentBackground();
-
-        // Initialize opaque background
-        this.opaqueBgCtx.fillStyle = '#ffffff';
-        this.opaqueBgCtx.fillRect(0, 0, this.opaqueBgCanvas.width, this.opaqueBgCanvas.height);
-
-        // Initialize drawing canvas
-        this.ctx.strokeStyle = this.currentColor;
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-
-        // Initialize overlay canvas
-        this.overlayCtx.strokeStyle = this.currentColor;
-        this.overlayCtx.fillStyle = this.currentColor;
-        this.overlayCtx.lineWidth = this.lineWidth;
-        this.overlayCtx.lineCap = 'round';
-        this.overlayCtx.lineJoin = 'round';
+        // Initialize canvases through the canvas manager
+        this.canvasManager.initializeCanvases();
 
         // Set initial transparency state
         const wrapper = this.canvas.parentElement;
-        if (this.isTransparent) {
-            wrapper.classList.add('transparent-mode');
+        if (wrapper) {
+            wrapper.classList.toggle('transparent', this.isTransparent);
         }
-        
-        // Save initial state
-        this.saveState();
     }
 
     /**
