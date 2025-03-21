@@ -1445,13 +1445,32 @@ class PaintBar {
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const paintBar = new PaintBar({
-        width: 800,
-        height: 600,
-        responsive: true,
-        minWidth: 300,
-        minHeight: 200,
-        maxWidth: 4096,
-        maxHeight: 4096
+    const canvasSettingsModal = document.getElementById('canvasSettingsModal');
+    const startPaintBarBtn = document.getElementById('startPaintBarBtn');
+    const responsiveCanvas = document.getElementById('responsiveCanvas');
+    const responsiveLimits = document.getElementById('responsiveLimits');
+    
+    // Show/hide responsive limits based on checkbox
+    responsiveCanvas.addEventListener('change', () => {
+        responsiveLimits.style.display = responsiveCanvas.checked ? 'block' : 'none';
+    });
+    
+    // Initialize PaintBar when settings are confirmed
+    startPaintBarBtn.addEventListener('click', () => {
+        const options = {
+            width: parseInt(document.getElementById('canvasWidth').value, 10),
+            height: parseInt(document.getElementById('canvasHeight').value, 10),
+            responsive: document.getElementById('responsiveCanvas').checked,
+            minWidth: parseInt(document.getElementById('minWidth').value, 10),
+            minHeight: parseInt(document.getElementById('minHeight').value, 10),
+            maxWidth: parseInt(document.getElementById('maxWidth').value, 10),
+            maxHeight: parseInt(document.getElementById('maxHeight').value, 10)
+        };
+        
+        // Hide modal
+        canvasSettingsModal.classList.add('hidden');
+        
+        // Initialize PaintBar with settings
+        const paintBar = new PaintBar(options);
     });
 });
