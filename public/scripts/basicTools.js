@@ -82,10 +82,10 @@ export class EraserTool extends GenericTool {
 export class FillTool extends GenericTool {
     constructor(paintBar) {
         super(paintBar);
+        this.isFilling = false;
     }
 
     onMouseDown(point) {
-        // Don't call super since fill is instant and doesn't use drawing state
         this.fill(point);
     }
 
@@ -100,6 +100,19 @@ export class FillTool extends GenericTool {
     fill(point) {
         const ctx = this.getContext();
         const imageData = ctx.getImageData(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
+        
+        // Save a copy of the unmodified image data for undo
+        const undoState = new ImageData(
+            new Uint8ClampedArray(imageData.data),
+            imageData.width,
+            imageData.height
+        );
+        this.paintBar.undoStack.push(undoState);
+        if (this.paintBar.undoStack.length > this.paintBar.maxUndoStates) {
+            this.paintBar.undoStack.shift();
+        }
+        this.paintBar.redoStack = [];
+        
         const pixels = imageData.data;
         
         // Convert floating point coordinates to integers
