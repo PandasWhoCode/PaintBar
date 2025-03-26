@@ -129,6 +129,7 @@ class PaintBar {
         this.initializeState();
         this.initializeElements();
         this.initializeUI();
+        this.addRecentColor(this.currentColor);
         this.initializeCanvas();  // Initialize canvas after all UI elements are set
         this.setupEventListeners();
     }
