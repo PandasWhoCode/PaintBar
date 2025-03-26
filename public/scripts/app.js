@@ -258,6 +258,8 @@ class PaintBar {
                     this.currentColor = value;
                     this.colorPicker.color.hexString = value;
                     this.updateColorPreview(value);
+                    this.updateColor(value);
+                    this.addRecentColor(value);
                 }
             });
 
@@ -281,6 +283,7 @@ class PaintBar {
                     this.currentColor = value;
                     this.colorPicker.color.hexString = value;
                     this.updateColorPreview(value);
+                    this.updateColor(value);
                 } else {
                     // Reset to current color if invalid
                     e.target.value = this.currentColor;
