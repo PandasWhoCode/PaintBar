@@ -1286,6 +1286,17 @@ class PaintBar {
             
             colorBtn.addEventListener('click', () => {
                 this.updateColor(color);
+                // Update color picker UI
+                const rgba = this.hexToRGBA(color);
+                document.getElementById('hexInput').value = color;
+                document.getElementById('color-preview').style.backgroundColor = color;
+                // Update color picker sliders if they exist
+                const redSlider = document.querySelector('input[type="range"][data-color="red"]');
+                const greenSlider = document.querySelector('input[type="range"][data-color="green"]');
+                const blueSlider = document.querySelector('input[type="range"][data-color="blue"]');
+                if (redSlider) redSlider.value = rgba.r;
+                if (greenSlider) greenSlider.value = rgba.g;
+                if (blueSlider) blueSlider.value = rgba.b;
             });
             
             recentColorsContainer.appendChild(colorBtn);
