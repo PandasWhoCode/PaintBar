@@ -1567,6 +1567,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hide modal
         canvasSettingsModal.classList.add('hidden');
         
+        // Update copyright year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        
         // Initialize PaintBar with settings
         const paintBar = new PaintBar(options);
         

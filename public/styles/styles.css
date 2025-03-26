@@ -932,6 +932,20 @@ body {
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+.submenu-content input[type="range"] {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.submenu-content input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 .eraser-icon {
     width: 20px;
     height: 20px;
@@ -1496,12 +1510,6 @@ button {
     font-size: 14px;
 }
 
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    filter: grayscale(100%);
-}
-
 .action-group {
     display: flex;
     flex-direction: column;
@@ -1696,4 +1704,16 @@ button:disabled {
 /* Hide modal */
 .modal.hidden {
     display: none !important;
+}
+
+.toolbar-footer {
+    margin-top: auto;
+    padding: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-content {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    text-align: center;
 }
