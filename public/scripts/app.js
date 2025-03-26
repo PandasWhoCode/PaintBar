@@ -129,6 +129,7 @@ class PaintBar {
         this.initializeState();
         this.initializeElements();
         this.initializeUI();
+        this.addRecentColor(this.currentColor);
         this.initializeCanvas();  // Initialize canvas after all UI elements are set
         this.setupEventListeners();
     }
@@ -257,6 +258,8 @@ class PaintBar {
                     this.currentColor = value;
                     this.colorPicker.color.hexString = value;
                     this.updateColorPreview(value);
+                    this.updateColor(value);
+                    this.addRecentColor(value);
                 }
             });
 
@@ -280,6 +283,7 @@ class PaintBar {
                     this.currentColor = value;
                     this.colorPicker.color.hexString = value;
                     this.updateColorPreview(value);
+                    this.updateColor(value);
                 } else {
                     // Reset to current color if invalid
                     e.target.value = this.currentColor;
@@ -500,6 +504,7 @@ class PaintBar {
         this.colorButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const color = button.dataset.color;
+                this.currentColor = color;
                 this.colorPicker.color.hexString = color;
                 this.updateColor(color);
                 this.updateColorPreview(color);
@@ -1285,7 +1290,10 @@ class PaintBar {
             }
             
             colorBtn.addEventListener('click', () => {
+                this.currentColor = color;
+                this.colorPicker.color.hexString = color;
                 this.updateColor(color);
+                this.updateColorPreview(color);
             });
             
             recentColorsContainer.appendChild(colorBtn);
@@ -1328,6 +1336,7 @@ class PaintBar {
         
         this.currentColor = color;
         this.colorPicker.color.hexString = color;
+        this.updateColor(color);
         this.updateColorPreview(color);
         this.addRecentColor(color);
         this.stopColorPicking();
