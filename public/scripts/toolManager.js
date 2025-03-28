@@ -2,6 +2,28 @@ import { PencilTool, EraserTool, FillTool, TextTool } from './basicTools.js';
 import { RectangleTool, CircleTool, LineTool, TriangleTool, ArcTool } from './objectTools.js';
 import { SelectionTool } from './actionTools.js';
 
+class SprayTool extends Tool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.cursor = 'crosshair';
+    }
+
+    onMouseDown(point) {
+        this.paintBar.startDrawing(point);
+        this.paintBar.drawSpray(point.x, point.y);
+    }
+
+    onMouseMove(point) {
+        if (this.paintBar.isDrawing) {
+            this.paintBar.drawSpray(point.x, point.y);
+        }
+    }
+
+    onMouseUp() {
+        this.paintBar.stopDrawing();
+    }
+}
+
 export class ToolManager {
     constructor(paintBar) {
         this.paintBar = paintBar;
@@ -22,7 +44,8 @@ export class ToolManager {
             circle: new CircleTool(paintBar),
             line: new LineTool(paintBar),
             triangle: new TriangleTool(paintBar),
-            arc: new ArcTool(paintBar)
+            arc: new ArcTool(paintBar),
+            spray: new SprayTool(paintBar)
         };
         
         // Set default tool

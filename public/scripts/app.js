@@ -298,6 +298,7 @@ class PaintBar {
         // Initialize tool buttons
         this.pencilBtn = document.getElementById('pencilBtn');
         this.eraserBtn = document.getElementById('eraserBtn');
+        this.sprayBtn = document.getElementById('sprayBtn');
         this.fillBtn = document.getElementById('fillBtn');
         this.textBtn = document.getElementById('textBtn');
         this.selectBtn = document.getElementById('selectBtn');
@@ -457,7 +458,8 @@ class PaintBar {
             circle: 'circleBtn',
             line: 'lineBtn',
             triangle: 'triangleBtn',
-            arc: 'arcBtn'
+            arc: 'arcBtn',
+            spray: 'sprayBtn'
         };
 
         Object.keys(toolButtons).forEach(tool => {
@@ -1145,6 +1147,42 @@ class PaintBar {
         
         // Restore context settings
         this.ctx.restore();
+    }
+
+    /**
+     * Draw spray effect at the given position
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     */
+    drawSpray(x, y) {
+        const density = 30; // Number of particles per spray
+        const radius = this.lineWidth * 2; // Spray radius based on brush size
+        
+        this.ctx.fillStyle = this.currentColor;
+        
+        for (let i = 0; i < density; i++) {
+            // Generate random position within the spray radius
+            const angle = Math.random() * Math.PI * 2;
+            const radiusRandom = Math.random() * radius;
+            const sprayX = x + Math.cos(angle) * radiusRandom;
+            const sprayY = y + Math.sin(angle) * radiusRandom;
+            
+            // Draw a small dot
+            this.ctx.beginPath();
+            this.ctx.arc(sprayX, sprayY, 0.5, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+
+    /**
+     * Handle mouse move for spray tool
+     * @param {MouseEvent} e - Mouse event
+     */
+    handleSprayMove(e) {
+        if (this.isDrawing) {
+            const pos = this.getMousePos(e);
+            this.drawSpray(pos.x, pos.y);
+        }
     }
 
     /**
