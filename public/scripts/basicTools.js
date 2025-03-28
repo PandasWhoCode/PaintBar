@@ -79,6 +79,56 @@ export class EraserTool extends GenericTool {
     }
 }
 
+export class SprayTool extends GenericTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.cursor = 'crosshair';
+        this.lastX = 0;
+        this.lastY = 0;
+    }
+
+    onMouseDown(point) {
+        super.onMouseDown(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
+        this.drawSpray(point);
+    }
+
+    onMouseMove(point) {
+        if (!this.isDrawing) return;
+        this.drawSpray(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
+    }
+
+    onMouseUp(point) {
+        if (!this.isDrawing) return;
+        this.drawSpray(point);
+        super.onMouseUp();
+    }
+
+    drawSpray(point) {
+        const ctx = this.getContext();
+        const density = 30; // Number of particles per spray
+        const radius = this.paintBar.lineWidth * 2; // Spray radius based on brush size
+        
+        ctx.fillStyle = this.paintBar.currentColor;
+        
+        for (let i = 0; i < density; i++) {
+            // Generate random position within the spray radius
+            const angle = Math.random() * Math.PI * 2;
+            const radiusRandom = Math.random() * radius;
+            const sprayX = point.x + Math.cos(angle) * radiusRandom;
+            const sprayY = point.y + Math.sin(angle) * radiusRandom;
+            
+            // Draw a small dot
+            ctx.beginPath();
+            ctx.arc(sprayX, sprayY, 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
 export class FillTool extends GenericTool {
     constructor(paintBar) {
         super(paintBar);

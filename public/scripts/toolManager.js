@@ -1,4 +1,4 @@
-import { PencilTool, EraserTool, FillTool, TextTool } from './basicTools.js';
+import { PencilTool, EraserTool, SprayTool, FillTool, TextTool } from './basicTools.js';
 import { RectangleTool, CircleTool, LineTool, TriangleTool, ArcTool } from './objectTools.js';
 import { SelectionTool } from './actionTools.js';
 
@@ -13,6 +13,7 @@ export class ToolManager {
             // Basic tools
             pencil: new PencilTool(paintBar),
             eraser: new EraserTool(paintBar),
+            spray: new SprayTool(paintBar),
             fill: new FillTool(paintBar),
             text: new TextTool(paintBar),
             select: new SelectionTool(paintBar),
