@@ -79,6 +79,35 @@ export class EraserTool extends GenericTool {
     }
 }
 
+export class SprayTool extends GenericTool {
+    constructor(paintBar) {
+        super(paintBar);
+        this.cursor = 'crosshair';
+        this.lastX = 0;
+        this.lastY = 0;
+    }
+
+    onMouseDown(point) {
+        super.onMouseDown(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
+    }
+
+    onMouseMove(point) {
+        if (!this.isDrawing) return;
+        this.drawSpray(point);
+        this.lastX = point.x;
+        this.lastY = point.y;
+    }
+
+    onMouseUp() {
+        if (!this.isDrawing) return;
+        this.drawSpray(point);
+        super.onMouseUp(point);
+    }
+}
+
+
 export class FillTool extends GenericTool {
     constructor(paintBar) {
         super(paintBar);
