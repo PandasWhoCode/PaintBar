@@ -140,18 +140,19 @@ export class FillTool extends GenericTool {
     }
 
     onMouseMove(point) {
-        // Fill tool doesn't need mouse move handling
+        // Fill tool operates on single clicks, no mouse move handling needed
     }
 
     onMouseUp(point) {
-        // Fill tool doesn't need mouse up handling
+        // Fill tool operates on single clicks, no mouse up handling needed
     }
 
     fill(point) {
         const ctx = this.getContext();
         const imageData = ctx.getImageData(0, 0, this.paintBar.canvas.width, this.paintBar.canvas.height);
         
-        // Save a copy of the unmodified image data for undo
+        // Note: Currently this creates two undo states due to putImageData interaction
+        // Save a copy of the unmodified image data for undo functionality
         const undoState = new ImageData(
             new Uint8ClampedArray(imageData.data),
             imageData.width,
@@ -165,18 +166,19 @@ export class FillTool extends GenericTool {
         
         const pixels = imageData.data;
         
-        // Convert floating point coordinates to integers
+        // Convert floating point coordinates to integers for pixel-perfect fill
         const x = Math.round(point.x);
         const y = Math.round(point.y);
         
-        // Ensure point is within bounds
+        // Early return if click is outside canvas bounds
         if (x < 0 || x >= imageData.width || y < 0 || y >= imageData.height) {
             return;
         }
         
-        // Calculate pixel position
+        // Calculate starting pixel position in the 1D array (4 bytes per pixel: RGBA)
         const startPos = (y * imageData.width + x) * 4;
         
+        // Get the color at the clicked position
         const startColor = {
             r: pixels[startPos],
             g: pixels[startPos + 1],
@@ -187,39 +189,42 @@ export class FillTool extends GenericTool {
         const fillColor = this.hexToRGBA(this.paintBar.currentColor);
         if (!fillColor) return;
 
-        // Start with the integer coordinates
+        // Initialize flood fill algorithm with starting point
         const stack = [[x, y]];
         const width = imageData.width;
         const height = imageData.height;
         const visited = new Set();
         
-        // Function to check if a pixel is similar enough to the start color
+        // Helper function to determine if a pixel should be filled
+        // Uses a tolerance value for color matching and special handling for transparency
         const isSimilarColor = (pos) => {
             const targetAlpha = pixels[pos + 3];
             
-            // If we're starting from a transparent area (alpha < 128)
+            // Special handling for transparent areas (alpha < 128)
             if (startColor.a < 128) {
                 // Only fill transparent and semi-transparent pixels
                 return targetAlpha < 128;
             }
             
-            // For solid colors, check RGB similarity only if the target pixel is mostly opaque
+            // For solid colors, only fill if target pixel is mostly opaque
             if (targetAlpha >= 128) {
                 const dr = pixels[pos] - startColor.r;
                 const dg = pixels[pos + 1] - startColor.g;
                 const db = pixels[pos + 2] - startColor.b;
                 
-                return (dr * dr + dg * dg + db * db) <= 1600; // 40^2
+                // Color similarity threshold of 40 (squared = 1600) for RGB components
+                return (dr * dr + dg * dg + db * db) <= 1600;
             }
             
             // Don't fill semi-transparent pixels when starting from a solid color
             return false;
         };
         
+        // Flood fill implementation using 8-way connectivity
         while (stack.length > 0) {
             const [px, py] = stack.pop();
             
-            // Skip if outside canvas bounds
+            // Skip pixels outside canvas bounds
             if (px < 0 || px >= width || py < 0 || py >= height) continue;
             
             const key = `${px},${py}`;
@@ -230,28 +235,30 @@ export class FillTool extends GenericTool {
             
             visited.add(key);
             
-            // Fill with the actual fill color
+            // Apply the fill color to the current pixel
             pixels[pos] = fillColor.r;
             pixels[pos + 1] = fillColor.g;
             pixels[pos + 2] = fillColor.b;
             pixels[pos + 3] = fillColor.a * 255;
             
-            // Add all 8 neighboring pixels
+            // Add all 8 adjacent pixels to the stack for processing
             stack.push(
-                [px + 1, py],
-                [px - 1, py],
-                [px, py + 1],
-                [px, py - 1],
-                [px + 1, py + 1],
-                [px - 1, py - 1],
-                [px + 1, py - 1],
-                [px - 1, py + 1]
+                [px + 1, py],     // right
+                [px - 1, py],     // left
+                [px, py + 1],     // down
+                [px, py - 1],     // up
+                [px + 1, py + 1], // bottom-right
+                [px - 1, py - 1], // top-left
+                [px + 1, py - 1], // top-right
+                [px - 1, py + 1]  // bottom-left
             );
         }
         
+        // Apply the modified image data back to the canvas
         ctx.putImageData(imageData, 0, 0);
     }
 
+    // Convert hex color string to RGBA object
     hexToRGBA(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? {

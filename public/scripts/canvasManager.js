@@ -1,6 +1,11 @@
 export class CanvasManager {
     constructor(paintBar, options = {}) {
         this.paintBar = paintBar;
+        // Initialize canvas layers for different purposes:
+        // - transparentBg: Displays the transparency grid pattern
+        // - opaqueBg: Solid background color layer
+        // - drawing: Main drawing canvas where all tools operate
+        // - overlay: Temporary visual effects and tool previews
         this.canvases = {
             transparentBg: paintBar.transparentBgCanvas,
             opaqueBg: paintBar.opaqueBgCanvas,
@@ -8,7 +13,7 @@ export class CanvasManager {
             overlay: paintBar.overlayCanvas
         };
 
-        // Initialize dimensions
+        // Set canvas dimensions with configurable defaults
         this.canvasWidth = options.width || 800;
         this.canvasHeight = options.height || 600;
         this.minWidth = options.minWidth || 300;
@@ -17,30 +22,30 @@ export class CanvasManager {
         this.maxHeight = options.maxHeight || 4096;
         this.responsiveCanvas = options.responsive !== undefined ? options.responsive : true;
 
-        // If square, ensure dimensions are equal
+        // Handle square canvas mode by ensuring equal dimensions
         if (this.paintBar.isSquare) {
             const size = Math.min(this.canvasWidth, this.canvasHeight);
             this.canvasWidth = size;
             this.canvasHeight = size;
             
-            // Also ensure min/max dimensions are equal
+            // Enforce equal min/max dimensions for square mode
             const minSize = Math.max(this.minWidth, this.minHeight);
             const maxSize = Math.min(this.maxWidth, this.maxHeight);
             this.minWidth = this.minHeight = minSize;
             this.maxWidth = this.maxHeight = maxSize;
         }
 
-        // Initialize canvases with the correct dimensions
+        // Set up all canvas layers and initialize their properties
         this.initializeCanvases();
     }
 
     initializeCanvases() {
-        // Set size for all canvas layers
+        // Apply dimensions to all canvas layers
         Object.values(this.canvases).forEach(canvas => {
             this.setCanvasSize(canvas);
         });
         
-        // Update container class if square locked
+        // Update container styling for square/rectangular modes
         const container = this.canvases.drawing.parentElement;
         if (container) {
             if (this.paintBar.isSquare) {
@@ -50,39 +55,42 @@ export class CanvasManager {
             }
         }
 
-        // Initialize specific canvas properties
+        // Initialize each canvas layer with its specific properties
         this.initializeTransparentBackground();
         this.initializeOpaqueBackground();
         this.initializeDrawingCanvas();
         this.initializeOverlayCanvas();
 
+        // Set up responsive resizing if enabled
         if (this.responsiveCanvas) {
             this.setupResizeListener();
         }
     }
 
     setCanvasSize(canvas) {
+        // Set actual canvas dimensions (not display size)
         canvas.width = this.canvasWidth;
         canvas.height = this.canvasHeight;
         
-        // Initial display size
         const wrapper = canvas.parentElement;
         if (!wrapper) return;
 
         const container = wrapper.parentElement;
+        // Account for padding/margins in container
         const availableWidth = container.clientWidth - 40;
         const availableHeight = container.clientHeight - 40;
         
         if (this.paintBar.isSquare) {
+            // For square mode, maintain 1:1 aspect ratio
             const size = Math.min(availableWidth, availableHeight);
             canvas.style.width = `${size}px`;
             canvas.style.height = `${size}px`;
         } else {
-            // For rectangular, let the wrapper handle the sizing
+            // For rectangular mode, use responsive sizing while maintaining aspect ratio
             canvas.style.width = '100%';
             canvas.style.height = '100%';
             
-            // Set wrapper size to maintain aspect ratio
+            // Calculate and set wrapper size to maintain aspect ratio
             const canvasAspectRatio = this.canvasWidth / this.canvasHeight;
             const containerAspectRatio = availableWidth / availableHeight;
             
@@ -101,17 +109,20 @@ export class CanvasManager {
     }
 
     initializeTransparentBackground() {
+        // Initialize transparent background canvas with grid pattern
         const ctx = this.canvases.transparentBg.getContext('2d');
         this.paintBar.drawTransparentBackground();
     }
 
     initializeOpaqueBackground() {
+        // Initialize opaque background canvas with solid color
         const ctx = this.canvases.opaqueBg.getContext('2d');
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
     }
 
     initializeDrawingCanvas() {
+        // Initialize main drawing canvas with default tool settings
         const ctx = this.canvases.drawing.getContext('2d');
         ctx.strokeStyle = this.paintBar.currentColor;
         ctx.lineWidth = this.paintBar.lineWidth;
@@ -120,6 +131,7 @@ export class CanvasManager {
     }
 
     initializeOverlayCanvas() {
+        // Initialize overlay canvas for temporary visual effects and tool previews
         const ctx = this.canvases.overlay.getContext('2d');
         ctx.strokeStyle = this.paintBar.currentColor;
         ctx.fillStyle = this.paintBar.currentColor;
@@ -206,12 +218,14 @@ export class CanvasManager {
     }
 
     updateCanvasSettings(settings) {
+        // Update canvas settings with new values
         const { style, width, height, responsive } = settings;
         this.canvasStyle = style || this.canvasStyle;
         this.canvasWidth = width || this.canvasWidth;
         this.canvasHeight = height || this.canvasHeight;
         this.responsiveCanvas = responsive !== undefined ? responsive : this.responsiveCanvas;
 
+        // Reinitialize canvases with new settings
         this.initializeCanvases();
     }
 }
