@@ -288,6 +288,13 @@ body {
     object-fit: cover;
 }
 
+.copyright {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
 @media (max-width: 1024px) {
     .content-wrapper {
         flex-direction: column-reverse;
