@@ -312,10 +312,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .section-header h2 {
+    font-size: 1.4rem;
+    margin: 0;
     color: var(--primary-color);
 }
 
@@ -333,17 +335,17 @@ body {
 .project-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .project-card {
     aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
-    border: 1px solid var(--border-color);
-    background: rgba(0, 0, 0, 0.2);
 }
 
 .project-card:hover {
