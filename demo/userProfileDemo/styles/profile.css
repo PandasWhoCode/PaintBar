@@ -74,30 +74,48 @@ body {
 }
 
 .main-content {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
 
+.content-wrapper {
+    display: flex;
+    gap: 2rem;
+}
+
+.projects-content {
+    flex: 1;
+    min-width: 0; /* Prevents flex item from overflowing */
+}
+
 .profile-section {
+    position: sticky;
+    top: 5rem; /* Accounts for the menu bar */
+    height: fit-content;
+    width: 350px;
     background: var(--card-background);
     backdrop-filter: blur(10px);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     padding: 2rem;
-    margin-bottom: 2rem;
     border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .user-info {
+    width: 100%;
     display: flex;
-    justify-content: space-between;
-    gap: 2rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .user-profile {
-    flex: 0 0 200px;
     text-align: center;
+    margin-bottom: 2rem;
 }
 
 .profile-picture {
@@ -119,14 +137,54 @@ body {
 
 .username {
     font-size: 1.5rem;
+    margin: 0.5rem 0;
     color: var(--primary-color);
-    margin-bottom: 0.5rem;
 }
 
 .display-name {
     font-size: 1.2rem;
+    margin: 0.5rem 0 1.5rem;
     color: var(--text-color);
-    font-weight: normal;
+    opacity: 0.8;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.social-link {
+    color: var(--text-color);
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.social-link:hover {
+    color: var(--primary-color);
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.hbar-address {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    font-family: monospace;
+}
+
+.hbar-symbol {
+    font-style: normal;
+    font-weight: bold;
+    font-size: 1.4rem;
+    color: var(--primary-color);
 }
 
 .user-links {
@@ -230,13 +288,17 @@ body {
     object-fit: cover;
 }
 
-.hbar-symbol {
-    font-style: normal;
-    font-weight: bold;
-    font-size: 1.4rem;
-}
-
 @media (max-width: 1024px) {
+    .content-wrapper {
+        flex-direction: column-reverse;
+    }
+
+    .profile-section {
+        position: relative;
+        top: 0;
+        width: 100%;
+    }
+
     .project-grid {
         grid-template-columns: repeat(3, 1fr);
     }
