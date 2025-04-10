@@ -1,9 +1,10 @@
 :root {
-    --primary-color: #008cff;
-    --text-color: #333;
-    --background-color: #f5f5f5;
-    --card-background: #ffffff;
-    --border-color: #e0e0e0;
+    --primary-color: #00ffff;
+    --text-color: #ffffff;
+    --background-color: rgb(49, 35, 58);
+    --card-background: rgba(0, 0, 0, 0.3);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-background: rgba(0, 255, 255, 0.2);
 }
 
 * {
@@ -13,16 +14,18 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
+    min-height: 100vh;
 }
 
 .menu-bar {
-    background-color: var(--card-background);
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
     padding: 1rem 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -46,6 +49,11 @@ body {
     height: 40px;
     width: auto;
     object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.logo-image:hover {
+    transform: scale(1.05);
 }
 
 .menu-items {
@@ -57,7 +65,8 @@ body {
     color: var(--text-color);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
 }
 
 .menu-item:hover {
@@ -71,11 +80,13 @@ body {
 }
 
 .profile-section {
-    background-color: var(--card-background);
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     padding: 2rem;
     margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
 }
 
 .user-info {
@@ -95,6 +106,7 @@ body {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 1rem;
+    border: 2px solid var(--border-color);
 }
 
 .username {
@@ -125,11 +137,13 @@ body {
 .link-label {
     font-weight: bold;
     min-width: 120px;
+    color: var(--primary-color);
 }
 
 .link-value, .link-item a {
     color: var(--text-color);
     text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 .link-item a:hover {
@@ -137,11 +151,13 @@ body {
 }
 
 .projects-section {
-    background-color: var(--card-background);
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     padding: 2rem;
     margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
 }
 
 .section-header {
@@ -159,6 +175,11 @@ body {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.view-all:hover {
+    text-shadow: 0 0 10px var(--primary-color);
 }
 
 .project-grid {
@@ -171,12 +192,16 @@ body {
     aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .project-card:hover {
     transform: translateY(-5px);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2);
 }
 
 .project-card img {
