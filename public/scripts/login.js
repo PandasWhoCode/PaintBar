@@ -1,3 +1,7 @@
+// Initialize Firebase
+import { firebaseConfig } from './firebase-config.js';
+firebase.initializeApp(firebaseConfig);
+
 // Form toggle functionality
 const toggleLinks = document.querySelectorAll('.toggle-link');
 const loginForm = document.getElementById('loginForm');
