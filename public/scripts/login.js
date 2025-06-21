@@ -33,7 +33,7 @@ loginForm.addEventListener('submit', async (e) => {
         const user = userCredential.user;
         
         if (user) {
-            window.location.href = '/demo/userProfileDemo/profile.html';
+            window.location.href = '/profile.html';
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -74,7 +74,7 @@ signupForm.addEventListener('submit', async (e) => {
         const user = userCredential.user;
         
         if (user) {
-            window.location.href = '/demo/userProfileDemo/profile.html';
+            window.location.href = '/profile.html';
         }
     } catch (error) {
         console.error('Signup error:', error);
@@ -99,6 +99,6 @@ signupForm.addEventListener('submit', async (e) => {
 // Auth state observer
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        window.location.href = '/demo/userProfileDemo/profile.html';
+        window.location.href = '/profile.html';
     }
 });

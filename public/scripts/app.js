@@ -1630,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         profileBtn.addEventListener('click', () => {
-            window.location.href = '/demo/userProfileDemo/profile.html';
+            window.location.href = '/profile.html';
         });
 
         logoutBtn.addEventListener('click', () => {
