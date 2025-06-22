@@ -200,6 +200,18 @@
                 </div>
             </div>
 
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Profile</span>
+                    <span class="submenu-toggle">▼</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="loginBtn" title="Login">Login</button>
+                    <button id="profileBtn" title="Profile" class="hidden">Profile</button>
+                    <button id="logoutBtn" title="Logout" class="hidden">Logout</button>
+                </div>
+            </div>
+
             <div class="toolbar-footer">
                 <div class="footer-content">
                     Copyright &copy; 2024-<span id="currentYear"></span> PandasWhoCode
@@ -351,29 +363,7 @@
             </div>
         </div>
     </div><!-- end of container -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-      
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyDumLfap0cHfbeNG1GFJEJq-vnbK4R2ziM",
-          authDomain: "paintbar-7f887.firebaseapp.com",
-          projectId: "paintbar-7f887",
-          storageBucket: "paintbar-7f887.firebasestorage.app",
-          messagingSenderId: "461183067730",
-          appId: "1:461183067730:web:292c0a62dc0df7203be18b",
-          measurementId: "G-WWQ5KF57NP"
-        };
-      
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-    </script>
+    <script type="module" src="scripts/firebase-init.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
     <script type="module" src="scripts/app.js"></script>

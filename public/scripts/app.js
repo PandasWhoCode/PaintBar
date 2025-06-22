@@ -11,6 +11,8 @@
 import { SaveManager } from './save.js';
 import { ToolManager } from './toolManager.js';
 import { CanvasManager } from './canvasManager.js';
+import { auth } from './firebase-init.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js';
 
 /**
  * PaintBar class representing the drawing application
@@ -1616,6 +1618,43 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update copyright year
         document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Get UI elements
+        const loginBtn = document.getElementById('loginBtn');
+        const profileBtn = document.getElementById('profileBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Add button click handlers
+        loginBtn.addEventListener('click', () => {
+            window.location.href = '/login.html';
+        });
+
+        profileBtn.addEventListener('click', () => {
+            window.location.href = '/profile.html';
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.reload();
+            }).catch((error) => {
+                console.error('Error signing out:', error);
+            });
+        });
+
+        // Handle auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                loginBtn.classList.add('hidden');
+                profileBtn.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+            } else {
+                // User is signed out
+                loginBtn.classList.remove('hidden');
+                profileBtn.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        });
         
         // Initialize PaintBar with settings
         const paintBar = new PaintBar(options);
