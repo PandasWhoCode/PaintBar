@@ -10,14 +10,12 @@ const limiter = rateLimit({
     message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 
-// Apply rate limiting to all routes
-app.use(limiter);
-
-// Serve static files from the public directory
+// Serve static files BEFORE rate limiting (assets should not be rate-limited)
 app.use(express.static('public'));
-
-// Serve files from the demo directory
 app.use('/demo', express.static('demo'));
+
+// Apply rate limiting to non-static routes only
+app.use(limiter);
 
 // Route for the root path
 app.get('/', (req, res) => {

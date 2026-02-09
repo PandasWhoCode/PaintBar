@@ -24,6 +24,7 @@ public/scripts/firebase-config.js
 # IDE/Editor specific
 .vscode/
 .idea/
+.windsurf/
 *.swp
 *.swo
 .DS_Store

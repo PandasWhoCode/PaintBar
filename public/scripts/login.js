@@ -2,6 +2,9 @@
 import { firebaseConfig } from './firebase-config.js';
 firebase.initializeApp(firebaseConfig);
 
+// Update copyright year
+document.querySelectorAll('.copyright-year').forEach(el => el.textContent = new Date().getFullYear());
+
 // Form toggle functionality
 const toggleLinks = document.querySelectorAll('.toggle-link');
 const loginForm = document.getElementById('loginForm');
