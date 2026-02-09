@@ -144,6 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
         resetPasswordBtn.addEventListener('click', handleResetPassword);
     }
 
+    // "View All" links — show under construction banner
+    document.querySelectorAll('.view-all').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showUnderConstructionBanner();
+        });
+    });
+
     // Clean up on page unload
     window.addEventListener('unload', cleanupListeners);
 });
@@ -245,6 +253,11 @@ function setupProjectsListener(uid) {
         updateProjectsUI(projects);
     }, (error) => {
         console.error('Error in projects listener:', error);
+        // Clear skeleton loaders on error so they don't spin forever
+        const projectGrid = document.getElementById('projectsGrid');
+        if (projectGrid) {
+            projectGrid.innerHTML = '<p class="no-projects">No projects yet. Start creating!</p>';
+        }
         if (error.code === 'permission-denied') {
             cleanupListeners();
             alert('You do not have permission to access projects. Please log in again.');
@@ -388,6 +401,11 @@ function setupStatsListeners(uid) {
             }
         }, (error) => {
             console.error(`Error in ${name} listener:`, error);
+            // Clear skeleton loaders on error so they don't spin forever
+            const grid = document.getElementById(gridId);
+            if (grid) {
+                grid.innerHTML = `<p class="no-projects">No ${name === 'nfts' ? 'NFTs' : 'gallery items'} yet.</p>`;
+            }
         });
 
         unsubscribeStats.push(unsub);
@@ -704,6 +722,23 @@ function showSuccessMessage(message) {
     document.body.appendChild(toast);
 
     setTimeout(() => toast.remove(), 3000);
+}
+
+// Show an "Under Construction" banner
+function showUnderConstructionBanner() {
+    const existing = document.querySelector('.under-construction-banner');
+    if (existing) return; // don't stack banners
+
+    const banner = document.createElement('div');
+    banner.className = 'under-construction-banner';
+    banner.innerHTML = `
+        <span>🚧 Under Construction — This feature is coming soon!</span>
+        <button class="banner-close" aria-label="Close">&times;</button>
+    `;
+    document.body.prepend(banner);
+
+    banner.querySelector('.banner-close').addEventListener('click', () => banner.remove());
+    setTimeout(() => banner.remove(), 5000);
 }
 
 // Initialize smooth scrolling
