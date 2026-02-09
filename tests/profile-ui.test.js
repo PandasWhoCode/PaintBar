@@ -64,14 +64,14 @@ describe('updateProfileUI', () => {
         expect(document.getElementById('profileUsername').textContent).toBe('testuser');
     });
 
-    test('falls back to email prefix when no username', () => {
+    test('shows prompt when no username set', () => {
         updateProfileUI({ email: 'artist@paintbar.app' });
-        expect(document.getElementById('profileUsername').textContent).toBe('artist');
+        expect(document.getElementById('profileUsername').textContent).toBe('Choose a username');
     });
 
-    test('falls back to "User" when no username or email', () => {
+    test('shows prompt when no username or email', () => {
         updateProfileUI({});
-        expect(document.getElementById('profileUsername').textContent).toBe('User');
+        expect(document.getElementById('profileUsername').textContent).toBe('Choose a username');
     });
 
     test('displays display name and shows element', () => {
@@ -355,11 +355,10 @@ describe('profile.js source validation', () => {
         expect(profileSource).toContain("addEventListener('unload', cleanupListeners)");
     });
 
-    test('does not import getDocs or getDoc (replaced by onSnapshot)', () => {
-        expect(profileSource).not.toMatch(/import[\s\S]*?getDocs[\s\S]*?from/);
-        // getDoc should not be in the import block
+    test('imports getDoc and writeBatch for username uniqueness', () => {
         const importBlock = profileSource.match(/import \{[\s\S]*?\} from.*firebase-firestore/)[0];
-        expect(importBlock).not.toContain('getDoc');
+        expect(importBlock).toContain('getDoc');
+        expect(importBlock).toContain('writeBatch');
     });
 
     test('uses non-blocking success toast instead of alert on save', () => {
@@ -377,6 +376,16 @@ describe('profile.js source validation', () => {
 
     test('saves githubUrl in form submission', () => {
         expect(profileSource).toContain("githubUrl: formData.get('githubUrl')");
+    });
+
+    test('checks username uniqueness before claiming', () => {
+        expect(profileSource).toContain("doc(db, 'usernames'");
+        expect(profileSource).toContain('writeBatch(db)');
+        expect(profileSource).toContain('batch.commit()');
+    });
+
+    test('validates username format', () => {
+        expect(profileSource).toContain('/^[a-z0-9_-]{3,30}$/');
     });
 
     test('does not reference githubProfiles subcollection', () => {

@@ -2,12 +2,14 @@ import { auth, db, sendPasswordResetEmail, signOut } from './firebase-init.js';
 import { 
     doc, 
     setDoc, 
+    getDoc,
     collection, 
     query, 
     where, 
     onSnapshot,
     orderBy,
-    limit
+    limit,
+    writeBatch
 } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js';
 
 // Listener unsubscribe functions for cleanup
@@ -185,7 +187,7 @@ async function handleAuthStateChanged(user) {
                 const initialUserData = {
                     uid: user.uid,
                     email: user.email,
-                    username: user.email.split('@')[0],
+                    username: '',
                     displayName: user.displayName || '',
                     createdAt: new Date(),
                     updatedAt: new Date()
@@ -279,10 +281,30 @@ async function handleProfileFormSubmit(event) {
     // Only set username if it's a new user (doesn't have one yet)
     // Username can only be set once — check via the readOnly state set by populateFormData
     const usernameInput = document.getElementById('username');
+    let claimingUsername = false;
     if (usernameInput && !usernameInput.readOnly) {
-        const newUsername = formData.get('username');
+        const newUsername = (formData.get('username') || '').trim().toLowerCase();
         if (newUsername) {
+            // Validate format: alphanumeric, underscores, hyphens, 3-30 chars
+            if (!/^[a-z0-9_-]{3,30}$/.test(newUsername)) {
+                alert('Username must be 3-30 characters and can only contain letters, numbers, underscores, and hyphens.');
+                return;
+            }
+            // Check uniqueness before proceeding
+            const usernameDocRef = doc(db, 'usernames', newUsername);
+            try {
+                const usernameDoc = await getDoc(usernameDocRef);
+                if (usernameDoc.exists()) {
+                    alert('That username is already taken. Please choose another.');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error checking username:', error);
+                alert('Could not verify username availability. Please try again.');
+                return;
+            }
             updates.username = newUsername;
+            claimingUsername = true;
         }
     }
 
@@ -302,10 +324,27 @@ async function handleProfileFormSubmit(event) {
     // Write to Firestore in the background
     try {
         const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, updates, { merge: true });
+        if (claimingUsername) {
+            // Atomic batch: claim username + update profile together
+            const batch = writeBatch(db);
+            const usernameDocRef = doc(db, 'usernames', updates.username);
+            batch.set(usernameDocRef, { uid: user.uid, createdAt: new Date() });
+            batch.set(userDocRef, updates, { merge: true });
+            await batch.commit();
+        } else {
+            await setDoc(userDocRef, updates, { merge: true });
+        }
     } catch (error) {
         console.error('Error saving profile to server:', error);
-        showSuccessMessage('Saved locally. Will sync when connection is restored.');
+        if (claimingUsername) {
+            // Revert optimistic username update
+            const reverted = { ...merged, username: '' };
+            setCachedProfile(reverted);
+            updateProfileUI(reverted);
+            showSuccessMessage('Username could not be claimed. Please try again.');
+        } else {
+            showSuccessMessage('Saved locally. Will sync when connection is restored.');
+        }
     }
 }
 
@@ -360,7 +399,7 @@ async function updateProfileUI(userData) {
     // Update username
     const usernameEl = document.getElementById('profileUsername');
     if (usernameEl) {
-        usernameEl.textContent = userData.username || (userData.email ? userData.email.split('@')[0] : 'User');
+        usernameEl.textContent = userData.username || 'Choose a username';
     }
 
     // Update display name
