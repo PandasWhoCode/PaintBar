@@ -535,12 +535,18 @@ function populateFormFromUI() {
     const hbar = document.getElementById('hbarAddressDisplay');
 
     const usernameInput = form.querySelector('#username');
-    if (usernameInput && username) {
-        const text = username.textContent.trim();
-        if (text && !text.includes('\u00a0')) { // skip skeleton nbsp
+    const usernameEl = document.getElementById('profileUsername');
+    if (usernameInput && usernameEl) {
+        const text = usernameEl.textContent.trim();
+        // Skip skeleton nbsp and placeholder prompt text
+        if (text && !text.includes('\u00a0') && text !== 'Choose a username') {
             usernameInput.value = text;
             usernameInput.readOnly = true;
             usernameInput.title = 'Username cannot be changed once set';
+        } else {
+            usernameInput.value = '';
+            usernameInput.readOnly = false;
+            usernameInput.title = '';
         }
     }
 
