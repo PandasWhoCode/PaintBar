@@ -12,7 +12,6 @@ export interface User {
   
   // Social media handles
   githubUrl?: string;
-  linkedinProfile?: string;
   instagramHandle?: string;
   twitterHandle?: string;
   blueskyHandle?: string;

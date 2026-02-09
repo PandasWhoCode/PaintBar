@@ -32,7 +32,6 @@ User profile documents. The `userId` is the Firebase Auth UID.
 | `twitterHandle` | string | No | Twitter/X handle (with or without @) |
 | `blueskyHandle` | string | No | Bluesky handle |
 | `instagramHandle` | string | No | Instagram handle |
-| `linkedinProfile` | string | No | LinkedIn profile URL |
 | `hbarAddress` | string | No | Hedera HBAR wallet address |
 | `createdAt` | timestamp | Yes | Account creation timestamp |
 | `updatedAt` | timestamp | Yes | Last profile update timestamp |

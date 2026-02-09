@@ -31,10 +31,42 @@ beforeEach(() => {
 // ---- Extract pure functions from profile.js source ----
 // We eval the function bodies in CJS context since we can't import ES modules in Jest
 
+// Stub helpers used by extracted functions (must be global for new Function scope)
+globalThis.PROJECTS_CACHE_SUFFIX = '_projects_cache';
+globalThis.setCachedGrid = function() {}; // no-op for tests
+globalThis.sanitizeUrl = function(url) {
+    if (!url) return '';
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+    } catch { /* invalid URL */ }
+    return '';
+};
+globalThis.createSafeLink = function(href, title, iconClass) {
+    const safeHref = globalThis.sanitizeUrl(href);
+    if (!safeHref) return null;
+    const a = document.createElement('a');
+    a.href = safeHref;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = title;
+    const i = document.createElement('i');
+    i.className = iconClass;
+    a.appendChild(i);
+    return a;
+};
+globalThis.safeSrc = function(src) {
+    if (!src) return 'images/placeholder.png';
+    if (src.startsWith('data:image/')) return src;
+    const safe = globalThis.sanitizeUrl(src);
+    return safe || 'images/placeholder.png';
+};
+
 // Extract updateProfileUI
 const updateProfileUIBody = profileSource.match(
     /\/\/ Update profile UI with user data\nasync function updateProfileUI\(userData\) \{([\s\S]*?)\n\}\n\n\/\/ Populate form/
 );
+expect(updateProfileUIBody).not.toBeNull();
 
 const updateProfileUI = new Function('userData', updateProfileUIBody[1]);
 
@@ -42,17 +74,15 @@ const updateProfileUI = new Function('userData', updateProfileUIBody[1]);
 const populateFormDataBody = profileSource.match(
     /\/\/ Populate form with user data\nfunction populateFormData\(userData\) \{([\s\S]*?)\n\}\n\n\/\/ Fallback/
 );
+expect(populateFormDataBody).not.toBeNull();
 
 const populateFormData = new Function('userData', populateFormDataBody[1]);
-
-// Stub cache functions used by updateProjectsUI (must be global for new Function scope)
-globalThis.PROJECTS_CACHE_KEY = 'paintbar_projects_cache';
-globalThis.setCachedGrid = function() {}; // no-op for tests
 
 // Extract updateProjectsUI
 const updateProjectsUIBody = profileSource.match(
     /\/\/ Update projects UI with user's projects\nfunction updateProjectsUI\(projects\) \{([\s\S]*?)\n\}\n\n\/\/ Handle/
 );
+expect(updateProjectsUIBody).not.toBeNull();
 
 const updateProjectsUI = new Function('projects', updateProjectsUIBody[1]);
 
@@ -303,13 +333,14 @@ describe('updateProjectsUI', () => {
         expect(cards[0].querySelector('h3').textContent).toBe('My Drawing');
     });
 
-    test('updates project count stat', () => {
+    test('does not set project count (count is handled by server aggregation)', () => {
         updateProjectsUI([
             { id: '1', name: 'P1' },
             { id: '2', name: 'P2' },
             { id: '3', name: 'P3' }
         ]);
-        expect(document.getElementById('projectCount').textContent).toBe('3');
+        // projectCount should remain at its default (0), not set by updateProjectsUI
+        expect(document.getElementById('projectCount').textContent).toBe('0');
     });
 
     test('handles project with no name as "Untitled"', () => {
@@ -355,10 +386,50 @@ describe('profile.js source validation', () => {
         expect(profileSource).toContain("addEventListener('unload', cleanupListeners)");
     });
 
+    test('does not import getDocs (replaced by onSnapshot)', () => {
+        expect(profileSource).not.toContain('getDocs');
+    });
+
     test('imports getDoc and writeBatch for username uniqueness', () => {
         const importBlock = profileSource.match(/import \{[\s\S]*?\} from.*firebase-firestore/)[0];
         expect(importBlock).toContain('getDoc');
         expect(importBlock).toContain('writeBatch');
+    });
+
+    test('imports and uses getCountFromServer for true stat counts', () => {
+        const importBlock = profileSource.match(/import \{[\s\S]*?\} from.*firebase-firestore/)[0];
+        expect(importBlock).toContain('getCountFromServer');
+        expect(profileSource).toContain('getCountFromServer(countQuery)');
+    });
+
+    test('has sanitization helpers (escapeHtml, sanitizeUrl, createSafeLink, safeSrc)', () => {
+        expect(profileSource).toContain('function escapeHtml(str)');
+        expect(profileSource).toContain('function sanitizeUrl(url)');
+        expect(profileSource).toContain('function createSafeLink(href, title, iconClass)');
+        expect(profileSource).toContain('function safeSrc(src)');
+    });
+
+    test('social links use createSafeLink with rel=noopener noreferrer', () => {
+        expect(profileSource).toContain('createSafeLink(');
+        expect(profileSource).toContain("rel = 'noopener noreferrer'");
+    });
+
+    test('normalizes Bluesky handle by stripping leading @', () => {
+        expect(profileSource).toContain("userData.blueskyHandle.startsWith('@') ? userData.blueskyHandle.slice(1) : userData.blueskyHandle");
+    });
+
+    test('caches are keyed by uid to prevent cross-account leakage', () => {
+        expect(profileSource).toContain('let currentUid = null');
+        expect(profileSource).toContain('`paintbar_${currentUid}${suffix}`');
+    });
+
+    test('guards against null email in user creation', () => {
+        expect(profileSource).toContain("email: user.email || ''");
+    });
+
+    test('success toast has aria-live for accessibility', () => {
+        expect(profileSource).toContain("setAttribute('role', 'status')");
+        expect(profileSource).toContain("setAttribute('aria-live', 'polite')");
     });
 
     test('uses non-blocking success toast instead of alert on save', () => {
@@ -397,5 +468,9 @@ describe('profile.js source validation', () => {
         expect(profileSource).toContain("setupStatsListeners(user.uid)");
         expect(profileSource).toContain("name: 'gallery'");
         expect(profileSource).toContain("name: 'nfts'");
+    });
+
+    test('does not contain dead initializeSmoothScrolling function', () => {
+        expect(profileSource).not.toContain('initializeSmoothScrolling');
     });
 });

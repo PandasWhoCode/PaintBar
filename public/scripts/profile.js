@@ -9,7 +9,8 @@ import {
     onSnapshot,
     orderBy,
     limit,
-    writeBatch
+    writeBatch,
+    getCountFromServer
 } from 'https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js';
 
 // Listener unsubscribe functions for cleanup
@@ -17,43 +18,87 @@ let unsubscribeProfile = null;
 let unsubscribeProjects = null;
 let unsubscribeStats = [];
 
-// Local cache keys for instant rendering
-const PROFILE_CACHE_KEY = 'paintbar_profile_cache';
-const PROJECTS_CACHE_KEY = 'paintbar_projects_cache';
-const GALLERY_CACHE_KEY = 'paintbar_gallery_cache';
-const NFTS_CACHE_KEY = 'paintbar_nfts_cache';
+// Local cache key suffixes (prefixed with uid at runtime)
+const PROFILE_CACHE_SUFFIX = '_profile_cache';
+const PROJECTS_CACHE_SUFFIX = '_projects_cache';
+const GALLERY_CACHE_SUFFIX = '_gallery_cache';
+const NFTS_CACHE_SUFFIX = '_nfts_cache';
+
+// Current user uid for cache scoping (set on auth state change)
+let currentUid = null;
+
+function cacheKey(suffix) {
+    return currentUid ? `paintbar_${currentUid}${suffix}` : null;
+}
 
 function getCachedProfile() {
     try {
-        const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+        const key = cacheKey(PROFILE_CACHE_SUFFIX);
+        if (!key) return null;
+        const cached = localStorage.getItem(key);
         return cached ? JSON.parse(cached) : null;
     } catch { return null; }
 }
 
 function setCachedProfile(userData) {
     try {
-        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(userData));
+        const key = cacheKey(PROFILE_CACHE_SUFFIX);
+        if (key) localStorage.setItem(key, JSON.stringify(userData));
     } catch { /* quota exceeded — ignore */ }
 }
 
 function clearCachedProfile() {
-    localStorage.removeItem(PROFILE_CACHE_KEY);
-    localStorage.removeItem(PROJECTS_CACHE_KEY);
-    localStorage.removeItem(GALLERY_CACHE_KEY);
-    localStorage.removeItem(NFTS_CACHE_KEY);
+    const suffixes = [PROFILE_CACHE_SUFFIX, PROJECTS_CACHE_SUFFIX, GALLERY_CACHE_SUFFIX, NFTS_CACHE_SUFFIX];
+    suffixes.forEach(suffix => {
+        const key = cacheKey(suffix);
+        if (key) localStorage.removeItem(key);
+    });
 }
 
-function getCachedGrid(key) {
+function getCachedGrid(suffix) {
     try {
+        const key = cacheKey(suffix);
+        if (!key) return null;
         const cached = localStorage.getItem(key);
         return cached ? JSON.parse(cached) : null;
     } catch { return null; }
 }
 
-function setCachedGrid(key, html) {
+function setCachedGrid(suffix, html) {
     try {
-        localStorage.setItem(key, JSON.stringify(html));
+        const key = cacheKey(suffix);
+        if (key) localStorage.setItem(key, JSON.stringify(html));
     } catch { /* quota exceeded — ignore */ }
+}
+
+// Sanitization helpers
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function sanitizeUrl(url) {
+    if (!url) return '';
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+    } catch { /* invalid URL */ }
+    return '';
+}
+
+function createSafeLink(href, title, iconClass) {
+    const safeHref = sanitizeUrl(href);
+    if (!safeHref) return null;
+    const a = document.createElement('a');
+    a.href = safeHref;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = title;
+    const i = document.createElement('i');
+    i.className = iconClass;
+    a.appendChild(i);
+    return a;
 }
 
 // Initialize profile page when DOM is loaded
@@ -61,26 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update copyright year
     document.querySelectorAll('.copyright-year').forEach(el => el.textContent = new Date().getFullYear());
 
-    // Render cached profile data instantly (before Firebase resolves)
-    const cached = getCachedProfile();
-    if (cached) {
-        updateProfileUI(cached);
-        populateFormData(cached);
-    }
-
-    // Render cached grid states instantly
-    const gridCaches = [
-        { key: PROJECTS_CACHE_KEY, id: 'projectsGrid' },
-        { key: GALLERY_CACHE_KEY, id: 'galleryGrid' },
-        { key: NFTS_CACHE_KEY, id: 'nftsGrid' }
-    ];
-    gridCaches.forEach(({ key, id }) => {
-        const cachedHtml = getCachedGrid(key);
-        if (cachedHtml) {
-            const grid = document.getElementById(id);
-            if (grid) grid.innerHTML = cachedHtml;
-        }
-    });
+    // Cached data is rendered after auth confirms uid (see handleAuthStateChanged)
 
     // Set up auth state listener
     auth.onAuthStateChanged(handleAuthStateChanged);
@@ -180,6 +206,26 @@ async function handleAuthStateChanged(user) {
         return;
     }
 
+    // Set uid for cache scoping and render cached data now that uid is confirmed
+    currentUid = user.uid;
+    const cached = getCachedProfile();
+    if (cached) {
+        updateProfileUI(cached);
+        populateFormData(cached);
+    }
+    const gridCaches = [
+        { suffix: PROJECTS_CACHE_SUFFIX, id: 'projectsGrid' },
+        { suffix: GALLERY_CACHE_SUFFIX, id: 'galleryGrid' },
+        { suffix: NFTS_CACHE_SUFFIX, id: 'nftsGrid' }
+    ];
+    gridCaches.forEach(({ suffix, id }) => {
+        const cachedHtml = getCachedGrid(suffix);
+        if (cachedHtml) {
+            const grid = document.getElementById(id);
+            if (grid) grid.innerHTML = cachedHtml;
+        }
+    });
+
     // Track whether we've handled the first snapshot (for new user detection)
     let isFirstSnapshot = true;
 
@@ -194,7 +240,7 @@ async function handleAuthStateChanged(user) {
                 // New user — create their document
                 const initialUserData = {
                     uid: user.uid,
-                    email: user.email,
+                    email: user.email || '',
                     username: '',
                     displayName: user.displayName || '',
                     createdAt: new Date(),
@@ -245,12 +291,22 @@ function setupProjectsListener(uid) {
         limit(10)
     );
 
-    unsubscribeProjects = onSnapshot(q, (snapshot) => {
+    unsubscribeProjects = onSnapshot(q, async (snapshot) => {
         const projects = snapshot.docs.map(d => ({ 
             id: d.id, 
             ...d.data() 
         }));
         updateProjectsUI(projects);
+
+        // Fetch true count via server aggregation (not capped by limit)
+        try {
+            const countQuery = query(collection(db, 'projects'), where('userId', '==', uid));
+            const countSnapshot = await getCountFromServer(countQuery);
+            const projectCountEl = document.getElementById('projectCount');
+            if (projectCountEl) projectCountEl.textContent = countSnapshot.data().count;
+        } catch (err) {
+            console.error('Error fetching project count:', err);
+        }
     }, (error) => {
         console.error('Error in projects listener:', error);
         // Clear skeleton loaders on error so they don't spin forever
@@ -364,40 +420,63 @@ async function handleProfileFormSubmit(event) {
 // Set up real-time listeners for profile stats and grid content
 function setupStatsListeners(uid) {
     const statCollections = [
-        { name: 'gallery', gridId: 'galleryGrid', cacheKey: GALLERY_CACHE_KEY },
-        { name: 'nfts', gridId: 'nftsGrid', cacheKey: NFTS_CACHE_KEY }
+        { name: 'gallery', gridId: 'galleryGrid', cacheSuffix: GALLERY_CACHE_SUFFIX },
+        { name: 'nfts', gridId: 'nftsGrid', cacheSuffix: NFTS_CACHE_SUFFIX }
     ];
     
-    statCollections.forEach(({ name, gridId, cacheKey }) => {
+    statCollections.forEach(({ name, gridId, cacheSuffix }) => {
         const statsQuery = query(
+            collection(db, name),
+            where('userId', '==', uid),
+            limit(10)
+        );
+
+        // Separate unlimited query for true count
+        const countQuery = query(
             collection(db, name),
             where('userId', '==', uid)
         );
 
-        const unsub = onSnapshot(statsQuery, (snapshot) => {
-            // Update count
+        const unsub = onSnapshot(statsQuery, async (snapshot) => {
+            // Fetch true count via server aggregation (not capped by limit)
             const countEl = document.getElementById(`${name}Count`);
-            if (countEl) countEl.textContent = snapshot.size;
+            try {
+                const countSnapshot = await getCountFromServer(countQuery);
+                if (countEl) countEl.textContent = countSnapshot.data().count;
+            } catch (err) {
+                console.error(`Error fetching ${name} count:`, err);
+                if (countEl) countEl.textContent = snapshot.size;
+            }
 
             // Update grid content
             const grid = document.getElementById(gridId);
             if (grid) {
+                grid.innerHTML = '';
                 if (snapshot.size === 0) {
                     grid.innerHTML = `<p class="no-projects">No ${name === 'nfts' ? 'NFTs' : 'gallery items'} yet.</p>`;
                 } else {
                     const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    grid.innerHTML = items.map(item => `
-                        <div class="project-card" data-item-id="${item.id}">
-                            <img src="${item.thumbnailData || item.imageData || 'images/placeholder.png'}" 
-                                 alt="${item.name || 'Untitled'}"
-                                 onerror="this.src='images/placeholder.png'">
-                            <div class="project-info">
-                                <h3>${item.name || 'Untitled'}</h3>
-                            </div>
-                        </div>
-                    `).join('');
+                    items.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'project-card';
+                        card.dataset.itemId = item.id;
+
+                        const img = document.createElement('img');
+                        img.src = safeSrc(item.thumbnailData || item.imageData);
+                        img.alt = item.name || 'Untitled';
+                        img.onerror = function() { this.src = 'images/placeholder.png'; };
+                        card.appendChild(img);
+
+                        const info = document.createElement('div');
+                        info.className = 'project-info';
+                        const h3 = document.createElement('h3');
+                        h3.textContent = item.name || 'Untitled';
+                        info.appendChild(h3);
+                        card.appendChild(info);
+                        grid.appendChild(card);
+                    });
                 }
-                setCachedGrid(cacheKey, grid.innerHTML);
+                setCachedGrid(cacheSuffix, grid.innerHTML);
             }
         }, (error) => {
             console.error(`Error in ${name} listener:`, error);
@@ -438,7 +517,11 @@ async function updateProfileUI(userData) {
     const locationEl = document.getElementById('profileLocation');
     if (locationEl) {
         if (userData.location) {
-            locationEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${userData.location}`;
+            locationEl.textContent = '';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-map-marker-alt';
+            locationEl.appendChild(icon);
+            locationEl.appendChild(document.createTextNode(' ' + userData.location));
             locationEl.style.display = 'block';
         } else {
             locationEl.style.display = 'none';
@@ -463,25 +546,31 @@ async function updateProfileUI(userData) {
         socialLinksEl.innerHTML = '';
         
         if (userData.githubUrl) {
-            socialLinksEl.innerHTML += `<a href="${userData.githubUrl}" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>`;
+            const link = createSafeLink(userData.githubUrl, 'GitHub', 'fab fa-github');
+            if (link) socialLinksEl.appendChild(link);
         }
         
         if (userData.twitterHandle) {
             const handle = userData.twitterHandle.startsWith('@') ? userData.twitterHandle.slice(1) : userData.twitterHandle;
-            socialLinksEl.innerHTML += `<a href="https://twitter.com/${handle}" target="_blank" title="Twitter/X"><i class="fab fa-x-twitter"></i></a>`;
+            const link = createSafeLink(`https://twitter.com/${encodeURIComponent(handle)}`, 'Twitter/X', 'fab fa-x-twitter');
+            if (link) socialLinksEl.appendChild(link);
         }
         
         if (userData.blueskyHandle) {
-            socialLinksEl.innerHTML += `<a href="https://bsky.app/profile/${userData.blueskyHandle}" target="_blank" title="Bluesky"><i class="fab fa-bluesky"></i></a>`;
+            const handle = userData.blueskyHandle.startsWith('@') ? userData.blueskyHandle.slice(1) : userData.blueskyHandle;
+            const link = createSafeLink(`https://bsky.app/profile/${encodeURIComponent(handle)}`, 'Bluesky', 'fab fa-bluesky');
+            if (link) socialLinksEl.appendChild(link);
         }
         
         if (userData.instagramHandle) {
             const handle = userData.instagramHandle.startsWith('@') ? userData.instagramHandle.slice(1) : userData.instagramHandle;
-            socialLinksEl.innerHTML += `<a href="https://instagram.com/${handle}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>`;
+            const link = createSafeLink(`https://instagram.com/${encodeURIComponent(handle)}`, 'Instagram', 'fab fa-instagram');
+            if (link) socialLinksEl.appendChild(link);
         }
         
         if (userData.website) {
-            socialLinksEl.innerHTML += `<a href="${userData.website}" target="_blank" title="Website"><i class="fas fa-globe"></i></a>`;
+            const link = createSafeLink(userData.website, 'Website', 'fas fa-globe');
+            if (link) socialLinksEl.appendChild(link);
         }
     }
 
@@ -612,35 +701,52 @@ function populateFormFromUI() {
     }
 }
 
+// Validate image src is a safe data URI or relative/https path
+function safeSrc(src) {
+    if (!src) return 'images/placeholder.png';
+    if (src.startsWith('data:image/')) return src;
+    const safe = sanitizeUrl(src);
+    return safe || 'images/placeholder.png';
+}
+
 // Update projects UI with user's projects
 function updateProjectsUI(projects) {
     const projectGrid = document.getElementById('projectsGrid');
     if (!projectGrid) return;
 
+    projectGrid.innerHTML = '';
     if (projects.length === 0) {
         projectGrid.innerHTML = '<p class="no-projects">No projects yet. Start creating!</p>';
     } else {
-        projectGrid.innerHTML = projects.map(project => `
-            <div class="project-card" data-project-id="${project.id}">
-                <img src="${project.thumbnailData || project.imageData || 'images/placeholder.png'}" 
-                     alt="${project.name || 'Untitled'}"
-                     onerror="this.src='images/placeholder.png'">
-                <div class="project-info">
-                    <h3>${project.name || 'Untitled'}</h3>
-                    ${project.createdAt ? `<span class="project-date">${new Date(project.createdAt.seconds * 1000).toLocaleDateString()}</span>` : ''}
-                </div>
-            </div>
-        `).join('');
+        projects.forEach(project => {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.dataset.projectId = project.id;
+
+            const img = document.createElement('img');
+            img.src = safeSrc(project.thumbnailData || project.imageData);
+            img.alt = project.name || 'Untitled';
+            img.onerror = function() { this.src = 'images/placeholder.png'; };
+            card.appendChild(img);
+
+            const info = document.createElement('div');
+            info.className = 'project-info';
+            const h3 = document.createElement('h3');
+            h3.textContent = project.name || 'Untitled';
+            info.appendChild(h3);
+            if (project.createdAt) {
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'project-date';
+                dateSpan.textContent = new Date(project.createdAt.seconds * 1000).toLocaleDateString();
+                info.appendChild(dateSpan);
+            }
+            card.appendChild(info);
+            projectGrid.appendChild(card);
+        });
     }
 
     // Cache the rendered grid HTML for instant load next time
-    setCachedGrid(PROJECTS_CACHE_KEY, projectGrid.innerHTML);
-
-    // Update project count
-    const projectCountEl = document.getElementById('projectCount');
-    if (projectCountEl) {
-        projectCountEl.textContent = projects.length;
-    }
+    setCachedGrid(PROJECTS_CACHE_SUFFIX, projectGrid.innerHTML);
 }
 
 // Handle logout
@@ -691,15 +797,13 @@ function showWelcomeModal() {
     // Show the modal
     modal.style.display = 'block';
 
-    // Add a one-time listener to restore the header text after closing
+    // Restore header when modal closes
     const restoreHeader = () => {
         if (modalHeader) {
             modalHeader.textContent = 'Edit Profile';
         }
-        modal.removeEventListener('close', restoreHeader);
     };
 
-    // Restore header when modal closes
     const closeBtn = modal.querySelector('.close-modal');
     const cancelBtn = modal.querySelector('.cancel-button');
     
@@ -718,6 +822,8 @@ function showSuccessMessage(message) {
 
     const toast = document.createElement('div');
     toast.className = 'success-message';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
     toast.textContent = message;
     document.body.appendChild(toast);
 
@@ -731,6 +837,8 @@ function showUnderConstructionBanner() {
 
     const banner = document.createElement('div');
     banner.className = 'under-construction-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
     banner.innerHTML = `
         <span>🚧 Under Construction — This feature is coming soon!</span>
         <button class="banner-close" aria-label="Close">&times;</button>
@@ -739,19 +847,4 @@ function showUnderConstructionBanner() {
 
     banner.querySelector('.banner-close').addEventListener('click', () => banner.remove());
     setTimeout(() => banner.remove(), 5000);
-}
-
-// Initialize smooth scrolling
-function initializeSmoothScrolling() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
 }

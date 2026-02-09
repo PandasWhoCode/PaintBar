@@ -7,15 +7,19 @@ const app = express();
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again after 15 minutes'
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    skip: (req) => {
+        // Skip rate limiting for static assets (not HTML pages)
+        return /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map)$/i.test(req.path);
+    }
 });
 
-// Serve static files BEFORE rate limiting (assets should not be rate-limited)
+// Apply rate limiting before static files (HTML pages are rate-limited, assets are skipped)
+app.use(limiter);
+
+// Serve static files
 app.use(express.static('public'));
 app.use('/demo', express.static('demo'));
-
-// Apply rate limiting to non-static routes only
-app.use(limiter);
 
 // Route for the root path
 app.get('/', (req, res) => {

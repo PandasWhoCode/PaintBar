@@ -21,33 +21,27 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId);
       allow write: if isOwner(userId);
-      
-      // GitHub profiles subcollection
-      match /githubProfiles/{profileId} {
-        allow read: if isAuthenticated();
-        allow write: if isOwner(userId);
-      }
     }
 
     // Projects collection
     match /projects/{projectId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || resource.data.isPublic == true);
       allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
     // Gallery collection
     match /gallery/{itemId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || resource.data.isPublic == true);
       allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
     // NFTs collection
     match /nfts/{nftId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || resource.data.isPublic == true);
       allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
