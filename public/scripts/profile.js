@@ -527,16 +527,18 @@ function populateFormFromUI() {
         const links = socialLinks.querySelectorAll('a');
         links.forEach(link => {
             const href = link.getAttribute('href') || '';
-            if (href.includes('github.com')) {
+            let hostname = '';
+            try { hostname = new URL(href).hostname; } catch { return; }
+            if (hostname === 'github.com' || hostname === 'www.github.com') {
                 const gi = form.querySelector('#githubUrl');
                 if (gi) gi.value = href;
-            } else if (href.includes('twitter.com')) {
+            } else if (hostname === 'twitter.com' || hostname === 'www.twitter.com' || hostname === 'x.com' || hostname === 'www.x.com') {
                 const ti = form.querySelector('#twitterHandle');
                 if (ti) ti.value = href.split('/').pop();
-            } else if (href.includes('bsky.app')) {
+            } else if (hostname === 'bsky.app' || hostname === 'www.bsky.app') {
                 const bi = form.querySelector('#blueskyHandle');
                 if (bi) bi.value = href.split('/').pop();
-            } else if (href.includes('instagram.com')) {
+            } else if (hostname === 'instagram.com' || hostname === 'www.instagram.com') {
                 const ii = form.querySelector('#instagramHandle');
                 if (ii) ii.value = href.split('/').pop();
             } else if (link.querySelector('.fa-globe')) {
