@@ -1617,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         canvasSettingsModal.classList.add('hidden');
         
         // Update copyright year
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        document.querySelectorAll('.copyright-year').forEach(el => el.textContent = new Date().getFullYear());
 
         // Get UI elements
         const loginBtn = document.getElementById('loginBtn');

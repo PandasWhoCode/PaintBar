@@ -85,6 +85,12 @@ p {
     background: rgb(59, 45, 68);
 }
 
+.copyright {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
 @media (max-width: 600px) {
     .container {
         margin: 10px;

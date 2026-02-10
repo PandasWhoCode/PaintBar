@@ -17,6 +17,10 @@
             <img src="images/panda.png" alt="Confused Panda" class="panda">
         </div>
         <a href="/" class="home-link">Go Back Home</a>
+        <div class="copyright">
+            &copy; 2024-<span class="copyright-year"></span> PandasWhoCode. All rights reserved.
+        </div>
     </div>
+    <script>document.querySelectorAll('.copyright-year').forEach(el => el.textContent = new Date().getFullYear());</script>
 </body>
 </html>
