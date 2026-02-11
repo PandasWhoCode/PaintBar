@@ -191,18 +191,20 @@ export class CanvasManager {
             });
         }
 
+        // Capture drawing state BEFORE resetting dimensions (setting
+        // canvas.width/height clears the bitmap)
+        const drawingState = this.canvases.drawing.getContext('2d')!
+            .getImageData(0, 0, this.canvasWidth, this.canvasHeight);
+
         Object.values(this.canvases).forEach(canvas => {
             canvas.width = this.canvasWidth;
             canvas.height = this.canvasHeight;
         });
 
-        this.redrawCanvases();
+        this.redrawCanvases(drawingState);
     }
 
-    private redrawCanvases(): void {
-        const drawingState = this.canvases.drawing.getContext('2d')!
-            .getImageData(0, 0, this.canvasWidth, this.canvasHeight);
-
+    private redrawCanvases(drawingState: ImageData): void {
         this.initializeTransparentBackground();
         this.initializeOpaqueBackground();
 

@@ -32,6 +32,9 @@ firebase-service-account.json
 *.swo
 .DS_Store
 
+# Task runner artifacts
+.task/
+
 # Go build artifacts
 bin/
 *.exe

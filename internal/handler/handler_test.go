@@ -1305,6 +1305,19 @@ func TestDocsHandler_ServeUI(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Contains(t, rr.Header().Get("Content-Type"), "text/html")
 	assert.Contains(t, rr.Body.String(), "swagger-ui")
+	assert.Contains(t, rr.Body.String(), "/api/docs/init.js")
+}
+
+func TestDocsHandler_ServeInitJS(t *testing.T) {
+	h := NewDocsHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/docs/init.js", nil)
+	rr := httptest.NewRecorder()
+	h.ServeInitJS(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/javascript", rr.Header().Get("Content-Type"))
+	assert.Contains(t, rr.Body.String(), "SwaggerUIBundle")
 	assert.Contains(t, rr.Body.String(), "openapi.yaml")
 }
 

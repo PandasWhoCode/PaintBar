@@ -32,7 +32,9 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
-    // Gallery collection (shared items are readable by any authenticated user)
+    // Gallery collection — sharing to gallery is an explicit user action that
+    // opts the item into public visibility. All gallery items are readable by
+    // any authenticated user by design (no per-item visibility flag needed).
     match /gallery/{itemId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;

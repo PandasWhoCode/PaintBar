@@ -47,6 +47,12 @@ export class SelectionTool extends GenericTool {
         const width = Math.abs(this.endPoint.x - this.startPoint.x);
         const height = Math.abs(this.endPoint.y - this.startPoint.y);
 
+        // Zero-area selection (click without drag) — treat as no selection
+        if (width === 0 || height === 0) {
+            this.clearSelection();
+            return;
+        }
+
         this.selectedArea = { x, y, width, height };
 
         const ctx = this.paintBar.ctx;

@@ -65,7 +65,7 @@ Built by [PandasWhoCode](https://github.com/pandasWhoCode).
 
 ### Prerequisites
 
-- **Go** 1.21+
+- **Go** 1.25+
 - **Node.js** 18+ and npm
 - **Docker** and Docker Compose
 - **Task** ([taskfile.dev](https://taskfile.dev))

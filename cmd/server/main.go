@@ -162,6 +162,7 @@ func main() {
 	if !cfg.IsProduction() {
 		r.Get("/api/docs", docsHandler.ServeUI)
 		r.Get("/api/docs/openapi.yaml", docsHandler.ServeSpec)
+		r.Get("/api/docs/init.js", docsHandler.ServeInitJS)
 	}
 
 	// API routes with CORS and auth

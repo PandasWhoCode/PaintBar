@@ -26,6 +26,12 @@ func (h *DocsHandler) ServeUI(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(swaggerHTML))
 }
 
+// ServeInitJS serves the Swagger UI initialization script as an external file.
+func (h *DocsHandler) ServeInitJS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Write([]byte(swaggerInitJS))
+}
+
 const swaggerHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,17 +47,18 @@ const swaggerHTML = `<!DOCTYPE html>
 <body>
   <div id="swagger-ui"></div>
   <script src="https://unpkg.com/swagger-ui-dist@5.31.0/swagger-ui-bundle.js" integrity="sha384-cxafBeQ+zYROeFafGFxtFbnp1ICqeS9mG7+f0WWSHzhnrUvwg9Za5CCw6wgrHA7K" crossorigin="anonymous"></script>
-  <script>
-    SwaggerUIBundle({
-      url: '/api/docs/openapi.yaml',
-      dom_id: '#swagger-ui',
-      deepLinking: true,
-      presets: [
-        SwaggerUIBundle.presets.apis,
-        SwaggerUIBundle.SwaggerUIStandalonePreset
-      ],
-      layout: 'BaseLayout'
-    });
-  </script>
+  <script src="/api/docs/init.js"></script>
 </body>
 </html>`
+
+const swaggerInitJS = `SwaggerUIBundle({
+  url: '/api/docs/openapi.yaml',
+  dom_id: '#swagger-ui',
+  deepLinking: true,
+  presets: [
+    SwaggerUIBundle.presets.apis,
+    SwaggerUIBundle.SwaggerUIStandalonePreset
+  ],
+  layout: 'BaseLayout'
+});
+`

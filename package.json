@@ -4,8 +4,12 @@
   "description": "PaintBar Application",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "echo 'Use: task run (Go server)' && exit 1",
+    "dev": "echo 'Use: task dev (Go server)' && exit 1",
+    "start:legacy": "node server.js",
+    "dev:legacy": "nodemon server.js",
+    "build:ts": "esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify",
+    "test": "jest"
   },
   "dependencies": {
     "express": "^4.18.2",
