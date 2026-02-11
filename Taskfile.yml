@@ -40,6 +40,14 @@ tasks:
     cmds:
       - go test ./... -bench=. -benchmem -run=^$ -count=1
 
+  lint:
+    desc: Run all linters (alias for lint:all)
+    aliases: ['lint:all']
+    cmds:
+      - task: lint:go
+      - task: lint:ts
+      - task: lint:md
+
   lint:go:
     desc: Run Go linters
     cmds:
@@ -48,30 +56,23 @@ tasks:
   lint:ts:
     desc: Run TypeScript type checking
     cmds:
-      - npx tsc --project web/ts/tsconfig.json --noEmit
+      - ./node_modules/.bin/tsc --project web/ts/tsconfig.json --noEmit
 
   lint:md:
-    desc: Lint Markdown files
+    desc: Lint all Markdown files (docs/, README, CONTRIBUTING, CODE_OF_CONDUCT)
     cmds:
-      - npx markdownlint docs/*.md
-
-  lint:all:
-    desc: Run all linters (Go, TypeScript, Markdown)
-    cmds:
-      - task: lint:go
-      - task: lint:ts
-      - task: lint:md
+      - ./node_modules/.bin/markdownlint 'docs/**/*.md' README.md CONTRIBUTING.md CODE_OF_CONDUCT.md
 
   lint-fix:md:
     desc: Auto-fix Markdown lint issues and format with Prettier
     cmds:
-      - npx prettier --write docs/*.md
-      - npx markdownlint --fix docs/*.md
+      - ./node_modules/.bin/prettier --write 'docs/**/*.md' README.md CONTRIBUTING.md CODE_OF_CONDUCT.md
+      - ./node_modules/.bin/markdownlint --fix 'docs/**/*.md' README.md CONTRIBUTING.md CODE_OF_CONDUCT.md
 
   lint-fix:ts:
-    desc: Auto-fix TypeScript lint issues with Prettier
+    desc: Auto-fix TypeScript formatting with Prettier
     cmds:
-      - npx prettier --write web/ts/**/*.ts
+      - ./node_modules/.bin/prettier --write 'web/ts/**/*.ts'
 
   lint-fix:all:
     desc: Auto-fix all lint issues (Markdown, TypeScript)

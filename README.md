@@ -1,42 +1,47 @@
 # PaintBar
 
-A free, browser-based drawing application with user profiles, project management, a community gallery, and NFT minting on the Hedera / Hiero-Ledger network.
+A free, browser-based drawing application with user profiles, project
+management, a community gallery, and NFT minting on the
+Hedera / Hiero-Ledger network.
 
 Built by [PandasWhoCode](https://github.com/pandasWhoCode).
 
 ## Architecture
 
-| Layer | Technology |
-|---|---|
-| **Backend** | Go (net/http), Goose migrations |
-| **Frontend** | TypeScript, esbuild (bundler), HTML5 Canvas |
-| **Auth** | Firebase Authentication |
-| **Database** | Firestore (users, projects, gallery, NFTs), PostgreSQL (sessions, rate limits, audit logs) |
-| **Infrastructure** | Docker Compose, Google Cloud Run, Cloud SQL, Firebase Hosting |
+| Layer              | Technology                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **Backend**        | Go (net/http), Goose migrations                                                            |
+| **Frontend**       | TypeScript, esbuild (bundler), HTML5 Canvas                                                |
+| **Auth**           | Firebase Authentication                                                                    |
+| **Database**       | Firestore (users, projects, gallery, NFTs), PostgreSQL (sessions, rate limits, audit logs) |
+| **Infrastructure** | Docker Compose, Google Cloud Run, Cloud SQL, Firebase Hosting                              |
 
 ## Features
 
 ### Drawing Tools
 
-- <img src="web/static/images/menus/tools_pencil.png" height="16"/> **Pencil** — Free-form drawing
-- <img src="web/static/images/menus/tools_eraser.png" height="16"/> **Eraser** — Free-form eraser
-- <img src="web/static/images/menus/tools_spraycan.png" height="16"/> **Spray** — Spray-can drawing
-- <img src="web/static/images/menus/tools_fill.png" height="16"/> **Fill** — Flood-fill to colored edges
-- <img src="web/static/images/menus/tools_text.png" height="16"/> **Text** — Rich text with font, size, style, color, and rotation
+- <img src="web/static/images/menus/tools_pencil.png" height="16" alt="Pencil"/> **Pencil** — Free-form drawing
+- <img src="web/static/images/menus/tools_eraser.png" height="16" alt="Eraser"/> **Eraser** — Free-form eraser
+- <img src="web/static/images/menus/tools_spraycan.png" height="16" alt="Spray"/> **Spray** — Spray-can drawing
+- <img src="web/static/images/menus/tools_fill.png" height="16" alt="Fill"/> **Fill** — Flood-fill to colored edges
+- <img src="web/static/images/menus/tools_text.png" height="16" alt="Text"/> **Text** — Rich text
+  (font, size, style, color, rotation)
 
 ### Shapes
 
-- <img src="web/static/images/menus/shapes_rectangle.png" height="16"/> **Rectangle**
-- <img src="web/static/images/menus/shapes_circle.png" height="16"/> **Circle**
-- <img src="web/static/images/menus/shapes_line.png" height="16"/> **Line**
-- <img src="web/static/images/menus/shapes_triangle.png" height="16"/> **Triangle** — Equilateral, isosceles, or right angle
-- <img src="web/static/images/menus/shapes_arc.png" height="16"/> **Arc** — Click-drag endpoint, then set curve depth
+- <img src="web/static/images/menus/shapes_rectangle.png" height="16" alt="Rectangle"/> **Rectangle**
+- <img src="web/static/images/menus/shapes_circle.png" height="16" alt="Circle"/> **Circle**
+- <img src="web/static/images/menus/shapes_line.png" height="16" alt="Line"/> **Line**
+- <img src="web/static/images/menus/shapes_triangle.png" height="16" alt="Triangle"/> **Triangle** —
+  Equilateral, isosceles, or right angle
+- <img src="web/static/images/menus/shapes_arc.png" height="16" alt="Arc"/> **Arc** —
+  Click-drag endpoint, then set curve depth
 
 ### Actions
 
-- <img src="web/static/images/menus/actions_clear.png" height="16"/> **Clear** canvas
-- <img src="web/static/images/menus/actions_undo.png" height="16"/> **Undo** (Cmd/Ctrl+Z)
-- <img src="web/static/images/menus/actions_redo.png" height="16"/> **Redo** (Cmd/Ctrl+Shift+Z)
+- <img src="web/static/images/menus/actions_clear.png" height="16" alt="Clear"/> **Clear** canvas
+- <img src="web/static/images/menus/actions_undo.png" height="16" alt="Undo"/> **Undo** (Cmd/Ctrl+Z)
+- <img src="web/static/images/menus/actions_redo.png" height="16" alt="Redo"/> **Redo** (Cmd/Ctrl+Shift+Z)
 
 ### Colors
 
@@ -96,65 +101,65 @@ task dev
 
 #### Server
 
-| Command | Description |
-|---|---|
-| `task dev` | Build TS + start Go server |
-| `task run:local` | Start Docker deps + build TS + run server |
-| `task restart:local` | Kill running server + restart |
-| `task stop:local` | Stop server + Docker deps |
-| `task build` | Build Go binary to `bin/` |
-| `task run` | Run Go server (no Docker deps) |
+| Command              | Description                               |
+| -------------------- | ----------------------------------------- |
+| `task dev`           | Build TS + start Go server                |
+| `task run:local`     | Start Docker deps + build TS + run server |
+| `task restart:local` | Kill running server + restart             |
+| `task stop:local`    | Stop server + Docker deps                 |
+| `task build`         | Build Go binary to `bin/`                 |
+| `task run`           | Run Go server (no Docker deps)            |
 
 #### TypeScript
 
-| Command | Description |
-|---|---|
-| `task ts-build` | Build with esbuild (dev, includes source maps) |
+| Command              | Description                                     |
+| -------------------- | ----------------------------------------------- |
+| `task ts-build`      | Build with esbuild (dev, includes source maps)  |
 | `task ts-build:prod` | Build with esbuild (production, no source maps) |
-| `task ts-check` | Type-check with tsc (no emit) |
-| `task ts-install` | Install TypeScript dev dependencies |
+| `task ts-check`      | Type-check with tsc (no emit)                   |
+| `task ts-install`    | Install TypeScript dev dependencies             |
 
 #### Database
 
-| Command | Description |
-|---|---|
-| `task migrate` | Run Goose migrations up |
-| `task migrate-down` | Rollback last migration |
-| `task migrate-status` | Show migration status |
-| `task migrate-create -- <name>` | Create a new migration |
+| Command                         | Description             |
+| ------------------------------- | ----------------------- |
+| `task migrate`                  | Run Goose migrations up |
+| `task migrate-down`             | Rollback last migration |
+| `task migrate-status`           | Show migration status   |
+| `task migrate-create -- <name>` | Create a new migration  |
 
 #### Docker
 
-| Command | Description |
-|---|---|
-| `task docker:up` | Start Postgres + Firebase emulators |
-| `task docker:down` | Stop Postgres + Firebase |
-| `task docker:reset-postgres` | Wipe and restart Postgres only |
+| Command                      | Description                             |
+| ---------------------------- | --------------------------------------- |
+| `task docker:up`             | Start Postgres + Firebase emulators     |
+| `task docker:down`           | Stop Postgres + Firebase                |
+| `task docker:reset-postgres` | Wipe and restart Postgres only          |
 | `task docker:reset-firebase` | Wipe and restart Firebase emulator only |
-| `task docker-clean` | Stop all + remove all volumes |
-| `task docker-logs` | Tail container logs |
+| `task docker-clean`          | Stop all + remove all volumes           |
+| `task docker-logs`           | Tail container logs                     |
 
 #### Testing
 
-| Command | Description |
-|---|---|
-| `task test` | Run all Go tests (with race detector) |
-| `task test-short` | Run Go tests (skip integration) |
+| Command                 | Description                                  |
+| ----------------------- | -------------------------------------------- |
+| `task test`             | Run all Go tests (with race detector)        |
+| `task test-short`       | Run Go tests (skip integration)              |
 | `task test-integration` | Run integration tests against local Postgres |
-| `task bench` | Run Go benchmarks |
-| `task lint` | Run Go linters |
+| `task bench`            | Run Go benchmarks                            |
+| `task lint`             | Run all linters (Go, TypeScript, Markdown)   |
 
 #### Deploy
 
-| Command | Description |
-|---|---|
-| `task deploy-preview` | Deploy to Firebase preview channel + Cloud Run |
-| `task deploy-prod` | Deploy to production |
-| `task clean` | Remove build artifacts (`bin/`, `web/static/dist/`) |
+| Command               | Description                                         |
+| --------------------- | --------------------------------------------------- |
+| `task deploy-preview` | Deploy to Firebase preview channel + Cloud Run      |
+| `task deploy-prod`    | Deploy to production                                |
+| `task clean`          | Remove build artifacts (`bin/`, `web/static/dist/`) |
 
 ## Project Structure
 
-```
+```text
 paintbar/
 ├── cmd/server/          # Go server entrypoint
 ├── internal/

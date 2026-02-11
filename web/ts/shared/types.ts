@@ -104,24 +104,24 @@ export interface RGBA {
 }
 
 /** Save image format */
-export type ImageFormat = 'png' | 'jpg' | 'ico';
+export type ImageFormat = "png" | "jpg" | "ico";
 
 /** Triangle type */
-export type TriangleType = 'right' | 'isosceles' | 'equilateral';
+export type TriangleType = "right" | "isosceles" | "equilateral";
 
 /** Tool name */
 export type ToolName =
-  | 'pencil'
-  | 'eraser'
-  | 'spray'
-  | 'fill'
-  | 'text'
-  | 'select'
-  | 'rectangle'
-  | 'circle'
-  | 'line'
-  | 'triangle'
-  | 'arc';
+  | "pencil"
+  | "eraser"
+  | "spray"
+  | "fill"
+  | "text"
+  | "select"
+  | "rectangle"
+  | "circle"
+  | "line"
+  | "triangle"
+  | "arc";
 
 /** Canvas layer names */
 export interface CanvasLayers {

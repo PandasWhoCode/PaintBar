@@ -2,7 +2,12 @@
 // Profile page — handles user profile, projects, gallery, NFTs
 // ============================================================
 
-import { auth, db, sendPasswordResetEmail, signOut } from '../shared/firebase-init';
+import {
+  auth,
+  db,
+  sendPasswordResetEmail,
+  signOut,
+} from "../shared/firebase-init";
 import {
   doc,
   setDoc,
@@ -17,8 +22,8 @@ import {
   getCountFromServer,
   type Unsubscribe,
   type DocumentData,
-} from 'firebase/firestore';
-import type { User as FirebaseUser } from 'firebase/auth';
+} from "firebase/firestore";
+import type { User as FirebaseUser } from "firebase/auth";
 
 // ---- Types ----
 
@@ -57,10 +62,10 @@ let unsubscribeStats: Unsubscribe[] = [];
 
 // ---- Cache keys ----
 
-const PROFILE_CACHE_SUFFIX = '_profile_cache';
-const PROJECTS_CACHE_SUFFIX = '_projects_cache';
-const GALLERY_CACHE_SUFFIX = '_gallery_cache';
-const NFTS_CACHE_SUFFIX = '_nfts_cache';
+const PROFILE_CACHE_SUFFIX = "_profile_cache";
+const PROJECTS_CACHE_SUFFIX = "_projects_cache";
+const GALLERY_CACHE_SUFFIX = "_gallery_cache";
+const NFTS_CACHE_SUFFIX = "_nfts_cache";
 
 let currentUid: string | null = null;
 
@@ -74,19 +79,28 @@ function getCachedProfile(): ProfileData | null {
     if (!key) return null;
     const cached = localStorage.getItem(key);
     return cached ? JSON.parse(cached) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function setCachedProfile(userData: ProfileData): void {
   try {
     const key = cacheKey(PROFILE_CACHE_SUFFIX);
     if (key) localStorage.setItem(key, JSON.stringify(userData));
-  } catch { /* quota exceeded */ }
+  } catch {
+    /* quota exceeded */
+  }
 }
 
 function clearCachedProfile(): void {
-  const suffixes = [PROFILE_CACHE_SUFFIX, PROJECTS_CACHE_SUFFIX, GALLERY_CACHE_SUFFIX, NFTS_CACHE_SUFFIX];
-  suffixes.forEach(suffix => {
+  const suffixes = [
+    PROFILE_CACHE_SUFFIX,
+    PROJECTS_CACHE_SUFFIX,
+    GALLERY_CACHE_SUFFIX,
+    NFTS_CACHE_SUFFIX,
+  ];
+  suffixes.forEach((suffix) => {
     const key = cacheKey(suffix);
     if (key) localStorage.removeItem(key);
   });
@@ -98,53 +112,64 @@ function getCachedGrid(suffix: string): string | null {
     if (!key) return null;
     const cached = localStorage.getItem(key);
     return cached ? JSON.parse(cached) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function setCachedGrid(suffix: string, html: string): void {
   try {
     const key = cacheKey(suffix);
     if (key) localStorage.setItem(key, JSON.stringify(html));
-  } catch { /* quota exceeded */ }
+  } catch {
+    /* quota exceeded */
+  }
 }
 
 // ---- Sanitization helpers ----
 
 function sanitizeUrl(url: string): string {
-  if (!url) return '';
+  if (!url) return "";
   try {
     const parsed = new URL(url);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
-  } catch { /* invalid URL */ }
-  return '';
+    if (parsed.protocol === "http:" || parsed.protocol === "https:")
+      return parsed.href;
+  } catch {
+    /* invalid URL */
+  }
+  return "";
 }
 
-function createSafeLink(href: string, title: string, iconClass: string): HTMLAnchorElement | null {
+function createSafeLink(
+  href: string,
+  title: string,
+  iconClass: string,
+): HTMLAnchorElement | null {
   const safeHref = sanitizeUrl(href);
   if (!safeHref) return null;
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = safeHref;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
   a.title = title;
-  const i = document.createElement('i');
+  const i = document.createElement("i");
   i.className = iconClass;
   a.appendChild(i);
   return a;
 }
 
 function safeSrc(src: string | undefined): string {
-  if (!src) return 'images/placeholder.png';
-  if (src.startsWith('data:image/')) return src;
+  if (!src) return "images/placeholder.png";
+  if (src.startsWith("data:image/")) return src;
   const safe = sanitizeUrl(src);
-  return safe || 'images/placeholder.png';
+  return safe || "images/placeholder.png";
 }
 
 // ---- DOMContentLoaded ----
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   // Update copyright year
-  document.querySelectorAll('.copyright-year').forEach(el => {
+  document.querySelectorAll(".copyright-year").forEach((el) => {
     el.textContent = String(new Date().getFullYear());
   });
 
@@ -152,20 +177,20 @@ document.addEventListener('DOMContentLoaded', () => {
   auth.onAuthStateChanged(handleAuthStateChanged);
 
   // Set up form submission handler
-  const form = document.getElementById('editProfileForm');
+  const form = document.getElementById("editProfileForm");
   if (form) {
-    form.addEventListener('submit', handleProfileFormSubmit);
+    form.addEventListener("submit", handleProfileFormSubmit);
   }
 
   // Set up modal handlers
-  const modal = document.getElementById('editProfileModal');
-  const editProfileBtn = document.getElementById('editProfileBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const closeModalBtn = document.querySelector('.close-modal');
-  const cancelBtn = document.querySelector('.cancel-button');
+  const modal = document.getElementById("editProfileModal");
+  const editProfileBtn = document.getElementById("editProfileBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const closeModalBtn = document.querySelector(".close-modal");
+  const cancelBtn = document.querySelector(".cancel-button");
 
   if (editProfileBtn && modal) {
-    editProfileBtn.addEventListener('click', (e) => {
+    editProfileBtn.addEventListener("click", (e) => {
       e.preventDefault();
       const cachedData = getCachedProfile();
       if (cachedData) {
@@ -173,49 +198,49 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         populateFormFromUI();
       }
-      modal.style.display = 'block';
+      modal.style.display = "block";
     });
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
+    logoutBtn.addEventListener("click", handleLogout);
   }
 
   if (closeModalBtn && modal) {
-    closeModalBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
+    closeModalBtn.addEventListener("click", () => {
+      modal.style.display = "none";
     });
   }
 
   if (cancelBtn && modal) {
-    cancelBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
+    cancelBtn.addEventListener("click", () => {
+      modal.style.display = "none";
     });
   }
 
   if (modal) {
-    window.addEventListener('click', (e) => {
+    window.addEventListener("click", (e) => {
       if (e.target === modal) {
-        modal.style.display = 'none';
+        modal.style.display = "none";
       }
     });
   }
 
-  const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+  const resetPasswordBtn = document.getElementById("resetPasswordBtn");
   if (resetPasswordBtn) {
-    resetPasswordBtn.addEventListener('click', handleResetPassword);
+    resetPasswordBtn.addEventListener("click", handleResetPassword);
   }
 
   // "View All" links
-  document.querySelectorAll('.view-all').forEach(link => {
-    link.addEventListener('click', (e) => {
+  document.querySelectorAll(".view-all").forEach((link) => {
+    link.addEventListener("click", (e) => {
       e.preventDefault();
       showUnderConstructionBanner();
     });
   });
 
   // Clean up on page unload
-  window.addEventListener('unload', cleanupListeners);
+  window.addEventListener("unload", cleanupListeners);
 });
 
 // ---- Listener cleanup ----
@@ -229,17 +254,19 @@ function cleanupListeners(): void {
     unsubscribeProjects();
     unsubscribeProjects = null;
   }
-  unsubscribeStats.forEach(unsub => unsub());
+  unsubscribeStats.forEach((unsub) => unsub());
   unsubscribeStats = [];
 }
 
 // ---- Auth state ----
 
-async function handleAuthStateChanged(user: FirebaseUser | null): Promise<void> {
+async function handleAuthStateChanged(
+  user: FirebaseUser | null,
+): Promise<void> {
   cleanupListeners();
 
   if (!user) {
-    window.location.replace('/login');
+    window.location.replace("/login");
     return;
   }
 
@@ -250,9 +277,9 @@ async function handleAuthStateChanged(user: FirebaseUser | null): Promise<void> 
     populateFormData(cached);
   }
   const gridCaches = [
-    { suffix: PROJECTS_CACHE_SUFFIX, id: 'projectsGrid' },
-    { suffix: GALLERY_CACHE_SUFFIX, id: 'galleryGrid' },
-    { suffix: NFTS_CACHE_SUFFIX, id: 'nftsGrid' },
+    { suffix: PROJECTS_CACHE_SUFFIX, id: "projectsGrid" },
+    { suffix: GALLERY_CACHE_SUFFIX, id: "galleryGrid" },
+    { suffix: NFTS_CACHE_SUFFIX, id: "nftsGrid" },
   ];
   gridCaches.forEach(({ suffix, id }) => {
     const cachedHtml = getCachedGrid(suffix);
@@ -263,45 +290,54 @@ async function handleAuthStateChanged(user: FirebaseUser | null): Promise<void> 
   });
 
   let isFirstSnapshot = true;
-  const userDocRef = doc(db, 'users', user.uid);
+  const userDocRef = doc(db, "users", user.uid);
 
-  unsubscribeProfile = onSnapshot(userDocRef, async (docSnapshot) => {
-    try {
-      if (!docSnapshot.exists() && isFirstSnapshot) {
-        const initialUserData: ProfileData = {
-          uid: user.uid,
-          email: user.email || '',
-          username: '',
-          displayName: user.displayName || '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        await setDoc(userDocRef, initialUserData);
+  unsubscribeProfile = onSnapshot(
+    userDocRef,
+    async (docSnapshot) => {
+      try {
+        if (!docSnapshot.exists() && isFirstSnapshot) {
+          const initialUserData: ProfileData = {
+            uid: user.uid,
+            email: user.email || "",
+            username: "",
+            displayName: user.displayName || "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          await setDoc(userDocRef, initialUserData);
+          isFirstSnapshot = false;
+          showWelcomeModal();
+          return;
+        }
+
+        if (docSnapshot.exists()) {
+          const userData: ProfileData = {
+            ...docSnapshot.data(),
+            uid: user.uid,
+          };
+          setCachedProfile(userData);
+          updateProfileUI(userData);
+          populateFormData(docSnapshot.data());
+        }
+
         isFirstSnapshot = false;
-        showWelcomeModal();
-        return;
+      } catch (error) {
+        console.error("Error processing profile snapshot:", error);
       }
-
-      if (docSnapshot.exists()) {
-        const userData: ProfileData = { ...docSnapshot.data(), uid: user.uid };
-        setCachedProfile(userData);
-        updateProfileUI(userData);
-        populateFormData(docSnapshot.data());
+    },
+    (error) => {
+      console.error("Error in profile listener:", error);
+      if (error.code === "permission-denied") {
+        cleanupListeners();
+        alert(
+          "You do not have permission to access this profile. Please log in again.",
+        );
+        signOut(auth);
+        window.location.replace("/login");
       }
-
-      isFirstSnapshot = false;
-    } catch (error) {
-      console.error('Error processing profile snapshot:', error);
-    }
-  }, (error) => {
-    console.error('Error in profile listener:', error);
-    if (error.code === 'permission-denied') {
-      cleanupListeners();
-      alert('You do not have permission to access this profile. Please log in again.');
-      signOut(auth);
-      window.location.replace('/login');
-    }
-  });
+    },
+  );
 
   setupProjectsListener(user.uid);
   setupStatsListeners(user.uid);
@@ -310,42 +346,53 @@ async function handleAuthStateChanged(user: FirebaseUser | null): Promise<void> 
 // ---- Projects listener ----
 
 function setupProjectsListener(uid: string): void {
-  const projectsRef = collection(db, 'projects');
+  const projectsRef = collection(db, "projects");
   const q = query(
     projectsRef,
-    where('userId', '==', uid),
-    orderBy('createdAt', 'desc'),
-    limit(10)
+    where("userId", "==", uid),
+    orderBy("createdAt", "desc"),
+    limit(10),
   );
 
-  unsubscribeProjects = onSnapshot(q, async (snapshot) => {
-    const projects: ProjectData[] = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data(),
-    }));
-    updateProjectsUI(projects);
+  unsubscribeProjects = onSnapshot(
+    q,
+    async (snapshot) => {
+      const projects: ProjectData[] = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      updateProjectsUI(projects);
 
-    try {
-      const countQuery = query(collection(db, 'projects'), where('userId', '==', uid));
-      const countSnapshot = await getCountFromServer(countQuery);
-      const projectCountEl = document.getElementById('projectCount');
-      if (projectCountEl) projectCountEl.textContent = String(countSnapshot.data().count);
-    } catch (err) {
-      console.error('Error fetching project count:', err);
-    }
-  }, (error) => {
-    console.error('Error in projects listener:', error);
-    const projectGrid = document.getElementById('projectsGrid');
-    if (projectGrid) {
-      projectGrid.innerHTML = '<p class="no-projects">No projects yet. Start creating!</p>';
-    }
-    if (error.code === 'permission-denied') {
-      cleanupListeners();
-      alert('You do not have permission to access projects. Please log in again.');
-      signOut(auth);
-      window.location.replace('/login');
-    }
-  });
+      try {
+        const countQuery = query(
+          collection(db, "projects"),
+          where("userId", "==", uid),
+        );
+        const countSnapshot = await getCountFromServer(countQuery);
+        const projectCountEl = document.getElementById("projectCount");
+        if (projectCountEl)
+          projectCountEl.textContent = String(countSnapshot.data().count);
+      } catch (err) {
+        console.error("Error fetching project count:", err);
+      }
+    },
+    (error) => {
+      console.error("Error in projects listener:", error);
+      const projectGrid = document.getElementById("projectsGrid");
+      if (projectGrid) {
+        projectGrid.innerHTML =
+          '<p class="no-projects">No projects yet. Start creating!</p>';
+      }
+      if (error.code === "permission-denied") {
+        cleanupListeners();
+        alert(
+          "You do not have permission to access projects. Please log in again.",
+        );
+        signOut(auth);
+        window.location.replace("/login");
+      }
+    },
+  );
 }
 
 // ---- Profile form submission ----
@@ -355,43 +402,49 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
 
   const user = auth.currentUser;
   if (!user) {
-    alert('Please log in to update your profile.');
+    alert("Please log in to update your profile.");
     return;
   }
 
   const formData = new FormData(event.target as HTMLFormElement);
   const updates: Record<string, unknown> = {
-    displayName: formData.get('displayName') || '',
-    bio: formData.get('bio') || '',
-    location: formData.get('location') || '',
-    website: formData.get('website') || '',
-    githubUrl: formData.get('githubUrl') || '',
-    twitterHandle: formData.get('twitterHandle') || '',
-    blueskyHandle: formData.get('blueskyHandle') || '',
-    instagramHandle: formData.get('instagramHandle') || '',
-    hbarAddress: formData.get('hbarAddress') || '',
+    displayName: formData.get("displayName") || "",
+    bio: formData.get("bio") || "",
+    location: formData.get("location") || "",
+    website: formData.get("website") || "",
+    githubUrl: formData.get("githubUrl") || "",
+    twitterHandle: formData.get("twitterHandle") || "",
+    blueskyHandle: formData.get("blueskyHandle") || "",
+    instagramHandle: formData.get("instagramHandle") || "",
+    hbarAddress: formData.get("hbarAddress") || "",
     updatedAt: new Date(),
   };
 
-  const usernameInput = document.getElementById('username') as HTMLInputElement | null;
+  const usernameInput = document.getElementById(
+    "username",
+  ) as HTMLInputElement | null;
   let claimingUsername = false;
   if (usernameInput && !usernameInput.readOnly) {
-    const newUsername = ((formData.get('username') as string) || '').trim().toLowerCase();
+    const newUsername = ((formData.get("username") as string) || "")
+      .trim()
+      .toLowerCase();
     if (newUsername) {
       if (!/^[a-z0-9_-]{3,30}$/.test(newUsername)) {
-        alert('Username must be 3-30 characters and can only contain letters, numbers, underscores, and hyphens.');
+        alert(
+          "Username must be 3-30 characters and can only contain letters, numbers, underscores, and hyphens.",
+        );
         return;
       }
-      const usernameDocRef = doc(db, 'usernames', newUsername);
+      const usernameDocRef = doc(db, "usernames", newUsername);
       try {
         const usernameDoc = await getDoc(usernameDocRef);
         if (usernameDoc.exists()) {
-          alert('That username is already taken. Please choose another.');
+          alert("That username is already taken. Please choose another.");
           return;
         }
       } catch (error) {
-        console.error('Error checking username:', error);
-        alert('Could not verify username availability. Please try again.');
+        console.error("Error checking username:", error);
+        alert("Could not verify username availability. Please try again.");
         return;
       }
       updates.username = newUsername;
@@ -400,23 +453,23 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
   }
 
   // Optimistic update
-  const modal = document.getElementById('editProfileModal');
+  const modal = document.getElementById("editProfileModal");
   if (modal) {
-    modal.style.display = 'none';
+    modal.style.display = "none";
   }
 
   const cachedData = getCachedProfile() || {};
   const merged: ProfileData = { ...cachedData, ...updates, uid: user.uid };
   setCachedProfile(merged);
   updateProfileUI(merged);
-  showSuccessMessage('Profile updated successfully!');
+  showSuccessMessage("Profile updated successfully!");
 
   // Write to Firestore in background
   try {
-    const userDocRef = doc(db, 'users', user.uid);
+    const userDocRef = doc(db, "users", user.uid);
     if (claimingUsername) {
       const batch = writeBatch(db);
-      const usernameDocRef = doc(db, 'usernames', updates.username as string);
+      const usernameDocRef = doc(db, "usernames", updates.username as string);
       batch.set(usernameDocRef, { uid: user.uid, createdAt: new Date() });
       batch.set(userDocRef, updates, { merge: true });
       await batch.commit();
@@ -424,14 +477,16 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
       await setDoc(userDocRef, updates, { merge: true });
     }
   } catch (error) {
-    console.error('Error saving profile to server:', error);
+    console.error("Error saving profile to server:", error);
     if (claimingUsername) {
-      const reverted: ProfileData = { ...merged, username: '' };
+      const reverted: ProfileData = { ...merged, username: "" };
       setCachedProfile(reverted);
       updateProfileUI(reverted);
-      showSuccessMessage('Username could not be claimed. Please try again.');
+      showSuccessMessage("Username could not be claimed. Please try again.");
     } else {
-      showSuccessMessage('Saved locally. Will sync when connection is restored.');
+      showSuccessMessage(
+        "Saved locally. Will sync when connection is restored.",
+      );
     }
   }
 }
@@ -440,68 +495,75 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
 
 function setupStatsListeners(uid: string): void {
   const statCollections = [
-    { name: 'gallery', gridId: 'galleryGrid', cacheSuffix: GALLERY_CACHE_SUFFIX },
-    { name: 'nfts', gridId: 'nftsGrid', cacheSuffix: NFTS_CACHE_SUFFIX },
+    {
+      name: "gallery",
+      gridId: "galleryGrid",
+      cacheSuffix: GALLERY_CACHE_SUFFIX,
+    },
+    { name: "nfts", gridId: "nftsGrid", cacheSuffix: NFTS_CACHE_SUFFIX },
   ];
 
   statCollections.forEach(({ name, gridId, cacheSuffix }) => {
     const statsQuery = query(
       collection(db, name),
-      where('userId', '==', uid),
-      limit(10)
+      where("userId", "==", uid),
+      limit(10),
     );
 
-    const countQ = query(
-      collection(db, name),
-      where('userId', '==', uid)
-    );
+    const countQ = query(collection(db, name), where("userId", "==", uid));
 
-    const unsub = onSnapshot(statsQuery, async (snapshot) => {
-      const countEl = document.getElementById(`${name}Count`);
-      try {
-        const countSnapshot = await getCountFromServer(countQ);
-        if (countEl) countEl.textContent = String(countSnapshot.data().count);
-      } catch (err) {
-        console.error(`Error fetching ${name} count:`, err);
-        if (countEl) countEl.textContent = String(snapshot.size);
-      }
-
-      const grid = document.getElementById(gridId);
-      if (grid) {
-        grid.innerHTML = '';
-        if (snapshot.size === 0) {
-          grid.innerHTML = `<p class="no-projects">No ${name === 'nfts' ? 'NFTs' : 'gallery items'} yet.</p>`;
-        } else {
-          const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          items.forEach((item: DocumentData & { id: string }) => {
-            const card = document.createElement('div');
-            card.className = 'project-card';
-            card.dataset.itemId = item.id;
-
-            const img = document.createElement('img');
-            img.src = safeSrc(item.thumbnailData || item.imageData);
-            img.alt = item.name || 'Untitled';
-            img.onerror = function (this: HTMLImageElement) { this.src = 'images/placeholder.png'; };
-            card.appendChild(img);
-
-            const info = document.createElement('div');
-            info.className = 'project-info';
-            const h3 = document.createElement('h3');
-            h3.textContent = item.name || 'Untitled';
-            info.appendChild(h3);
-            card.appendChild(info);
-            grid.appendChild(card);
-          });
+    const unsub = onSnapshot(
+      statsQuery,
+      async (snapshot) => {
+        const countEl = document.getElementById(`${name}Count`);
+        try {
+          const countSnapshot = await getCountFromServer(countQ);
+          if (countEl) countEl.textContent = String(countSnapshot.data().count);
+        } catch (err) {
+          console.error(`Error fetching ${name} count:`, err);
+          if (countEl) countEl.textContent = String(snapshot.size);
         }
-        setCachedGrid(cacheSuffix, grid.innerHTML);
-      }
-    }, (error) => {
-      console.error(`Error in ${name} listener:`, error);
-      const grid = document.getElementById(gridId);
-      if (grid) {
-        grid.innerHTML = `<p class="no-projects">No ${name === 'nfts' ? 'NFTs' : 'gallery items'} yet.</p>`;
-      }
-    });
+
+        const grid = document.getElementById(gridId);
+        if (grid) {
+          grid.innerHTML = "";
+          if (snapshot.size === 0) {
+            grid.innerHTML = `<p class="no-projects">No ${name === "nfts" ? "NFTs" : "gallery items"} yet.</p>`;
+          } else {
+            const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            items.forEach((item: DocumentData & { id: string }) => {
+              const card = document.createElement("div");
+              card.className = "project-card";
+              card.dataset.itemId = item.id;
+
+              const img = document.createElement("img");
+              img.src = safeSrc(item.thumbnailData || item.imageData);
+              img.alt = item.name || "Untitled";
+              img.onerror = function (this: HTMLImageElement) {
+                this.src = "images/placeholder.png";
+              };
+              card.appendChild(img);
+
+              const info = document.createElement("div");
+              info.className = "project-info";
+              const h3 = document.createElement("h3");
+              h3.textContent = item.name || "Untitled";
+              info.appendChild(h3);
+              card.appendChild(info);
+              grid.appendChild(card);
+            });
+          }
+          setCachedGrid(cacheSuffix, grid.innerHTML);
+        }
+      },
+      (error) => {
+        console.error(`Error in ${name} listener:`, error);
+        const grid = document.getElementById(gridId);
+        if (grid) {
+          grid.innerHTML = `<p class="no-projects">No ${name === "nfts" ? "NFTs" : "gallery items"} yet.</p>`;
+        }
+      },
+    );
 
     unsubscribeStats.push(unsub);
   });
@@ -510,191 +572,261 @@ function setupStatsListeners(uid: string): void {
 // ---- UI update functions ----
 
 function updateProfileUI(userData: ProfileData): void {
-  const usernameEl = document.getElementById('profileUsername');
+  const usernameEl = document.getElementById("profileUsername");
   if (usernameEl) {
-    usernameEl.textContent = userData.username || 'Choose a username';
+    usernameEl.textContent = userData.username || "Choose a username";
   }
 
-  const displayNameEl = document.getElementById('profileDisplayName');
+  const displayNameEl = document.getElementById("profileDisplayName");
   if (displayNameEl) {
-    displayNameEl.textContent = userData.displayName || '';
-    displayNameEl.style.display = userData.displayName ? 'block' : 'none';
+    displayNameEl.textContent = userData.displayName || "";
+    displayNameEl.style.display = userData.displayName ? "block" : "none";
   }
 
-  const bioEl = document.getElementById('profileBio');
+  const bioEl = document.getElementById("profileBio");
   if (bioEl) {
-    bioEl.textContent = userData.bio || '';
-    bioEl.style.display = userData.bio ? 'block' : 'none';
+    bioEl.textContent = userData.bio || "";
+    bioEl.style.display = userData.bio ? "block" : "none";
   }
 
-  const locationEl = document.getElementById('profileLocation');
+  const locationEl = document.getElementById("profileLocation");
   if (locationEl) {
     if (userData.location) {
-      locationEl.textContent = '';
-      const icon = document.createElement('i');
-      icon.className = 'fas fa-map-marker-alt';
+      locationEl.textContent = "";
+      const icon = document.createElement("i");
+      icon.className = "fas fa-map-marker-alt";
       locationEl.appendChild(icon);
-      locationEl.appendChild(document.createTextNode(' ' + userData.location));
-      locationEl.style.display = 'block';
+      locationEl.appendChild(document.createTextNode(" " + userData.location));
+      locationEl.style.display = "block";
     } else {
-      locationEl.style.display = 'none';
+      locationEl.style.display = "none";
     }
   }
 
-  const hbarAddressEl = document.getElementById('hbarAddressDisplay');
-  const hbarContainerEl = document.getElementById('hbarAddressContainer');
+  const hbarAddressEl = document.getElementById("hbarAddressDisplay");
+  const hbarContainerEl = document.getElementById("hbarAddressContainer");
   if (hbarAddressEl && hbarContainerEl) {
     if (userData.hbarAddress) {
       hbarAddressEl.textContent = userData.hbarAddress;
-      hbarContainerEl.style.display = 'flex';
+      hbarContainerEl.style.display = "flex";
     } else {
-      hbarContainerEl.style.display = 'none';
+      hbarContainerEl.style.display = "none";
     }
   }
 
-  const socialLinksEl = document.getElementById('socialLinks');
+  const socialLinksEl = document.getElementById("socialLinks");
   if (socialLinksEl) {
-    socialLinksEl.innerHTML = '';
+    socialLinksEl.innerHTML = "";
 
     if (userData.githubUrl) {
-      const link = createSafeLink(userData.githubUrl, 'GitHub', 'fab fa-github');
+      const link = createSafeLink(
+        userData.githubUrl,
+        "GitHub",
+        "fab fa-github",
+      );
       if (link) socialLinksEl.appendChild(link);
     }
 
     if (userData.twitterHandle) {
-      const handle = userData.twitterHandle.startsWith('@') ? userData.twitterHandle.slice(1) : userData.twitterHandle;
-      const link = createSafeLink(`https://twitter.com/${encodeURIComponent(handle)}`, 'Twitter/X', 'fab fa-x-twitter');
+      const handle = userData.twitterHandle.startsWith("@")
+        ? userData.twitterHandle.slice(1)
+        : userData.twitterHandle;
+      const link = createSafeLink(
+        `https://twitter.com/${encodeURIComponent(handle)}`,
+        "Twitter/X",
+        "fab fa-x-twitter",
+      );
       if (link) socialLinksEl.appendChild(link);
     }
 
     if (userData.blueskyHandle) {
-      const handle = userData.blueskyHandle.startsWith('@') ? userData.blueskyHandle.slice(1) : userData.blueskyHandle;
-      const link = createSafeLink(`https://bsky.app/profile/${encodeURIComponent(handle)}`, 'Bluesky', 'fab fa-bluesky');
+      const handle = userData.blueskyHandle.startsWith("@")
+        ? userData.blueskyHandle.slice(1)
+        : userData.blueskyHandle;
+      const link = createSafeLink(
+        `https://bsky.app/profile/${encodeURIComponent(handle)}`,
+        "Bluesky",
+        "fab fa-bluesky",
+      );
       if (link) socialLinksEl.appendChild(link);
     }
 
     if (userData.instagramHandle) {
-      const handle = userData.instagramHandle.startsWith('@') ? userData.instagramHandle.slice(1) : userData.instagramHandle;
-      const link = createSafeLink(`https://instagram.com/${encodeURIComponent(handle)}`, 'Instagram', 'fab fa-instagram');
+      const handle = userData.instagramHandle.startsWith("@")
+        ? userData.instagramHandle.slice(1)
+        : userData.instagramHandle;
+      const link = createSafeLink(
+        `https://instagram.com/${encodeURIComponent(handle)}`,
+        "Instagram",
+        "fab fa-instagram",
+      );
       if (link) socialLinksEl.appendChild(link);
     }
 
     if (userData.website) {
-      const link = createSafeLink(userData.website, 'Website', 'fas fa-globe');
+      const link = createSafeLink(userData.website, "Website", "fas fa-globe");
       if (link) socialLinksEl.appendChild(link);
     }
   }
 }
 
 function populateFormData(userData: ProfileData | DocumentData): void {
-  const form = document.getElementById('editProfileForm');
+  const form = document.getElementById("editProfileForm");
   if (!form) return;
 
-  const displayNameInput = form.querySelector('#displayName') as HTMLInputElement | null;
-  if (displayNameInput) displayNameInput.value = (userData.displayName as string) || '';
+  const displayNameInput = form.querySelector(
+    "#displayName",
+  ) as HTMLInputElement | null;
+  if (displayNameInput)
+    displayNameInput.value = (userData.displayName as string) || "";
 
-  const usernameInput = form.querySelector('#username') as HTMLInputElement | null;
+  const usernameInput = form.querySelector(
+    "#username",
+  ) as HTMLInputElement | null;
   if (usernameInput) {
-    usernameInput.value = (userData.username as string) || '';
+    usernameInput.value = (userData.username as string) || "";
     if (userData.username) {
       usernameInput.readOnly = true;
-      usernameInput.style.backgroundColor = '#f0f0f0';
-      usernameInput.style.cursor = 'not-allowed';
-      usernameInput.title = 'Username cannot be changed once set';
+      usernameInput.style.backgroundColor = "#f0f0f0";
+      usernameInput.style.cursor = "not-allowed";
+      usernameInput.title = "Username cannot be changed once set";
     } else {
       usernameInput.readOnly = false;
-      usernameInput.style.backgroundColor = '';
-      usernameInput.style.cursor = '';
-      usernameInput.title = '';
+      usernameInput.style.backgroundColor = "";
+      usernameInput.style.cursor = "";
+      usernameInput.title = "";
     }
   }
 
-  const githubInput = form.querySelector('#githubUrl') as HTMLInputElement | null;
-  if (githubInput) githubInput.value = (userData.githubUrl as string) || '';
+  const githubInput = form.querySelector(
+    "#githubUrl",
+  ) as HTMLInputElement | null;
+  if (githubInput) githubInput.value = (userData.githubUrl as string) || "";
 
-  const twitterInput = form.querySelector('#twitterHandle') as HTMLInputElement | null;
-  if (twitterInput) twitterInput.value = (userData.twitterHandle as string) || '';
+  const twitterInput = form.querySelector(
+    "#twitterHandle",
+  ) as HTMLInputElement | null;
+  if (twitterInput)
+    twitterInput.value = (userData.twitterHandle as string) || "";
 
-  const blueskyInput = form.querySelector('#blueskyHandle') as HTMLInputElement | null;
-  if (blueskyInput) blueskyInput.value = (userData.blueskyHandle as string) || '';
+  const blueskyInput = form.querySelector(
+    "#blueskyHandle",
+  ) as HTMLInputElement | null;
+  if (blueskyInput)
+    blueskyInput.value = (userData.blueskyHandle as string) || "";
 
-  const instagramInput = form.querySelector('#instagramHandle') as HTMLInputElement | null;
-  if (instagramInput) instagramInput.value = (userData.instagramHandle as string) || '';
+  const instagramInput = form.querySelector(
+    "#instagramHandle",
+  ) as HTMLInputElement | null;
+  if (instagramInput)
+    instagramInput.value = (userData.instagramHandle as string) || "";
 
-  const bioInput = form.querySelector('#bio') as HTMLTextAreaElement | null;
-  if (bioInput) bioInput.value = (userData.bio as string) || '';
+  const bioInput = form.querySelector("#bio") as HTMLTextAreaElement | null;
+  if (bioInput) bioInput.value = (userData.bio as string) || "";
 
-  const locationInput = form.querySelector('#location') as HTMLInputElement | null;
-  if (locationInput) locationInput.value = (userData.location as string) || '';
+  const locationInput = form.querySelector(
+    "#location",
+  ) as HTMLInputElement | null;
+  if (locationInput) locationInput.value = (userData.location as string) || "";
 
-  const websiteInput = form.querySelector('#website') as HTMLInputElement | null;
-  if (websiteInput) websiteInput.value = (userData.website as string) || '';
+  const websiteInput = form.querySelector(
+    "#website",
+  ) as HTMLInputElement | null;
+  if (websiteInput) websiteInput.value = (userData.website as string) || "";
 
-  const hbarInput = form.querySelector('#hbarAddress') as HTMLInputElement | null;
-  if (hbarInput) hbarInput.value = (userData.hbarAddress as string) || '';
+  const hbarInput = form.querySelector(
+    "#hbarAddress",
+  ) as HTMLInputElement | null;
+  if (hbarInput) hbarInput.value = (userData.hbarAddress as string) || "";
 }
 
 function populateFormFromUI(): void {
-  const form = document.getElementById('editProfileForm');
+  const form = document.getElementById("editProfileForm");
   if (!form) return;
 
-  const displayName = document.getElementById('profileDisplayName');
-  const bio = document.getElementById('profileBio');
-  const locationEl = document.getElementById('profileLocation');
-  const hbar = document.getElementById('hbarAddressDisplay');
+  const displayName = document.getElementById("profileDisplayName");
+  const bio = document.getElementById("profileBio");
+  const locationEl = document.getElementById("profileLocation");
+  const hbar = document.getElementById("hbarAddressDisplay");
 
-  const usernameInput = form.querySelector('#username') as HTMLInputElement | null;
-  const usernameEl = document.getElementById('profileUsername');
+  const usernameInput = form.querySelector(
+    "#username",
+  ) as HTMLInputElement | null;
+  const usernameEl = document.getElementById("profileUsername");
   if (usernameInput && usernameEl) {
-    const text = usernameEl.textContent?.trim() || '';
-    if (text && !text.includes('\u00a0') && text !== 'Choose a username') {
+    const text = usernameEl.textContent?.trim() || "";
+    if (text && !text.includes("\u00a0") && text !== "Choose a username") {
       usernameInput.value = text;
       usernameInput.readOnly = true;
-      usernameInput.title = 'Username cannot be changed once set';
+      usernameInput.title = "Username cannot be changed once set";
     } else {
-      usernameInput.value = '';
+      usernameInput.value = "";
       usernameInput.readOnly = false;
-      usernameInput.title = '';
+      usernameInput.title = "";
     }
   }
 
-  const displayNameInput = form.querySelector('#displayName') as HTMLInputElement | null;
-  if (displayNameInput && displayName) displayNameInput.value = displayName.textContent?.trim() || '';
+  const displayNameInput = form.querySelector(
+    "#displayName",
+  ) as HTMLInputElement | null;
+  if (displayNameInput && displayName)
+    displayNameInput.value = displayName.textContent?.trim() || "";
 
-  const bioInput = form.querySelector('#bio') as HTMLTextAreaElement | null;
-  if (bioInput && bio) bioInput.value = bio.textContent?.trim() || '';
+  const bioInput = form.querySelector("#bio") as HTMLTextAreaElement | null;
+  if (bioInput && bio) bioInput.value = bio.textContent?.trim() || "";
 
-  const locationInput = form.querySelector('#location') as HTMLInputElement | null;
+  const locationInput = form.querySelector(
+    "#location",
+  ) as HTMLInputElement | null;
   if (locationInput && locationEl) {
-    const locText = locationEl.textContent?.trim() || '';
+    const locText = locationEl.textContent?.trim() || "";
     if (locText) locationInput.value = locText;
   }
 
-  const hbarInput = form.querySelector('#hbarAddress') as HTMLInputElement | null;
-  if (hbarInput && hbar) hbarInput.value = hbar.textContent?.trim() || '';
+  const hbarInput = form.querySelector(
+    "#hbarAddress",
+  ) as HTMLInputElement | null;
+  if (hbarInput && hbar) hbarInput.value = hbar.textContent?.trim() || "";
 
   // Social links: read href attributes from rendered links
-  const socialLinks = document.getElementById('socialLinks');
+  const socialLinks = document.getElementById("socialLinks");
   if (socialLinks) {
-    const links = socialLinks.querySelectorAll('a');
-    links.forEach(link => {
-      const href = link.getAttribute('href') || '';
-      let hostname = '';
-      try { hostname = new URL(href).hostname; } catch { return; }
-      if (hostname === 'github.com' || hostname === 'www.github.com') {
-        const gi = form.querySelector('#githubUrl') as HTMLInputElement | null;
+    const links = socialLinks.querySelectorAll("a");
+    links.forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      let hostname = "";
+      try {
+        hostname = new URL(href).hostname;
+      } catch {
+        return;
+      }
+      if (hostname === "github.com" || hostname === "www.github.com") {
+        const gi = form.querySelector("#githubUrl") as HTMLInputElement | null;
         if (gi) gi.value = href;
-      } else if (['twitter.com', 'www.twitter.com', 'x.com', 'www.x.com'].includes(hostname)) {
-        const ti = form.querySelector('#twitterHandle') as HTMLInputElement | null;
-        if (ti) ti.value = href.split('/').pop() || '';
-      } else if (hostname === 'bsky.app' || hostname === 'www.bsky.app') {
-        const bi = form.querySelector('#blueskyHandle') as HTMLInputElement | null;
-        if (bi) bi.value = href.split('/').pop() || '';
-      } else if (hostname === 'instagram.com' || hostname === 'www.instagram.com') {
-        const ii = form.querySelector('#instagramHandle') as HTMLInputElement | null;
-        if (ii) ii.value = href.split('/').pop() || '';
-      } else if (link.querySelector('.fa-globe')) {
-        const wi = form.querySelector('#website') as HTMLInputElement | null;
+      } else if (
+        ["twitter.com", "www.twitter.com", "x.com", "www.x.com"].includes(
+          hostname,
+        )
+      ) {
+        const ti = form.querySelector(
+          "#twitterHandle",
+        ) as HTMLInputElement | null;
+        if (ti) ti.value = href.split("/").pop() || "";
+      } else if (hostname === "bsky.app" || hostname === "www.bsky.app") {
+        const bi = form.querySelector(
+          "#blueskyHandle",
+        ) as HTMLInputElement | null;
+        if (bi) bi.value = href.split("/").pop() || "";
+      } else if (
+        hostname === "instagram.com" ||
+        hostname === "www.instagram.com"
+      ) {
+        const ii = form.querySelector(
+          "#instagramHandle",
+        ) as HTMLInputElement | null;
+        if (ii) ii.value = href.split("/").pop() || "";
+      } else if (link.querySelector(".fa-globe")) {
+        const wi = form.querySelector("#website") as HTMLInputElement | null;
         if (wi) wi.value = href;
       }
     });
@@ -704,33 +836,38 @@ function populateFormFromUI(): void {
 // ---- Projects UI ----
 
 function updateProjectsUI(projects: ProjectData[]): void {
-  const projectGrid = document.getElementById('projectsGrid');
+  const projectGrid = document.getElementById("projectsGrid");
   if (!projectGrid) return;
 
-  projectGrid.innerHTML = '';
+  projectGrid.innerHTML = "";
   if (projects.length === 0) {
-    projectGrid.innerHTML = '<p class="no-projects">No projects yet. Start creating!</p>';
+    projectGrid.innerHTML =
+      '<p class="no-projects">No projects yet. Start creating!</p>';
   } else {
-    projects.forEach(project => {
-      const card = document.createElement('div');
-      card.className = 'project-card';
+    projects.forEach((project) => {
+      const card = document.createElement("div");
+      card.className = "project-card";
       card.dataset.projectId = project.id;
 
-      const img = document.createElement('img');
+      const img = document.createElement("img");
       img.src = safeSrc(project.thumbnailData || project.imageData);
-      img.alt = project.name || 'Untitled';
-      img.onerror = function (this: HTMLImageElement) { this.src = 'images/placeholder.png'; };
+      img.alt = project.name || "Untitled";
+      img.onerror = function (this: HTMLImageElement) {
+        this.src = "images/placeholder.png";
+      };
       card.appendChild(img);
 
-      const info = document.createElement('div');
-      info.className = 'project-info';
-      const h3 = document.createElement('h3');
-      h3.textContent = project.name || 'Untitled';
+      const info = document.createElement("div");
+      info.className = "project-info";
+      const h3 = document.createElement("h3");
+      h3.textContent = project.name || "Untitled";
       info.appendChild(h3);
       if (project.createdAt) {
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'project-date';
-        dateSpan.textContent = new Date(project.createdAt.seconds * 1000).toLocaleDateString();
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "project-date";
+        dateSpan.textContent = new Date(
+          project.createdAt.seconds * 1000,
+        ).toLocaleDateString();
         info.appendChild(dateSpan);
       }
       card.appendChild(info);
@@ -750,10 +887,10 @@ async function handleLogout(e: Event): Promise<void> {
     cleanupListeners();
     clearCachedProfile();
     await signOut(auth);
-    window.location.replace('/login');
+    window.location.replace("/login");
   } catch (error) {
-    console.error('Error signing out:', error);
-    alert('Failed to sign out. Please try again.');
+    console.error("Error signing out:", error);
+    alert("Failed to sign out. Please try again.");
   }
 }
 
@@ -765,53 +902,53 @@ async function handleResetPassword(): Promise<void> {
 
   try {
     await sendPasswordResetEmail(auth, user.email);
-    alert('Password reset email sent. Please check your inbox.');
+    alert("Password reset email sent. Please check your inbox.");
   } catch (error) {
-    console.error('Error sending reset email:', error);
-    alert('Failed to send reset email. Please try again.');
+    console.error("Error sending reset email:", error);
+    alert("Failed to send reset email. Please try again.");
   }
 }
 
 // ---- Welcome modal ----
 
 function showWelcomeModal(): void {
-  const modal = document.getElementById('editProfileModal');
+  const modal = document.getElementById("editProfileModal");
   if (!modal) return;
 
-  const modalHeader = modal.querySelector('.modal-header h2');
+  const modalHeader = modal.querySelector(".modal-header h2");
   if (modalHeader) {
-    modalHeader.textContent = 'Welcome to PaintBar! Complete Your Profile';
+    modalHeader.textContent = "Welcome to PaintBar! Complete Your Profile";
   }
 
-  modal.style.display = 'block';
+  modal.style.display = "block";
 
   const restoreHeader = (): void => {
     if (modalHeader) {
-      modalHeader.textContent = 'Edit Profile';
+      modalHeader.textContent = "Edit Profile";
     }
   };
 
-  const closeBtn = modal.querySelector('.close-modal');
-  const cancelBtn = modal.querySelector('.cancel-button');
+  const closeBtn = modal.querySelector(".close-modal");
+  const cancelBtn = modal.querySelector(".cancel-button");
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', restoreHeader, { once: true });
+    closeBtn.addEventListener("click", restoreHeader, { once: true });
   }
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', restoreHeader, { once: true });
+    cancelBtn.addEventListener("click", restoreHeader, { once: true });
   }
 }
 
 // ---- Toast / banner ----
 
 function showSuccessMessage(message: string): void {
-  const existing = document.querySelector('.success-message');
+  const existing = document.querySelector(".success-message");
   if (existing) existing.remove();
 
-  const toast = document.createElement('div');
-  toast.className = 'success-message';
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
+  const toast = document.createElement("div");
+  toast.className = "success-message";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   toast.textContent = message;
   document.body.appendChild(toast);
 
@@ -819,19 +956,21 @@ function showSuccessMessage(message: string): void {
 }
 
 function showUnderConstructionBanner(): void {
-  const existing = document.querySelector('.under-construction-banner');
+  const existing = document.querySelector(".under-construction-banner");
   if (existing) return;
 
-  const banner = document.createElement('div');
-  banner.className = 'under-construction-banner';
-  banner.setAttribute('role', 'status');
-  banner.setAttribute('aria-live', 'polite');
+  const banner = document.createElement("div");
+  banner.className = "under-construction-banner";
+  banner.setAttribute("role", "status");
+  banner.setAttribute("aria-live", "polite");
   banner.innerHTML = `
     <span>🚧 Under Construction — This feature is coming soon!</span>
     <button class="banner-close" aria-label="Close">&times;</button>
   `;
   document.body.prepend(banner);
 
-  banner.querySelector('.banner-close')?.addEventListener('click', () => banner.remove());
+  banner
+    .querySelector(".banner-close")
+    ?.addEventListener("click", () => banner.remove());
   setTimeout(() => banner.remove(), 5000);
 }
