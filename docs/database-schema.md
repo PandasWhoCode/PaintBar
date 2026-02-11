@@ -80,10 +80,10 @@ User's saved drawing projects from the canvas.
 | Field           | Type      | Required | Description                                  |
 | --------------- | --------- | -------- | -------------------------------------------- |
 | `userId`        | string    | Yes      | Owner's Firebase Auth UID                    |
-| `name`          | string    | Yes      | Project name                                 |
-| `description`   | string    | No       | Project description                          |
-| `imageData`     | string    | Yes      | Canvas image data (base64 or URL)            |
-| `thumbnailData` | string    | No       | Thumbnail for grid display                   |
+| `title`         | string    | Yes      | Project title                                |
+| `contentHash`   | string    | Yes      | SHA-256 hex of canvas PNG (64 chars)         |
+| `storageURL`    | string    | No       | Firebase Storage download URL                |
+| `thumbnailData` | string    | No       | Thumbnail for grid display (200px max edge)  |
 | `width`         | number    | Yes      | Canvas width in pixels                       |
 | `height`        | number    | Yes      | Canvas height in pixels                      |
 | `isPublic`      | boolean   | No       | Whether project is visible in public gallery |

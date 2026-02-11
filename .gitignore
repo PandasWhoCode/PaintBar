@@ -1,3 +1,6 @@
+# Compiled binaries
+server
+
 # Dependencies
 node_modules/
 firebase-debug.log*

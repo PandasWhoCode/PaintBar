@@ -49,6 +49,7 @@ paintbar/
 │   │
 │   ├── repository/               # Data access layer
 │   │   ├── firestore.go          # Firebase client initialization + health check
+│   │   ├── storage.go            # StorageService — signed URLs + blob delete
 │   │   ├── user.go               # UserRepository interface + Firestore impl
 │   │   ├── project.go            # ProjectRepository interface + Firestore impl
 │   │   ├── gallery.go            # GalleryRepository interface + Firestore impl
@@ -88,6 +89,7 @@ paintbar/
 │   │   │   ├── actionTools.ts    # Selection tool (getImageData/putImageData)
 │   │   │   ├── genericTool.ts    # GenericTool base class
 │   │   │   ├── save.ts           # SaveManager — PNG, JPG, ICO export
+│   │   │   ├── project.ts        # ProjectManager — save project to server (hash, upload, confirm)
 │   │   │   └── iro.d.ts          # Type declarations for iro.js color picker
 │   │   ├── profile/
 │   │   │   └── profile.ts        # Profile page — fetch API, form handling
@@ -119,6 +121,7 @@ paintbar/
 ├── firebase.json                 # Firebase Hosting config + Firestore rules/indexes
 ├── firestore.rules               # Firestore security rules
 ├── firestore.indexes.json        # Firestore composite index definitions
+├── storage.rules                 # Firebase Storage security rules
 ├── .firebaserc                   # Firebase project alias (paintbar-7f887)
 ├── go.mod / go.sum               # Go module dependencies
 ├── package.json / package-lock.json # Node dependencies (esbuild, TypeScript)

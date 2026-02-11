@@ -1,7 +1,10 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -222,87 +225,87 @@ func TestUserService_ClaimUsername_Taken(t *testing.T) {
 
 func TestProjectService_CreateAndGet(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "My Art", IsPublic: false}
-	id, err := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "My Art", IsPublic: false}
+	result, err := svc.CreateProject(context.Background(), "user1", project)
 	require.NoError(t, err)
-	assert.NotEmpty(t, id)
+	assert.NotEmpty(t, result.ProjectID)
 
-	got, err := svc.GetProject(context.Background(), "user1", id)
+	got, err := svc.GetProject(context.Background(), "user1", result.ProjectID)
 	require.NoError(t, err)
-	assert.Equal(t, "My Art", got.Name)
+	assert.Equal(t, "My Art", got.Title)
 	assert.Equal(t, "user1", got.UserID)
 }
 
 func TestProjectService_GetProject_Unauthorized(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "Private Art", IsPublic: false}
-	id, _ := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "Private Art", IsPublic: false}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
 
-	_, err := svc.GetProject(context.Background(), "attacker", id)
+	_, err := svc.GetProject(context.Background(), "attacker", result.ProjectID)
 	assert.ErrorContains(t, err, "unauthorized")
 }
 
 func TestProjectService_GetProject_PublicAllowed(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "Public Art", IsPublic: true}
-	id, _ := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "Public Art", IsPublic: true}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
 
-	got, err := svc.GetProject(context.Background(), "other_user", id)
+	got, err := svc.GetProject(context.Background(), "other_user", result.ProjectID)
 	require.NoError(t, err)
-	assert.Equal(t, "Public Art", got.Name)
+	assert.Equal(t, "Public Art", got.Title)
 }
 
 func TestProjectService_UpdateProject_Unauthorized(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "Art"}
-	id, _ := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "Art"}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
 
-	name := "Hacked"
-	err := svc.UpdateProject(context.Background(), "attacker", id, &model.ProjectUpdate{Name: &name})
+	title := "Hacked"
+	err := svc.UpdateProject(context.Background(), "attacker", result.ProjectID, &model.ProjectUpdate{Title: &title})
 	assert.ErrorContains(t, err, "unauthorized")
 }
 
 func TestProjectService_DeleteProject_Unauthorized(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "Art"}
-	id, _ := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "Art"}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
 
-	err := svc.DeleteProject(context.Background(), "attacker", id)
+	err := svc.DeleteProject(context.Background(), "attacker", result.ProjectID)
 	assert.ErrorContains(t, err, "unauthorized")
 }
 
 func TestProjectService_DeleteProject_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	project := &model.Project{Name: "Art"}
-	id, _ := svc.CreateProject(context.Background(), "user1", project)
+	project := &model.Project{Title: "Art"}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
 
-	err := svc.DeleteProject(context.Background(), "user1", id)
+	err := svc.DeleteProject(context.Background(), "user1", result.ProjectID)
 	require.NoError(t, err)
 
-	_, err = svc.GetProject(context.Background(), "user1", id)
+	_, err = svc.GetProject(context.Background(), "user1", result.ProjectID)
 	assert.Error(t, err) // should be gone
 }
 
 func TestProjectService_ListProjects(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
 	for i := 0; i < 3; i++ {
-		svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
+		svc.CreateProject(context.Background(), "user1", &model.Project{Title: fmt.Sprintf("Art %d", i)})
 	}
-	svc.CreateProject(context.Background(), "user2", &model.Project{Name: "Other"})
+	svc.CreateProject(context.Background(), "user2", &model.Project{Title: "Other"})
 
 	projects, err := svc.ListProjects(context.Background(), "user1", 10, "")
 	require.NoError(t, err)
@@ -311,7 +314,7 @@ func TestProjectService_ListProjects(t *testing.T) {
 
 func TestProjectService_ListProjects_CapsPageSize(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
 	// Request 100 but max is 50 — service should cap it without error
 	_, err := svc.ListProjects(context.Background(), "user1", 100, "")
@@ -320,10 +323,10 @@ func TestProjectService_ListProjects_CapsPageSize(t *testing.T) {
 
 func TestProjectService_CountProjects(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "A"})
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "B"})
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "A"})
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "B"})
 
 	count, err := svc.CountProjects(context.Background(), "user1")
 	require.NoError(t, err)
@@ -331,82 +334,473 @@ func TestProjectService_CountProjects(t *testing.T) {
 }
 
 func TestProjectService_CreateProject_ValidationFails(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
-	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Name: ""})
-	assert.ErrorContains(t, err, "name is required")
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: ""})
+	assert.ErrorContains(t, err, "title is required")
 }
 
 func TestProjectService_ListProjects_EmptyUID(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	_, err := svc.ListProjects(context.Background(), "", 10, "")
 	assert.ErrorContains(t, err, "uid is required")
 }
 
 func TestProjectService_ListProjects_DefaultPageSize(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
+	svc := NewProjectService(repo, nil)
 	// limit 0 should default to DefaultPageSize
 	_, err := svc.ListProjects(context.Background(), "user1", 0, "")
 	require.NoError(t, err)
 }
 
 func TestProjectService_ListProjects_NegativePageSize(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	_, err := svc.ListProjects(context.Background(), "user1", -5, "")
 	require.NoError(t, err)
 }
 
 func TestProjectService_GetProject_EmptyID(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	_, err := svc.GetProject(context.Background(), "user1", "")
 	assert.ErrorContains(t, err, "project ID is required")
 }
 
 func TestProjectService_GetProject_NotFound(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	_, err := svc.GetProject(context.Background(), "user1", "nonexistent")
 	assert.Error(t, err)
 }
 
 func TestProjectService_UpdateProject_EmptyID(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
-	name := "test"
-	err := svc.UpdateProject(context.Background(), "user1", "", &model.ProjectUpdate{Name: &name})
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	title := "test"
+	err := svc.UpdateProject(context.Background(), "user1", "", &model.ProjectUpdate{Title: &title})
 	assert.ErrorContains(t, err, "project ID is required")
 }
 
 func TestProjectService_UpdateProject_NotFound(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
-	name := "test"
-	err := svc.UpdateProject(context.Background(), "user1", "nonexistent", &model.ProjectUpdate{Name: &name})
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	title := "test"
+	err := svc.UpdateProject(context.Background(), "user1", "nonexistent", &model.ProjectUpdate{Title: &title})
 	assert.Error(t, err)
 }
 
 func TestProjectService_UpdateProject_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := NewProjectService(repo)
-	id, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
-	name := "Updated"
-	err := svc.UpdateProject(context.Background(), "user1", id, &model.ProjectUpdate{Name: &name})
+	svc := NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	title := "Updated"
+	err := svc.UpdateProject(context.Background(), "user1", result.ProjectID, &model.ProjectUpdate{Title: &title})
 	assert.NoError(t, err)
 }
 
 func TestProjectService_DeleteProject_EmptyID(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	err := svc.DeleteProject(context.Background(), "user1", "")
 	assert.ErrorContains(t, err, "project ID is required")
 }
 
 func TestProjectService_DeleteProject_NotFound(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	err := svc.DeleteProject(context.Background(), "user1", "nonexistent")
 	assert.Error(t, err)
 }
 
 func TestProjectService_CountProjects_EmptyUID(t *testing.T) {
-	svc := NewProjectService(newMockProjectRepo())
+	svc := NewProjectService(newMockProjectRepo(), nil)
 	_, err := svc.CountProjects(context.Background(), "")
 	assert.ErrorContains(t, err, "uid is required")
+}
+
+// --- Mock StorageClient for testing ---
+
+type mockStorageClient struct {
+	objects map[string]bool // tracks which object paths "exist"
+}
+
+func newMockStorageClient() *mockStorageClient {
+	return &mockStorageClient{objects: make(map[string]bool)}
+}
+
+func (m *mockStorageClient) GenerateUploadURL(objectPath string, _ time.Duration) (string, error) {
+	return "https://storage.example.com/upload/" + objectPath, nil
+}
+
+func (m *mockStorageClient) GenerateDownloadURL(objectPath string, _ time.Duration) (string, error) {
+	return "https://storage.example.com/download/" + objectPath, nil
+}
+
+func (m *mockStorageClient) ObjectExists(_ context.Context, objectPath string) (bool, error) {
+	return m.objects[objectPath], nil
+}
+
+func (m *mockStorageClient) ReadObject(_ context.Context, objectPath string) (io.ReadCloser, error) {
+	if m.objects[objectPath] {
+		return io.NopCloser(bytes.NewReader([]byte("fake-png-data"))), nil
+	}
+	return nil, fmt.Errorf("object not found: %s", objectPath)
+}
+
+func (m *mockStorageClient) DeleteObject(_ context.Context, objectPath string) error {
+	delete(m.objects, objectPath)
+	return nil
+}
+
+// --- ProjectService + Storage tests ---
+
+func TestProjectService_CreateProject_WithStorage(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	project := &model.Project{
+		Title:       "Art",
+		ContentHash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+	}
+	result, err := svc.CreateProject(context.Background(), "user1", project)
+	require.NoError(t, err)
+	assert.NotEmpty(t, result.ProjectID)
+	assert.NotEmpty(t, result.UploadURL)
+	assert.False(t, result.Duplicate)
+	assert.Contains(t, result.UploadURL, "upload/")
+}
+
+func TestProjectService_CreateProject_Dedup(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	project := &model.Project{Title: "Art", ContentHash: hash}
+	first, err := svc.CreateProject(context.Background(), "user1", project)
+	require.NoError(t, err)
+
+	// Same hash → should return existing project as duplicate
+	project2 := &model.Project{Title: "Art Again", ContentHash: hash}
+	second, err := svc.CreateProject(context.Background(), "user1", project2)
+	require.NoError(t, err)
+	assert.True(t, second.Duplicate)
+	assert.Equal(t, first.ProjectID, second.ProjectID)
+	assert.Empty(t, second.UploadURL)
+}
+
+func TestProjectService_ConfirmUpload_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	project := &model.Project{Title: "Art", ContentHash: hash}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
+
+	// Simulate the blob being uploaded
+	storage.objects["projects/user1/"+hash+".png"] = true
+
+	err := svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+	require.NoError(t, err)
+
+	// Verify storageURL was set
+	got, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
+	assert.Contains(t, got.StorageURL, "download/")
+}
+
+func TestProjectService_ConfirmUpload_NotUploaded(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	project := &model.Project{Title: "Art", ContentHash: hash}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
+
+	// Don't simulate upload — should fail
+	err := svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "upload not found")
+}
+
+func TestProjectService_ConfirmUpload_Unauthorized(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	project := &model.Project{Title: "Art", ContentHash: hash}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
+
+	err := svc.ConfirmUpload(context.Background(), "attacker", result.ProjectID)
+	assert.ErrorContains(t, err, "unauthorized")
+}
+
+func TestProjectService_ConfirmUpload_EmptyID(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), newMockStorageClient())
+	err := svc.ConfirmUpload(context.Background(), "user1", "")
+	assert.ErrorContains(t, err, "project ID is required")
+}
+
+func TestProjectService_ConfirmUpload_NoStorage(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	err := svc.ConfirmUpload(context.Background(), "user1", "proj_1")
+	assert.ErrorContains(t, err, "storage is not configured")
+}
+
+func TestProjectService_ConfirmUpload_NoContentHash(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	// Create project without content hash
+	project := &model.Project{Title: "Art"}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
+
+	err := svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "no content hash")
+}
+
+func TestProjectService_DeleteProject_WithStorage(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	project := &model.Project{Title: "Art", ContentHash: hash}
+	result, _ := svc.CreateProject(context.Background(), "user1", project)
+
+	// Simulate blob existing
+	objPath := "projects/user1/" + hash + ".png"
+	storage.objects[objPath] = true
+
+	err := svc.DeleteProject(context.Background(), "user1", result.ProjectID)
+	require.NoError(t, err)
+
+	// Verify blob was deleted
+	assert.False(t, storage.objects[objPath])
+}
+
+// --- GetProjectByTitle tests ---
+
+func TestProjectService_GetProjectByTitle_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := NewProjectService(repo, nil)
+
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Sunset"})
+
+	got, err := svc.GetProjectByTitle(context.Background(), "user1", "Sunset")
+	require.NoError(t, err)
+	assert.Equal(t, "Sunset", got.Title)
+}
+
+func TestProjectService_GetProjectByTitle_NotFound(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), nil)
+
+	_, err := svc.GetProjectByTitle(context.Background(), "user1", "Nonexistent")
+	assert.ErrorContains(t, err, "project not found")
+}
+
+func TestProjectService_GetProjectByTitle_EmptyTitle(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), nil)
+
+	_, err := svc.GetProjectByTitle(context.Background(), "user1", "")
+	assert.ErrorContains(t, err, "title is required")
+}
+
+// --- DownloadBlob tests ---
+
+func TestProjectService_DownloadBlob_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	objPath := "projects/user1/" + hash + ".png"
+	storage.objects[objPath] = true
+
+	reader, err := svc.DownloadBlob(context.Background(), "user1", result.ProjectID)
+	require.NoError(t, err)
+	defer reader.Close()
+	data, _ := io.ReadAll(reader)
+	assert.Equal(t, []byte("fake-png-data"), data)
+}
+
+func TestProjectService_DownloadBlob_EmptyID(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), newMockStorageClient())
+	_, err := svc.DownloadBlob(context.Background(), "user1", "")
+	assert.ErrorContains(t, err, "project ID is required")
+}
+
+func TestProjectService_DownloadBlob_NoStorage(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := NewProjectService(repo, nil)
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	_, err := svc.DownloadBlob(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "storage is not configured")
+}
+
+func TestProjectService_DownloadBlob_Unauthorized(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	_, err := svc.DownloadBlob(context.Background(), "attacker", result.ProjectID)
+	assert.ErrorContains(t, err, "unauthorized")
+}
+
+func TestProjectService_DownloadBlob_NoContentHash(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	_, err := svc.DownloadBlob(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "no content hash")
+}
+
+// --- CreateProject upsert tests ---
+
+func TestProjectService_CreateProject_UpsertByTitle(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash1 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	hash2 := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+	// Create initial project
+	result1, err := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title: "My Art", ContentHash: hash1, Width: 800, Height: 600,
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, result1.UploadURL)
+	assert.False(t, result1.Duplicate)
+
+	// Upsert with same title, different content
+	result2, err := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title: "My Art", ContentHash: hash2, Width: 1024, Height: 768,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, result1.ProjectID, result2.ProjectID) // same project ID
+	assert.NotEmpty(t, result2.UploadURL)
+	assert.False(t, result2.Duplicate)
+
+	// Verify the project was updated
+	got, err := svc.GetProject(context.Background(), "user1", result1.ProjectID)
+	require.NoError(t, err)
+	assert.Equal(t, hash2, got.ContentHash)
+	assert.Equal(t, 1024, got.Width)
+	assert.Equal(t, 768, got.Height)
+}
+
+func TestProjectService_CreateProject_UpsertClearsStorageURL(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash1 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	hash2 := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title: "Art", ContentHash: hash1,
+	})
+
+	// Simulate confirm-upload setting storageURL
+	objPath := "projects/user1/" + hash1 + ".png"
+	storage.objects[objPath] = true
+	svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+
+	// Verify storageURL was set
+	got, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
+	assert.NotEmpty(t, got.StorageURL)
+
+	// Upsert with new content — storageURL should be cleared
+	svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title: "Art", ContentHash: hash2,
+	})
+
+	got, _ = svc.GetProject(context.Background(), "user1", result.ProjectID)
+	assert.Empty(t, got.StorageURL)
+	assert.Equal(t, hash2, got.ContentHash)
+}
+
+// --- Error-path tests for service coverage ---
+
+func TestProjectService_CreateProject_DedupCheckFails(t *testing.T) {
+	repo := &failingFindByContentHashRepo{mockProjectRepo: *newMockProjectRepo()}
+	svc := NewProjectService(repo, nil)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+	assert.ErrorContains(t, err, "dedup check")
+}
+
+func TestProjectService_CreateProject_TitleLookupFails(t *testing.T) {
+	repo := &failingFindByTitleRepo{mockProjectRepo: *newMockProjectRepo()}
+	svc := NewProjectService(repo, nil)
+
+	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	assert.ErrorContains(t, err, "title lookup")
+}
+
+func TestProjectService_CreateProject_UploadURLFails(t *testing.T) {
+	storage := &failingUploadStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(newMockProjectRepo(), storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+	assert.ErrorContains(t, err, "generate upload url")
+}
+
+func TestProjectService_GetProjectByTitle_RepoError(t *testing.T) {
+	repo := &failingFindByTitleRepo{mockProjectRepo: *newMockProjectRepo()}
+	svc := NewProjectService(repo, nil)
+
+	_, err := svc.GetProjectByTitle(context.Background(), "user1", "Art")
+	assert.ErrorContains(t, err, "find project by title")
+}
+
+func TestProjectService_ConfirmUpload_ObjectExistsFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := &failingObjectExistsStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	err := svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "check upload")
+}
+
+func TestProjectService_ConfirmUpload_DownloadURLFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := &failingDownloadURLStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	// Simulate blob existing so ObjectExists passes
+	objPath := "projects/user1/" + hash + ".png"
+	storage.objects[objPath] = true
+
+	err := svc.ConfirmUpload(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "download url failed")
+}
+
+func TestProjectService_DownloadBlob_ReadObjectFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := &failingReadObjectStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	_, err := svc.DownloadBlob(context.Background(), "user1", result.ProjectID)
+	assert.ErrorContains(t, err, "read blob")
 }
 
 // --- GalleryService tests ---
@@ -636,4 +1030,39 @@ func TestNFTService_CountNFTs_EmptyUID(t *testing.T) {
 	svc := NewNFTService(newMockNFTRepo())
 	_, err := svc.CountNFTs(context.Background(), "")
 	assert.ErrorContains(t, err, "uid is required")
+}
+
+// --- Additional ProjectService coverage tests ---
+
+func TestProjectService_UpdateProject_ValidationFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	longTitle := string(make([]byte, 201))
+	update := &model.ProjectUpdate{Title: &longTitle}
+	err := svc.UpdateProject(context.Background(), "user1", result.ProjectID, update)
+	assert.ErrorContains(t, err, "validation")
+}
+
+func TestProjectService_CreateProject_BadThumbnail(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:         "Art",
+		ThumbnailData: "javascript:alert(1)",
+	})
+	assert.ErrorContains(t, err, "validation")
+}
+
+func TestProjectService_CreateProject_StorageURLStripped(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := NewProjectService(repo, nil)
+	result, err := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:      "Art",
+		StorageURL: "https://evil.com/malicious.png",
+	})
+	require.NoError(t, err)
+
+	project, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
+	assert.Empty(t, project.StorageURL)
 }

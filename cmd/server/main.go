@@ -51,8 +51,10 @@ func main() {
 	fbClients, err := repository.NewFirebaseClients(ctx,
 		cfg.FirebaseProjectID,
 		cfg.FirebaseServiceAccountPath,
+		cfg.FirebaseStorageBucket,
 		cfg.FirestoreEmulatorHost,
 		cfg.FirebaseAuthEmulatorHost,
+		cfg.FirebaseStorageEmulatorHost,
 	)
 	if err != nil {
 		slog.Error("failed to initialize firebase", "error", err)
@@ -66,10 +68,13 @@ func main() {
 	galleryRepo := repository.NewGalleryRepository(fbClients.Firestore)
 	nftRepo := repository.NewNFTRepository(fbClients.Firestore)
 
+	// Initialize Storage service
+	storageSvc := repository.NewStorageService(fbClients.Storage, cfg.FirebaseStorageBucket, cfg.FirebaseStorageEmulatorHost)
+
 	// Initialize services
 	authService := service.NewAuthService(fbClients.Auth)
 	userService := service.NewUserService(userRepo)
-	projectService := service.NewProjectService(projectRepo)
+	projectService := service.NewProjectService(projectRepo, storageSvc)
 	galleryService := service.NewGalleryService(galleryRepo)
 	nftService := service.NewNFTService(nftRepo)
 
@@ -88,9 +93,13 @@ func main() {
 	}
 	pageHandler := handler.NewPageHandler(renderer, cfg.Env)
 
-	// Set up rate limiters
+	// Set up rate limiters (relaxed in local env for development)
 	rateLimiter := mw.NewRateLimiter(100, time.Minute)
-	sensitiveLimiter := mw.NewRateLimiter(5, time.Minute)
+	sensitiveRate := 5
+	if cfg.Env == "local" {
+		sensitiveRate = 60
+	}
+	sensitiveLimiter := mw.NewRateLimiter(sensitiveRate, time.Minute)
 
 	// Set up router
 	r := chi.NewRouter()
@@ -159,11 +168,14 @@ func main() {
 
 		// Projects
 		r.Get("/projects", projectHandler.ListProjects)
-		r.Post("/projects", projectHandler.CreateProject)
+		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects", projectHandler.CreateProject)
 		r.Get("/projects/count", projectHandler.CountProjects)
+		r.Get("/projects/by-title", projectHandler.GetProjectByTitle)
 		r.Get("/projects/{id}", projectHandler.GetProject)
 		r.Put("/projects/{id}", projectHandler.UpdateProject)
 		r.Delete("/projects/{id}", projectHandler.DeleteProject)
+		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects/{id}/confirm-upload", projectHandler.ConfirmUpload)
+		r.Get("/projects/{id}/blob", projectHandler.DownloadBlob)
 
 		// Gallery
 		r.Get("/gallery", galleryHandler.ListItems)

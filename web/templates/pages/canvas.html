@@ -192,7 +192,8 @@
                     <span class="submenu-toggle">&#x25BC;</span>
                 </div>
                 <div class="submenu-content">
-                    <button id="saveBtn" title="Save">&#x1F4BE; Save</button>
+                    <button id="saveBtn" title="Save to Device">&#x1F4BE; Save</button>
+                    <button id="saveProjectBtn" title="Save Project">&#x2601; Save Project</button>
                 </div>
             </div>
 
@@ -333,6 +334,38 @@
                 </div>
                 <div class="modal-footer">
                     <button id="cancelSave" class="btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="saveProjectModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Save Project</h3>
+                    <button id="closeSaveProjectBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="save-project-form">
+                        <div class="form-group">
+                            <label for="projectTitle">Title</label>
+                            <input type="text" id="projectTitle" maxlength="200" placeholder="My Artwork" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectTags">Tags <span class="hint">(comma-separated, max 20)</span></label>
+                            <input type="text" id="projectTags" placeholder="landscape, pixel-art" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="projectPublic">
+                                Make project public
+                            </label>
+                        </div>
+                        <div id="saveProjectStatus" class="save-project-status hidden"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelSaveProject" class="btn">Cancel</button>
+                    <button id="confirmSaveProject" class="primary-btn">Save</button>
                 </div>
             </div>
         </div>

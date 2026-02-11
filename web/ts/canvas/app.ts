@@ -9,6 +9,7 @@
  */
 
 import { SaveManager } from "./save";
+import { ProjectManager } from "./project";
 import { ToolManager } from "./toolManager";
 import { CanvasManager } from "./canvasManager";
 import { auth, onAuthStateChanged } from "../shared/firebase-init";
@@ -69,6 +70,7 @@ export class PaintBar {
   // Managers
   toolManager: ToolManager;
   saveManager: SaveManager;
+  projectManager: ProjectManager;
   canvasManager: CanvasManager;
 
   // UI elements
@@ -207,6 +209,7 @@ export class PaintBar {
     // Initialize managers
     this.toolManager = new ToolManager(this);
     this.saveManager = new SaveManager(this);
+    this.projectManager = new ProjectManager(this);
     this.canvasManager = new CanvasManager(this, {
       width: this.defaultWidth,
       height: this.defaultHeight,
@@ -1399,6 +1402,26 @@ export class PaintBar {
   private clearCanvas(): void {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
+
+  /**
+   * Load a project image from a URL onto the drawing canvas.
+   * The image is drawn at (0,0) and the canvas dimensions are assumed
+   * to already match the project dimensions.
+   */
+  loadProjectImage(url: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.drawImage(img, 0, 0);
+        this.saveState();
+        resolve();
+      };
+      img.onerror = () => reject(new Error("Failed to load project image"));
+      img.src = url;
+    });
+  }
 }
 
 // ============================================================
@@ -1421,13 +1444,11 @@ document.addEventListener("DOMContentLoaded", () => {
   canvasSettingsModal.classList.add("hidden");
 
   // Auth gate — redirect to login if not authenticated
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (!user) {
       window.location.replace("/login");
       return;
     }
-    // User is authenticated — show the settings modal
-    canvasSettingsModal.classList.remove("hidden");
 
     // Update toolbar auth UI
     const loginBtn = document.getElementById("loginBtn");
@@ -1436,6 +1457,60 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loginBtn) loginBtn.classList.add("hidden");
     if (profileBtn) profileBtn.classList.remove("hidden");
     if (logoutBtn) logoutBtn.classList.remove("hidden");
+
+    // Check for ?project={title} — load existing project, skip settings modal
+    const projectTitle = new URLSearchParams(window.location.search).get("project");
+    if (projectTitle) {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/projects/by-title?title=${encodeURIComponent(projectTitle)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`Failed to load project (${res.status})`);
+
+        const project = await res.json();
+        const w = project.width || 800;
+        const h = project.height || 600;
+
+        // Wire auth UI buttons (normally done in startPaintBarBtn handler)
+        document.getElementById("loginBtn")?.addEventListener("click", () => {
+          window.location.href = "/login";
+        });
+        document.getElementById("profileBtn")?.addEventListener("click", () => {
+          window.location.href = "/profile";
+        });
+        document.getElementById("logoutBtn")?.addEventListener("click", () => {
+          auth.signOut().catch((error: unknown) => {
+            console.error("Error signing out:", error);
+          });
+        });
+
+        const paintBar = new PaintBar({ width: w, height: h });
+
+        if (project.storageURL) {
+          // Download via API proxy (avoids CORS/auth issues with direct emulator URLs)
+          const blobRes = await fetch(`/api/projects/${encodeURIComponent(project.id)}/blob`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (blobRes.ok) {
+            const imgBlob = await blobRes.blob();
+            const blobURL = URL.createObjectURL(imgBlob);
+            await paintBar.loadProjectImage(blobURL);
+            URL.revokeObjectURL(blobURL);
+          }
+        }
+
+        // Store project context for re-save (title pre-filled)
+        paintBar.projectManager.setLoadedProject(project.id, project.title || "");
+        return;
+      } catch (err) {
+        console.error("Failed to load project:", err);
+        // Fall through to settings modal on error
+      }
+    }
+
+    // No project param (or load failed) — show the settings modal
+    canvasSettingsModal.classList.remove("hidden");
   });
 
   let isSquareLocked = false;

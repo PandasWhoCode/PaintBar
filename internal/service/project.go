@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
 
 	"github.com/pandasWhoCode/paintbar/internal/model"
 	"github.com/pandasWhoCode/paintbar/internal/repository"
@@ -14,14 +16,37 @@ const DefaultPageSize = 10
 // MaxPageSize is the maximum allowed page size.
 const MaxPageSize = 50
 
+// UploadURLExpiry is how long a signed upload URL remains valid.
+const UploadURLExpiry = 10 * time.Minute
+
+// StorageClient abstracts the storage operations needed by ProjectService.
+// This allows unit testing without a real GCS bucket.
+type StorageClient interface {
+	GenerateUploadURL(objectPath string, expiry time.Duration) (string, error)
+	GenerateDownloadURL(objectPath string, expiry time.Duration) (string, error)
+	ObjectExists(ctx context.Context, objectPath string) (bool, error)
+	ReadObject(ctx context.Context, objectPath string) (io.ReadCloser, error)
+	DeleteObject(ctx context.Context, objectPath string) error
+}
+
+// CreateProjectResult is returned by CreateProject with the project ID and
+// an optional signed upload URL (empty when the content hash already exists).
+type CreateProjectResult struct {
+	ProjectID string `json:"projectId"`
+	UploadURL string `json:"uploadURL,omitempty"`
+	Duplicate bool   `json:"duplicate"`
+}
+
 // ProjectService handles project business logic.
 type ProjectService struct {
-	repo repository.ProjectRepository
+	repo    repository.ProjectRepository
+	storage StorageClient
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(repo repository.ProjectRepository) *ProjectService {
-	return &ProjectService{repo: repo}
+// storage may be nil if Storage is not yet configured (existing CRUD still works).
+func NewProjectService(repo repository.ProjectRepository, storage StorageClient) *ProjectService {
+	return &ProjectService{repo: repo, storage: storage}
 }
 
 // ListProjects returns paginated projects for a user.
@@ -59,22 +84,197 @@ func (s *ProjectService) GetProject(ctx context.Context, requestorUID string, pr
 	return project, nil
 }
 
-// CreateProject validates and creates a new project.
-func (s *ProjectService) CreateProject(ctx context.Context, uid string, project *model.Project) (string, error) {
+// CreateProject validates, dedup-checks, creates or upserts a Firestore record,
+// and returns a signed upload URL so the client can PUT the PNG blob directly.
+//
+// Upsert logic (titles are unique per user):
+//  1. Same content hash already exists → return Duplicate=true, no upload.
+//  2. Same title already exists → update the existing project's content hash,
+//     generate a new upload URL, return the existing project ID.
+//  3. Otherwise → create a new project.
+func (s *ProjectService) CreateProject(ctx context.Context, uid string, project *model.Project) (*CreateProjectResult, error) {
 	project.UserID = uid
+	project.StorageURL = "" // Never trust client-supplied storageURL
 	project.Sanitize()
 
 	if err := project.Validate(); err != nil {
-		return "", fmt.Errorf("validation: %w", err)
+		return nil, fmt.Errorf("validation: %w", err)
 	}
 
-	return s.repo.Create(ctx, project)
+	// Dedup check: same user + same content hash → return existing project
+	if project.ContentHash != "" {
+		existing, err := s.repo.FindByContentHash(ctx, uid, project.ContentHash)
+		if err != nil {
+			return nil, fmt.Errorf("dedup check: %w", err)
+		}
+		if existing != nil {
+			return &CreateProjectResult{
+				ProjectID: existing.ID,
+				Duplicate: true,
+			}, nil
+		}
+	}
+
+	// Pre-generate signed upload URL before creating/updating the Firestore record.
+	var uploadURL string
+	if s.storage != nil && project.ContentHash != "" {
+		objectPath, err := repository.ProjectObjectPath(uid, project.ContentHash)
+		if err != nil {
+			return nil, fmt.Errorf("build object path: %w", err)
+		}
+
+		uploadURL, err = s.storage.GenerateUploadURL(objectPath, UploadURLExpiry)
+		if err != nil {
+			return nil, fmt.Errorf("generate upload url: %w", err)
+		}
+	}
+
+	// Title upsert: if a project with this title already exists, update it
+	existing, err := s.repo.FindByTitle(ctx, uid, project.Title)
+	if err != nil {
+		return nil, fmt.Errorf("title lookup: %w", err)
+	}
+	if existing != nil {
+		err = s.repo.UpdateRaw(ctx, existing.ID, map[string]interface{}{
+			"contentHash":   project.ContentHash,
+			"storageURL":    "",
+			"thumbnailData": project.ThumbnailData,
+			"width":         project.Width,
+			"height":        project.Height,
+			"isPublic":      project.IsPublic,
+			"tags":          project.Tags,
+			"updatedAt":     time.Now(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("upsert project: %w", err)
+		}
+		return &CreateProjectResult{
+			ProjectID: existing.ID,
+			UploadURL: uploadURL,
+		}, nil
+	}
+
+	// Create a new Firestore record (StorageURL will be set after upload confirmation)
+	id, err := s.repo.Create(ctx, project)
+	if err != nil {
+		return nil, fmt.Errorf("create project: %w", err)
+	}
+
+	return &CreateProjectResult{
+		ProjectID: id,
+		UploadURL: uploadURL,
+	}, nil
+}
+
+// GetProjectByTitle retrieves a project by user ID and title.
+func (s *ProjectService) GetProjectByTitle(ctx context.Context, requestorUID, title string) (*model.Project, error) {
+	if title == "" {
+		return nil, fmt.Errorf("title is required")
+	}
+
+	project, err := s.repo.FindByTitle(ctx, requestorUID, title)
+	if err != nil {
+		return nil, fmt.Errorf("find project by title: %w", err)
+	}
+	if project == nil {
+		return nil, fmt.Errorf("project not found")
+	}
+
+	return project, nil
+}
+
+// ConfirmUpload verifies that the blob was uploaded to Storage and sets the
+// StorageURL on the project record. Called by the client after a successful PUT.
+func (s *ProjectService) ConfirmUpload(ctx context.Context, requestorUID, projectID string) error {
+	if projectID == "" {
+		return fmt.Errorf("project ID is required")
+	}
+	if s.storage == nil {
+		return fmt.Errorf("storage is not configured")
+	}
+
+	project, err := s.repo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("get project for confirm: %w", err)
+	}
+	if project.UserID != requestorUID {
+		return fmt.Errorf("unauthorized: cannot confirm another user's project")
+	}
+	if project.ContentHash == "" {
+		return fmt.Errorf("project has no content hash")
+	}
+
+	objectPath, err := repository.ProjectObjectPath(requestorUID, project.ContentHash)
+	if err != nil {
+		return fmt.Errorf("build object path: %w", err)
+	}
+
+	exists, err := s.storage.ObjectExists(ctx, objectPath)
+	if err != nil {
+		return fmt.Errorf("check upload: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("upload not found: blob has not been uploaded yet")
+	}
+
+	// Generate a long-lived download URL (7 days; frontend can refresh)
+	downloadURL, err := s.storage.GenerateDownloadURL(objectPath, 7*24*time.Hour)
+	if err != nil {
+		return fmt.Errorf("generate download url: %w", err)
+	}
+
+	err = s.repo.UpdateRaw(ctx, projectID, map[string]interface{}{
+		"storageURL": downloadURL,
+		"updatedAt":  time.Now(),
+	})
+	if err != nil {
+		return fmt.Errorf("set storage url: %w", err)
+	}
+
+	return nil
+}
+
+// DownloadBlob returns a streaming reader for the project's PNG blob from Storage
+// after verifying ownership. The caller must close the returned ReadCloser.
+func (s *ProjectService) DownloadBlob(ctx context.Context, requestorUID, projectID string) (io.ReadCloser, error) {
+	if projectID == "" {
+		return nil, fmt.Errorf("project ID is required")
+	}
+	if s.storage == nil {
+		return nil, fmt.Errorf("storage is not configured")
+	}
+
+	project, err := s.repo.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("get project for download: %w", err)
+	}
+	if project.UserID != requestorUID {
+		return nil, fmt.Errorf("unauthorized: cannot download another user's project")
+	}
+	if project.ContentHash == "" {
+		return nil, fmt.Errorf("project has no content hash")
+	}
+
+	objectPath, err := repository.ProjectObjectPath(requestorUID, project.ContentHash)
+	if err != nil {
+		return nil, fmt.Errorf("build object path: %w", err)
+	}
+
+	reader, err := s.storage.ReadObject(ctx, objectPath)
+	if err != nil {
+		return nil, fmt.Errorf("read blob: %w", err)
+	}
+	return reader, nil
 }
 
 // UpdateProject validates ownership and applies a partial update.
 func (s *ProjectService) UpdateProject(ctx context.Context, requestorUID string, projectID string, update *model.ProjectUpdate) error {
 	if projectID == "" {
 		return fmt.Errorf("project ID is required")
+	}
+
+	if err := update.Validate(); err != nil {
+		return fmt.Errorf("validation: %w", err)
 	}
 
 	// Verify ownership
@@ -89,7 +289,8 @@ func (s *ProjectService) UpdateProject(ctx context.Context, requestorUID string,
 	return s.repo.Update(ctx, projectID, update)
 }
 
-// DeleteProject verifies ownership and deletes a project.
+// DeleteProject verifies ownership, deletes the Storage blob, and removes
+// the Firestore record.
 func (s *ProjectService) DeleteProject(ctx context.Context, requestorUID string, projectID string) error {
 	if projectID == "" {
 		return fmt.Errorf("project ID is required")
@@ -102,6 +303,14 @@ func (s *ProjectService) DeleteProject(ctx context.Context, requestorUID string,
 	}
 	if project.UserID != requestorUID {
 		return fmt.Errorf("unauthorized: cannot delete another user's project")
+	}
+
+	// Delete the Storage blob (best-effort; idempotent)
+	if s.storage != nil && project.ContentHash != "" {
+		objectPath, pathErr := repository.ProjectObjectPath(requestorUID, project.ContentHash)
+		if pathErr == nil {
+			_ = s.storage.DeleteObject(ctx, objectPath)
+		}
 	}
 
 	return s.repo.Delete(ctx, projectID)

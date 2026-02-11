@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Project canvas PNG blobs: projects/{userId}/{contentHash}.png
+    match /projects/{userId}/{fileName} {
+      // Anyone authenticated can read (for public projects, download URL is shared)
+      allow read: if request.auth != null;
+
+      // Only the owner can create or overwrite, PNG only, max 10 MB
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.contentType == 'image/png'
+                            && request.resource.size < 10 * 1024 * 1024;
+
+      // Only the owner can delete
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId;
+    }
+
+    // Deny all other paths by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

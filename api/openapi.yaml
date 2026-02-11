@@ -155,8 +155,13 @@ paths:
           $ref: "#/components/responses/Unauthorized"
     post:
       tags: [Projects]
-      summary: Create a new project
+      summary: Create or upsert a project
       operationId: createProject
+      description: |
+        Creates a new project or upserts an existing one. Titles are unique per user.
+        - If a project with the same contentHash exists: returns Duplicate=true, no upload.
+        - If a project with the same title exists: updates its content (upsert), returns upload URL.
+        - Otherwise: creates a new project.
       requestBody:
         required: true
         content:
@@ -165,11 +170,50 @@ paths:
               $ref: "#/components/schemas/ProjectCreate"
       responses:
         "201":
-          $ref: "#/components/responses/Created"
+          description: Project created/upserted with optional upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProjectResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "409":
+          description: Duplicate content hash (returns existing project)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProjectResult"
+
+  /api/projects/by-title:
+    get:
+      tags: [Projects]
+      summary: Get a project by title
+      operationId: getProjectByTitle
+      description: Looks up a project by title for the authenticated user. Titles are unique per user.
+      parameters:
+        - name: title
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Project title to look up
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/projects/count:
     get:
@@ -234,6 +278,57 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/Deleted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{id}/confirm-upload:
+    post:
+      tags: [Projects]
+      summary: Confirm blob upload to Storage
+      operationId: confirmUpload
+      description: |
+        Called by the client after successfully uploading the PNG blob
+        to the signed URL. Verifies the object exists in Storage and
+        sets the storageURL on the project record.
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/projects/{id}/blob:
+    get:
+      tags: [Projects]
+      summary: Download project PNG blob
+      operationId: downloadBlob
+      description: |
+        Streams the project's full-resolution PNG from Storage through the API.
+        This avoids CORS issues with direct Storage/emulator URLs.
+        Response has Cache-Control: no-store to ensure fresh content after upserts.
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          description: PNG image blob
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -521,18 +616,22 @@ components:
           type: string
         userId:
           type: string
-        name:
+        title:
           type: string
           maxLength: 200
-        description:
+        contentHash:
           type: string
-          maxLength: 2000
-        imageData:
+          description: SHA-256 hex digest of the canvas PNG blob (64 chars)
+          pattern: "^[0-9a-f]{64}$"
+        storageURL:
           type: string
-          description: Base64-encoded canvas image data
+          description: Firebase Storage download URL for the full-resolution PNG
         thumbnailData:
           type: string
-          description: Base64-encoded thumbnail
+          maxLength: 512000
+          description: |
+            Base64-encoded data:image/ URI thumbnail (longest edge 200px, aspect ratio preserved).
+            Must start with "data:image/" prefix. Maximum 500 KB.
         width:
           type: integer
         height:
@@ -554,18 +653,19 @@ components:
 
     ProjectCreate:
       type: object
-      required: [name]
+      required: [title, contentHash, thumbnailData, width, height]
       properties:
-        name:
+        title:
           type: string
           maxLength: 200
-        description:
+        contentHash:
           type: string
-          maxLength: 2000
-        imageData:
-          type: string
+          description: SHA-256 hex digest of the canvas PNG blob
+          pattern: "^[0-9a-f]{64}$"
         thumbnailData:
           type: string
+          maxLength: 512000
+          description: Base64-encoded data:image/ URI thumbnail (max 500 KB)
         width:
           type: integer
         height:
@@ -578,30 +678,35 @@ components:
           items:
             type: string
 
+    CreateProjectResult:
+      type: object
+      required: [projectId, duplicate]
+      properties:
+        projectId:
+          type: string
+          description: The Firestore document ID of the project
+        uploadURL:
+          type: string
+          description: Signed URL for PUT upload of the PNG blob (omitted for duplicates)
+        duplicate:
+          type: boolean
+          description: True if a project with the same contentHash already exists for this user
+
     ProjectUpdate:
       type: object
-      description: Partial update — only provided fields are changed
+      description: Partial update — only provided fields are changed. Title, isPublic, and tags are the only mutable fields.
       properties:
-        name:
+        title:
           type: string
           maxLength: 200
-        description:
-          type: string
-          maxLength: 2000
-        imageData:
-          type: string
-        thumbnailData:
-          type: string
-        width:
-          type: integer
-        height:
-          type: integer
         isPublic:
           type: boolean
         tags:
           type: array
+          maxItems: 20
           items:
             type: string
+            maxLength: 50
 
     GalleryItem:
       type: object
@@ -620,8 +725,12 @@ components:
           maxLength: 2000
         imageData:
           type: string
+          maxLength: 512000
+          description: Base64-encoded image data (max 500 KB)
         thumbnailData:
           type: string
+          maxLength: 512000
+          description: Base64-encoded data:image/ URI thumbnail (max 500 KB)
         width:
           type: integer
         height:
@@ -673,11 +782,16 @@ components:
           type: string
         imageData:
           type: string
+          maxLength: 512000
+          description: Base64-encoded image data (max 500 KB)
         imageUrl:
           type: string
           format: uri
+          description: Image URL (must use http or https scheme)
         thumbnailData:
           type: string
+          maxLength: 512000
+          description: Base64-encoded data:image/ URI thumbnail (max 500 KB)
         metadata:
           type: string
         price:

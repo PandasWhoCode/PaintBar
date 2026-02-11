@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -82,6 +83,24 @@ func (m *mockProjectRepo) GetByID(_ context.Context, id string) (*model.Project,
 	return p, nil
 }
 
+func (m *mockProjectRepo) FindByContentHash(_ context.Context, userID, contentHash string) (*model.Project, error) {
+	for _, p := range m.projects {
+		if p.UserID == userID && p.ContentHash == contentHash {
+			return p, nil
+		}
+	}
+	return nil, nil
+}
+
+func (m *mockProjectRepo) FindByTitle(_ context.Context, userID, title string) (*model.Project, error) {
+	for _, p := range m.projects {
+		if p.UserID == userID && p.Title == title {
+			return p, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *mockProjectRepo) List(_ context.Context, userID string, limit int, startAfter string) ([]*model.Project, error) {
 	var result []*model.Project
 	for _, p := range m.projects {
@@ -111,6 +130,13 @@ func (m *mockProjectRepo) Create(_ context.Context, project *model.Project) (str
 }
 
 func (m *mockProjectRepo) Update(_ context.Context, id string, update *model.ProjectUpdate) error {
+	if _, ok := m.projects[id]; !ok {
+		return fmt.Errorf("project not found")
+	}
+	return nil
+}
+
+func (m *mockProjectRepo) UpdateRaw(_ context.Context, id string, fields map[string]interface{}) error {
 	if _, ok := m.projects[id]; !ok {
 		return fmt.Errorf("project not found")
 	}
@@ -235,6 +261,40 @@ func (m *mockNFTRepo) Delete(_ context.Context, id string) error {
 		return fmt.Errorf("NFT not found")
 	}
 	delete(m.nfts, id)
+	return nil
+}
+
+// --- Mock StorageClient ---
+
+type mockStorageClient struct {
+	objects map[string]bool
+}
+
+func newMockStorageClient() *mockStorageClient {
+	return &mockStorageClient{objects: make(map[string]bool)}
+}
+
+func (m *mockStorageClient) GenerateUploadURL(objectPath string, _ time.Duration) (string, error) {
+	return "https://storage.example.com/upload/" + objectPath, nil
+}
+
+func (m *mockStorageClient) GenerateDownloadURL(objectPath string, _ time.Duration) (string, error) {
+	return "https://storage.example.com/download/" + objectPath, nil
+}
+
+func (m *mockStorageClient) ObjectExists(_ context.Context, objectPath string) (bool, error) {
+	return m.objects[objectPath], nil
+}
+
+func (m *mockStorageClient) ReadObject(_ context.Context, objectPath string) (io.ReadCloser, error) {
+	if m.objects[objectPath] {
+		return io.NopCloser(bytes.NewReader([]byte("fake-png-data"))), nil
+	}
+	return nil, fmt.Errorf("object not found: %s", objectPath)
+}
+
+func (m *mockStorageClient) DeleteObject(_ context.Context, objectPath string) error {
+	delete(m.objects, objectPath)
 	return nil
 }
 
@@ -526,8 +586,8 @@ func TestClaimUsername_InvalidFormat(t *testing.T) {
 
 func TestListProjects_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
+	svc := service.NewProjectService(repo, nil)
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
 	h := NewProjectHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects", nil)
@@ -540,7 +600,7 @@ func TestListProjects_Success(t *testing.T) {
 }
 
 func TestListProjects_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects", nil)
 	rr := httptest.NewRecorder()
@@ -551,8 +611,9 @@ func TestListProjects_NoAuth(t *testing.T) {
 
 func TestGetProject_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	id, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
 	h := NewProjectHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/"+id, nil)
@@ -566,7 +627,7 @@ func TestGetProject_Success(t *testing.T) {
 }
 
 func TestGetProject_NotFound(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/nope", nil)
 	req = withUser(req, "user1", "a@b.com")
@@ -578,20 +639,20 @@ func TestGetProject_NotFound(t *testing.T) {
 }
 
 func TestCreateProject_Success(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
-	body := jsonBody(map[string]string{"name": "New Art"})
+	body := jsonBody(map[string]string{"title": "New Art"})
 	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
 	req = withUser(req, "user1", "a@b.com")
 	rr := httptest.NewRecorder()
 	h.CreateProject(rr, req)
 
 	assert.Equal(t, http.StatusCreated, rr.Code)
-	assert.Contains(t, rr.Body.String(), "id")
+	assert.Contains(t, rr.Body.String(), "projectId")
 }
 
 func TestCreateProject_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodPost, "/api/projects", strings.NewReader("{}"))
 	rr := httptest.NewRecorder()
@@ -601,7 +662,7 @@ func TestCreateProject_NoAuth(t *testing.T) {
 }
 
 func TestCreateProject_BadJSON(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodPost, "/api/projects", strings.NewReader("{bad"))
 	req = withUser(req, "user1", "a@b.com")
@@ -612,9 +673,9 @@ func TestCreateProject_BadJSON(t *testing.T) {
 }
 
 func TestCreateProject_ValidationFails(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
-	body := jsonBody(map[string]string{"name": ""})
+	body := jsonBody(map[string]string{"title": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
 	req = withUser(req, "user1", "a@b.com")
 	rr := httptest.NewRecorder()
@@ -625,11 +686,12 @@ func TestCreateProject_ValidationFails(t *testing.T) {
 
 func TestUpdateProject_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	id, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
 	h := NewProjectHandler(svc)
 
-	body := jsonBody(map[string]string{"name": "Updated"})
+	body := jsonBody(map[string]string{"title": "Updated"})
 	req := httptest.NewRequest(http.MethodPut, "/api/projects/"+id, body)
 	req = withUser(req, "user1", "a@b.com")
 	req = chiContext(req, map[string]string{"id": id})
@@ -640,7 +702,7 @@ func TestUpdateProject_Success(t *testing.T) {
 }
 
 func TestUpdateProject_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodPut, "/api/projects/x", strings.NewReader("{}"))
 	rr := httptest.NewRecorder()
@@ -650,7 +712,7 @@ func TestUpdateProject_NoAuth(t *testing.T) {
 }
 
 func TestUpdateProject_BadJSON(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodPut, "/api/projects/x", strings.NewReader("{bad"))
 	req = withUser(req, "user1", "a@b.com")
@@ -663,8 +725,9 @@ func TestUpdateProject_BadJSON(t *testing.T) {
 
 func TestDeleteProject_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	id, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Name: "Art"})
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
 	h := NewProjectHandler(svc)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/projects/"+id, nil)
@@ -678,7 +741,7 @@ func TestDeleteProject_Success(t *testing.T) {
 }
 
 func TestDeleteProject_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/projects/x", nil)
 	rr := httptest.NewRecorder()
@@ -688,7 +751,7 @@ func TestDeleteProject_NoAuth(t *testing.T) {
 }
 
 func TestDeleteProject_NotFound(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/projects/nope", nil)
 	req = withUser(req, "user1", "a@b.com")
@@ -701,9 +764,9 @@ func TestDeleteProject_NotFound(t *testing.T) {
 
 func TestCountProjects_Success(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "A"})
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "B"})
+	svc := service.NewProjectService(repo, nil)
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "A"})
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "B"})
 	h := NewProjectHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/count", nil)
@@ -716,7 +779,7 @@ func TestCountProjects_Success(t *testing.T) {
 }
 
 func TestCountProjects_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/count", nil)
 	rr := httptest.NewRecorder()
@@ -1030,8 +1093,8 @@ func TestCountNFTs_NoAuth(t *testing.T) {
 
 func TestListProjects_WithPagination(t *testing.T) {
 	repo := newMockProjectRepo()
-	svc := service.NewProjectService(repo)
-	svc.CreateProject(context.Background(), "user1", &model.Project{Name: "A"})
+	svc := service.NewProjectService(repo, nil)
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "A"})
 	h := NewProjectHandler(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects?limit=5&startAfter=abc", nil)
@@ -1043,7 +1106,7 @@ func TestListProjects_WithPagination(t *testing.T) {
 }
 
 func TestGetProject_NoAuth(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/x", nil)
 	rr := httptest.NewRecorder()
@@ -1096,10 +1159,194 @@ func TestDeleteNFT_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
 
-func TestUpdateProject_NotFound(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo()))
+// --- Security regression tests ---
 
-	body := jsonBody(map[string]string{"name": "Updated"})
+func TestCreateProject_StorageURL_Stripped(t *testing.T) {
+	// Verify that a client-supplied storageURL is zeroed out (Fix #8)
+	repo := newMockProjectRepo()
+	svc := service.NewProjectService(repo, nil)
+	h := NewProjectHandler(svc)
+
+	body := jsonBody(map[string]interface{}{
+		"title":      "Injected",
+		"storageURL": "https://evil.com/malicious.png",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.CreateProject(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+
+	// Verify the stored project has no storageURL
+	for _, p := range repo.projects {
+		if p.UserID == "user1" && p.Title == "Injected" {
+			assert.Empty(t, p.StorageURL, "storageURL should be stripped on create")
+		}
+	}
+}
+
+func TestUpdateProject_ValidationRejectsLongTitle(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
+	h := NewProjectHandler(svc)
+
+	longTitle := string(make([]byte, 201))
+	body := jsonBody(map[string]string{"title": longTitle})
+	req := httptest.NewRequest(http.MethodPut, "/api/projects/"+id, body)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": id})
+	rr := httptest.NewRecorder()
+	h.UpdateProject(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "200 characters")
+}
+
+func TestUpdateProject_ValidationRejectsTooManyTags(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
+	h := NewProjectHandler(svc)
+
+	tags := make([]string, 21)
+	body := jsonBody(map[string]interface{}{"tags": tags})
+	req := httptest.NewRequest(http.MethodPut, "/api/projects/"+id, body)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": id})
+	rr := httptest.NewRecorder()
+	h.UpdateProject(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "20 tags")
+}
+
+func TestConfirmUpload_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := service.NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:       "Art",
+		ContentHash: hash,
+	})
+	// Simulate blob upload
+	storage.objects["projects/user1/"+hash+".png"] = true
+
+	h := NewProjectHandler(svc)
+	req := httptest.NewRequest(http.MethodPost, "/api/projects/"+result.ProjectID+"/confirm-upload", nil)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": result.ProjectID})
+	rr := httptest.NewRecorder()
+	h.ConfirmUpload(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "confirmed")
+}
+
+func TestConfirmUpload_NoAuth(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), newMockStorageClient()))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/projects/x/confirm-upload", nil)
+	rr := httptest.NewRecorder()
+	h.ConfirmUpload(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestConfirmUpload_NotFound(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), newMockStorageClient()))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/projects/nope/confirm-upload", nil)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": "nope"})
+	rr := httptest.NewRecorder()
+	h.ConfirmUpload(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestConfirmUpload_Unauthorized(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := service.NewProjectService(repo, storage)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:       "Art",
+		ContentHash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+	})
+	h := NewProjectHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/projects/"+result.ProjectID+"/confirm-upload", nil)
+	req = withUser(req, "attacker", "evil@b.com")
+	req = chiContext(req, map[string]string{"id": result.ProjectID})
+	rr := httptest.NewRecorder()
+	h.ConfirmUpload(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
+}
+
+func TestConfirmUpload_NotUploaded(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := service.NewProjectService(repo, storage)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:       "Art",
+		ContentHash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+	})
+	h := NewProjectHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/projects/"+result.ProjectID+"/confirm-upload", nil)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": result.ProjectID})
+	rr := httptest.NewRecorder()
+	h.ConfirmUpload(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestUpdateProject_ValidationRejectsEmptyTitle(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := service.NewProjectService(repo, nil)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+	id := result.ProjectID
+	h := NewProjectHandler(svc)
+
+	body := jsonBody(map[string]string{"title": ""})
+	req := httptest.NewRequest(http.MethodPut, "/api/projects/"+id, body)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": id})
+	rr := httptest.NewRecorder()
+	h.UpdateProject(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "title is required")
+}
+
+func TestCreateProject_BadThumbnail_Rejected(t *testing.T) {
+	svc := service.NewProjectService(newMockProjectRepo(), nil)
+	h := NewProjectHandler(svc)
+
+	body := jsonBody(map[string]string{
+		"title":         "Art",
+		"thumbnailData": "javascript:alert(1)",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.CreateProject(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "data:image/")
+}
+
+func TestUpdateProject_NotFound(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
+
+	body := jsonBody(map[string]string{"title": "Updated"})
 	req := httptest.NewRequest(http.MethodPut, "/api/projects/nope", body)
 	req = withUser(req, "user1", "a@b.com")
 	req = chiContext(req, map[string]string{"id": "nope"})
@@ -1129,6 +1376,119 @@ func TestListNFTs_WithPagination(t *testing.T) {
 	h.ListNFTs(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+// --- GetProjectByTitle handler tests ---
+
+func TestGetProjectByTitle_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	svc := service.NewProjectService(repo, nil)
+	svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Sunset"})
+	h := NewProjectHandler(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/by-title?title=Sunset", nil)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.GetProjectByTitle(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Sunset")
+}
+
+func TestGetProjectByTitle_MissingTitle(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/by-title", nil)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.GetProjectByTitle(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestGetProjectByTitle_NotFound(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/by-title?title=Nope", nil)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.GetProjectByTitle(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestGetProjectByTitle_NoAuth(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), nil))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/by-title?title=Art", nil)
+	rr := httptest.NewRecorder()
+	h.GetProjectByTitle(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+// --- DownloadBlob handler tests ---
+
+func TestDownloadBlob_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := service.NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title: "Art", ContentHash: hash,
+	})
+	storage.objects["projects/user1/"+hash+".png"] = true
+
+	h := NewProjectHandler(svc)
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/"+result.ProjectID+"/blob", nil)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": result.ProjectID})
+	rr := httptest.NewRecorder()
+	h.DownloadBlob(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "image/png", rr.Header().Get("Content-Type"))
+	assert.Equal(t, "no-store", rr.Header().Get("Cache-Control"))
+	assert.Equal(t, "fake-png-data", rr.Body.String())
+}
+
+func TestDownloadBlob_NoAuth(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), newMockStorageClient()))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/x/blob", nil)
+	rr := httptest.NewRecorder()
+	h.DownloadBlob(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestDownloadBlob_NotFound(t *testing.T) {
+	h := NewProjectHandler(service.NewProjectService(newMockProjectRepo(), newMockStorageClient()))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/nope/blob", nil)
+	req = withUser(req, "user1", "a@b.com")
+	req = chiContext(req, map[string]string{"id": "nope"})
+	rr := httptest.NewRecorder()
+	h.DownloadBlob(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestDownloadBlob_Unauthorized(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := service.NewProjectService(repo, storage)
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	h := NewProjectHandler(svc)
+	req := httptest.NewRequest(http.MethodGet, "/api/projects/"+result.ProjectID+"/blob", nil)
+	req = withUser(req, "attacker", "evil@b.com")
+	req = chiContext(req, map[string]string{"id": result.ProjectID})
+	rr := httptest.NewRecorder()
+	h.DownloadBlob(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
 }
 
 // --- Error-returning mock repos for error path coverage ---
@@ -1161,7 +1521,7 @@ func (m *failingNFTRepo) Count(_ context.Context, _ string) (int64, error) {
 }
 
 func TestListProjects_ServiceError(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(&failingProjectRepo{}))
+	h := NewProjectHandler(service.NewProjectService(&failingProjectRepo{}, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects", nil)
 	req = withUser(req, "user1", "a@b.com")
@@ -1172,7 +1532,7 @@ func TestListProjects_ServiceError(t *testing.T) {
 }
 
 func TestCountProjects_ServiceError(t *testing.T) {
-	h := NewProjectHandler(service.NewProjectService(&failingProjectRepo{}))
+	h := NewProjectHandler(service.NewProjectService(&failingProjectRepo{}, nil))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/projects/count", nil)
 	req = withUser(req, "user1", "a@b.com")

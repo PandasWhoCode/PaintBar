@@ -47,9 +47,13 @@ interface ProfileData {
 
 interface ProjectData {
   id: string;
-  name?: string;
+  title?: string;
   thumbnailData?: string;
-  imageData?: string;
+  storageURL?: string;
+  width?: number;
+  height?: number;
+  isPublic?: boolean;
+  tags?: string[];
   createdAt?: { seconds: number };
   [key: string]: unknown;
 }
@@ -850,8 +854,8 @@ function updateProjectsUI(projects: ProjectData[]): void {
       card.dataset.projectId = project.id;
 
       const img = document.createElement("img");
-      img.src = safeSrc(project.thumbnailData || project.imageData);
-      img.alt = project.name || "Untitled";
+      img.src = safeSrc(project.thumbnailData);
+      img.alt = project.title || "Untitled";
       img.onerror = function (this: HTMLImageElement) {
         this.src = "images/placeholder.png";
       };
@@ -860,7 +864,7 @@ function updateProjectsUI(projects: ProjectData[]): void {
       const info = document.createElement("div");
       info.className = "project-info";
       const h3 = document.createElement("h3");
-      h3.textContent = project.name || "Untitled";
+      h3.textContent = project.title || "Untitled";
       info.appendChild(h3);
       if (project.createdAt) {
         const dateSpan = document.createElement("span");
@@ -871,11 +875,65 @@ function updateProjectsUI(projects: ProjectData[]): void {
         info.appendChild(dateSpan);
       }
       card.appendChild(info);
+
+      // Action buttons
+      const actions = document.createElement("div");
+      actions.className = "project-actions";
+
+      const openBtn = document.createElement("button");
+      openBtn.className = "project-action-btn open-btn";
+      openBtn.textContent = "Open";
+      openBtn.title = "Open in canvas";
+      openBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.location.href = `/canvas?project=${encodeURIComponent(project.title || "Untitled")}`;
+      });
+      actions.appendChild(openBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "project-action-btn delete-btn";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.title = "Delete project";
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        handleDeleteProject(project.id, project.title || "Untitled");
+      });
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(actions);
       projectGrid.appendChild(card);
     });
   }
 
   setCachedGrid(PROJECTS_CACHE_SUFFIX, projectGrid.innerHTML);
+}
+
+async function handleDeleteProject(
+  projectId: string,
+  title: string,
+): Promise<void> {
+  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+
+  const user = auth.currentUser;
+  if (!user) return;
+
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch(`/api/projects/${encodeURIComponent(projectId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(
+        (err as { error?: string }).error || `Delete failed (${res.status})`,
+      );
+    }
+    showSuccessMessage(`"${title}" deleted.`);
+  } catch (err) {
+    console.error("Delete project error:", err);
+    alert(`Failed to delete project: ${(err as Error).message}`);
+  }
 }
 
 // ---- Logout ----

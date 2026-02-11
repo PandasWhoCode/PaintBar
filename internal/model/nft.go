@@ -41,6 +41,21 @@ func (n *NFT) Validate() error {
 	if n.Price < 0 {
 		return fmt.Errorf("price must be non-negative")
 	}
+	if n.ThumbnailData != "" {
+		if err := ValidateThumbnailData(n.ThumbnailData); err != nil {
+			return err
+		}
+	}
+	if n.ImageData != "" {
+		if len(n.ImageData) > MaxThumbnailDataLen {
+			return fmt.Errorf("imageData must be %d bytes or less", MaxThumbnailDataLen)
+		}
+	}
+	if n.ImageURL != "" {
+		if err := validateURL(n.ImageURL); err != nil {
+			return fmt.Errorf("invalid image URL: %w", err)
+		}
+	}
 	return nil
 }
 

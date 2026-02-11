@@ -55,7 +55,7 @@ func (r *firestoreNFTRepo) List(ctx context.Context, userID string, pageLimit in
 	if startAfter != "" {
 		cursorDoc, err := r.client.Collection("nfts").Doc(startAfter).Get(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("get cursor doc %s: %w", startAfter, err)
+			return []*model.NFT{}, nil
 		}
 		q = q.StartAfter(cursorDoc)
 	}

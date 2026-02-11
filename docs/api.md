@@ -181,13 +181,18 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 
 #### `POST /api/projects`
 
+Create or upsert a project. **Titles are unique per user.**
+
+- If a project with the same `contentHash` exists → returns `duplicate: true`, no upload.
+- If a project with the same `title` exists → updates its content (upsert), returns new upload URL.
+- Otherwise → creates a new project.
+
 **Request Body**
 
 ```json
 {
-  "name": "My Artwork",
-  "description": "A pixel art landscape",
-  "imageData": "data:image/png;base64,...",
+  "title": "My Artwork",
+  "contentHash": "a1b2c3d4e5f6...64-char-hex-sha256",
   "thumbnailData": "data:image/png;base64,...",
   "width": 800,
   "height": 600,
@@ -196,13 +201,48 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 }
 ```
 
-**Required**: `name`
+**Required**: `title`, `contentHash`, `thumbnailData`, `width`, `height`
 
 **Response** `201`
 
 ```json
-{ "id": "new-project-id" }
+{
+  "projectId": "new-or-existing-project-id",
+  "uploadURL": "https://storage.googleapis.com/...",
+  "duplicate": false
+}
 ```
+
+If `duplicate` is `true`, the `uploadURL` is omitted and `projectId` refers to the
+existing project with the same `contentHash`.
+
+#### `GET /api/projects/by-title`
+
+Look up a project by title for the authenticated user.
+
+**Query**: `?title=My+Artwork`
+
+**Response** `200`: `Project` object.
+
+**Errors**: `400` (missing title), `404` (not found)
+
+#### `POST /api/projects/{id}/confirm-upload`
+
+Called after the client successfully uploads the PNG blob to the signed `uploadURL`.
+Verifies the object exists in Storage and sets the `storageURL` on the project record.
+
+**Response** `200`
+
+```json
+{ "status": "confirmed" }
+```
+
+#### `GET /api/projects/{id}/blob`
+
+Download the project's full-resolution PNG. Streams the blob from Storage through the
+API (avoids CORS issues with direct Storage URLs). Response uses `Cache-Control: no-store`.
+
+**Response** `200`: `image/png` binary
 
 #### `GET /api/projects/count`
 
@@ -308,10 +348,12 @@ Same patterns as Projects. Listed NFTs (`isListed: true`) are readable by any au
 
 ## Rate Limiting
 
-| Scope                                 | Limit        | Window   |
-| ------------------------------------- | ------------ | -------- |
-| **Global** (per IP)                   | 100 requests | 1 minute |
-| **Sensitive** (`/api/claim-username`) | 5 requests   | 1 minute |
+| Scope              | Limit        | Window   |
+| ------------------ | ------------ | -------- |
+| **Global** per IP  | 100 requests | 1 minute |
+| **Sensitive** (\*) | 5 requests   | 1 minute |
+
+\* Sensitive endpoints: `POST /api/claim-username`, `POST /api/projects`, `POST /api/projects/{id}/confirm-upload`
 
 Rate-limited responses return `429 Too Many Requests` with a `Retry-After: 60` header.
 
