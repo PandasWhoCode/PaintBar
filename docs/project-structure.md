@@ -92,10 +92,10 @@ paintbar/
 │   │   │   ├── app.ts            # PaintBar main class + DOMContentLoaded init
 │   │   │   ├── canvasManager.ts  # Canvas layer management + responsive resize
 │   │   │   ├── toolManager.ts    # Tool switching + active tool state
-│   │   │   ├── basicTools.ts     # Pencil, eraser, spray, fill tools
-│   │   │   ├── objectTools.ts    # Rectangle, circle, line, triangle, arc, text
+│   │   │   ├── basicTools.ts     # Pencil, eraser, spray, fill, text tools
+│   │   │   ├── objectTools.ts    # Rectangle, circle, line, triangle, arc tools
 │   │   │   ├── actionTools.ts    # Selection tool (getImageData/putImageData)
-│   │   │   ├── genericTool.ts    # Base Tool interface
+│   │   │   ├── genericTool.ts    # GenericTool base class
 │   │   │   ├── save.ts           # SaveManager — PNG, JPG, ICO export
 │   │   │   └── iro.d.ts          # Type declarations for iro.js color picker
 │   │   ├── profile/

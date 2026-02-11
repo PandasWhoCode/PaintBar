@@ -95,16 +95,15 @@ services:
 
 #### Linting
 
-| Command             | Description                                 |
-| ------------------- | ------------------------------------------- |
-| `task lint`         | Run all linters (alias for `lint:all`)      |
-| `task lint:go`      | Run `go vet`                                |
-| `task lint:ts`      | TypeScript type checking (`tsc --noEmit`)   |
-| `task lint:md`      | Lint all Markdown (`markdownlint`)          |
-| `task lint:all`     | Run all linters (Go, TypeScript, Markdown)  |
-| `task lint-fix:md`  | Auto-fix Markdown (Prettier + markdownlint) |
-| `task lint-fix:ts`  | Auto-fix TypeScript (Prettier)              |
-| `task lint-fix:all` | Auto-fix all (Markdown + TypeScript)        |
+| Command             | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `task lint`         | Run all linters (also available as `lint:all`) |
+| `task lint:go`      | Run `go vet`                                   |
+| `task lint:ts`      | TypeScript type checking (`tsc --noEmit`)      |
+| `task lint:md`      | Lint all Markdown (`markdownlint`)             |
+| `task lint-fix:md`  | Auto-fix Markdown (Prettier + markdownlint)    |
+| `task lint-fix:ts`  | Auto-fix TypeScript (Prettier)                 |
+| `task lint-fix:all` | Auto-fix all (Markdown + TypeScript)           |
 
 #### Database
 

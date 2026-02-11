@@ -161,19 +161,19 @@ task ts-check          # TypeScript type checking only (no emit)
 │  ┌─────────────────────────────────┐
 │  │          Tool Hierarchy          │
 │  │                                  │
-│  │  genericTool.ts (Tool interface) │
+│  │  genericTool.ts (base class)     │
 │  │    ├── basicTools.ts             │
 │  │    │   ├── PencilTool            │
 │  │    │   ├── EraserTool            │
 │  │    │   ├── SprayTool             │
-│  │    │   └── FillTool              │
+│  │    │   ├── FillTool              │
+│  │    │   └── TextTool              │
 │  │    ├── objectTools.ts            │
 │  │    │   ├── RectangleTool         │
 │  │    │   ├── CircleTool            │
 │  │    │   ├── LineTool              │
 │  │    │   ├── TriangleTool          │
-│  │    │   ├── ArcTool               │
-│  │    │   └── TextTool              │
+│  │    │   └── ArcTool               │
 │  │    └── actionTools.ts            │
 │  │        └── SelectionTool         │
 │  └─────────────────────────────────┘
@@ -237,16 +237,28 @@ When responsive mode is enabled, `CanvasManager` listens for window resize event
 3. **Restore** drawing state via `putImageData()`
 4. **Recalculate** CSS display dimensions to fit container
 
-### Tool Interface
+### GenericTool Base Class
 
-All tools implement the `Tool` interface from `genericTool.ts`:
+All tools extend the `GenericTool` base class from `genericTool.ts`:
 
 ```typescript
-interface Tool {
+class GenericTool {
+  // Mouse event handlers (override in subclasses)
   onMouseDown(point: Point): void;
   onMouseMove(point: Point): void;
   onMouseUp(point: Point): void;
-  cursor: string;
+
+  // Lifecycle — activate sets cursor, deactivate cleans up
+  activate(): void;
+  deactivate(): void;
+
+  // Helpers
+  saveState(): void;
+  getContext(): CanvasRenderingContext2D;
+  getOverlayContext(): CanvasRenderingContext2D;
+  clearOverlay(): void;
+  applyBrushSettings(ctx: CanvasRenderingContext2D): CanvasRenderingContext2D;
+  restoreContext(ctx: CanvasRenderingContext2D): void;
 }
 ```
 
