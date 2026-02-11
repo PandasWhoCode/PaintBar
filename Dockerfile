@@ -44,9 +44,6 @@ COPY --from=ts-builder /app/web/static/dist/ /app/web/static/dist/
 # Copy templates
 COPY web/templates/ /app/web/templates/
 
-# Copy migrations
-COPY migrations/ /app/migrations/
-
 EXPOSE 8080
 
 ENTRYPOINT ["/app/paintbar"]

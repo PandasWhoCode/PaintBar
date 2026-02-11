@@ -27,14 +27,6 @@ tasks:
     cmds:
       - go test ./... -v -short
 
-  test-integration:
-    desc: Run integration tests against local Postgres
-    deps: [docker:up]
-    env:
-      DATABASE_URL: postgres://paintbar:paintbar@localhost:5432/paintbar?sslmode=disable
-    cmds:
-      - go test ./internal/repository/ -v -race
-
   bench:
     desc: Run Go benchmarks
     cmds:
@@ -79,26 +71,6 @@ tasks:
     cmds:
       - task: lint-fix:md
       - task: lint-fix:ts
-
-  migrate:
-    desc: Run Goose migrations up
-    cmds:
-      - goose -dir migrations postgres "$DATABASE_URL" up
-
-  migrate-down:
-    desc: Rollback last Goose migration
-    cmds:
-      - goose -dir migrations postgres "$DATABASE_URL" down
-
-  migrate-status:
-    desc: Show Goose migration status
-    cmds:
-      - goose -dir migrations postgres "$DATABASE_URL" status
-
-  migrate-create:
-    desc: Create a new Goose migration
-    cmds:
-      - goose -dir migrations create {{.CLI_ARGS}} sql
 
   ts-build:
     desc: Build TypeScript with esbuild (dev — includes source maps)
@@ -152,9 +124,9 @@ tasks:
       - go run ./cmd/server
 
   docker:up:
-    desc: Start dev dependencies (postgres + firebase)
+    desc: Start dev dependencies (firebase + solo)
     cmds:
-      - docker compose up postgres firebase -d
+      - docker compose up firebase -d
 
   docker:down:
     desc: Stop dev dependencies
@@ -175,13 +147,6 @@ tasks:
     desc: Tail Docker service logs
     cmds:
       - docker compose logs -f
-
-  docker:reset-postgres:
-    desc: Reset only Postgres (wipe data, restart)
-    cmds:
-      - docker compose stop postgres
-      - docker compose rm -f -v postgres
-      - docker compose up postgres -d
 
   docker:reset-firebase:
     desc: Reset only Firebase emulator (wipe data, restart)

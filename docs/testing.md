@@ -31,15 +31,6 @@ task test-short
 # Equivalent to: go test ./... -v -short
 ```
 
-### Integration Tests
-
-Requires Docker (Postgres + Firebase Emulator):
-
-```bash
-task test-integration
-# Starts Docker deps, then runs: go test ./internal/repository/ -v -race
-```
-
 ### Single Package
 
 ```bash
@@ -163,9 +154,8 @@ type mockUserRepo struct {
 
 **What's tested**:
 
-- Firestore CRUD operations (requires emulator)
-- PostgreSQL health check
-- Connection pool creation
+- Helper function unit tests (isNotFoundError, contains, searchString)
+- FirebaseClients Close method
 - Error handling for not-found documents
 
 ---

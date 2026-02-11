@@ -49,14 +49,11 @@ paintbar/
 │   │
 │   ├── repository/               # Data access layer
 │   │   ├── firestore.go          # Firebase client initialization + health check
-│   │   ├── postgres.go           # PostgreSQL connection pool + health check
-│   │   ├── migrate.go            # Goose migration runner (embedded SQL)
 │   │   ├── user.go               # UserRepository interface + Firestore impl
 │   │   ├── project.go            # ProjectRepository interface + Firestore impl
 │   │   ├── gallery.go            # GalleryRepository interface + Firestore impl
 │   │   ├── nft.go                # NFTRepository interface + Firestore impl
-│   │   ├── session.go            # SessionRepository (PostgreSQL)
-│   │   └── repository_test.go    # Repository tests (uses Firestore emulator)
+│   │   └── repository_test.go    # Repository tests (helper unit tests)
 │   │
 │   └── service/                  # Business logic layer
 │       ├── auth.go               # AuthService — Firebase token verification
@@ -66,12 +63,6 @@ paintbar/
 │       ├── nft.go                # NFTService — NFT record management
 │       ├── service_test.go       # Service unit tests
 │       └── mock_repos_test.go    # Mock repository implementations for tests
-│
-├── migrations/                   # Goose SQL migrations (embedded via go:embed)
-│   ├── embed.go                  # Embeds migration files into Go binary
-│   ├── 001_create_sessions.sql   # Sessions table (UUID PK, token hash, expiry)
-│   ├── 002_create_rate_limits.sql# Rate limits table (key + window)
-│   └── 003_create_audit_logs.sql # Audit logs table (JSONB details)
 │
 ├── web/                          # Frontend assets
 │   ├── embed.go                  # Embeds templates FS into Go binary
@@ -123,7 +114,7 @@ paintbar/
 │
 ├── Dockerfile                    # 3-stage: Go builder → TS builder → Alpine runtime
 ├── Dockerfile.firebase           # Firebase emulator container (Java 25)
-├── docker-compose.yml            # Local dev: postgres, firebase, solo
+├── docker-compose.yml            # Local dev: firebase, solo
 ├── Taskfile.yml                  # Task runner commands
 ├── firebase.json                 # Firebase Hosting config + Firestore rules/indexes
 ├── firestore.rules               # Firestore security rules
@@ -138,7 +129,7 @@ paintbar/
 ## Key Conventions
 
 - **`internal/`** — All Go business logic is under `internal/` to prevent external imports
-- **`go:embed`** — Templates, migrations, and the OpenAPI spec are embedded into the binary at compile time
+- **`go:embed`** — Templates and the OpenAPI spec are embedded into the binary at compile time
 - **Interface-driven repositories** — Each repository defines an interface
   (e.g., `UserRepository`) with a Firestore implementation, enabling mock-based testing
 - **Pointer fields for partial updates** — `*string` fields in update structs

@@ -8,33 +8,15 @@ services:
     environment:
       - ENV=local
       - PORT=8080
-      - DATABASE_URL=postgres://paintbar:paintbar@postgres:5432/paintbar?sslmode=disable
       - FIREBASE_PROJECT_ID=paintbar-7f887
       - FIRESTORE_EMULATOR_HOST=firebase:8080
       - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
       - HIERO_NETWORK=local
     depends_on:
-      postgres:
-        condition: service_healthy
       firebase:
         condition: service_healthy
     restart: unless-stopped
 
-  postgres:
-    image: postgres:16-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: paintbar
-      POSTGRES_PASSWORD: paintbar
-      POSTGRES_DB: paintbar
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U paintbar -d paintbar"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   firebase:
     build:
@@ -63,5 +45,3 @@ services:
       - "8545:8545"    # JSON-RPC relay
     restart: unless-stopped
 
-volumes:
-  pgdata:

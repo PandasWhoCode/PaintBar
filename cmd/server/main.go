@@ -20,7 +20,6 @@ import (
 	mw "github.com/pandasWhoCode/paintbar/internal/middleware"
 	"github.com/pandasWhoCode/paintbar/internal/repository"
 	"github.com/pandasWhoCode/paintbar/internal/service"
-	"github.com/pandasWhoCode/paintbar/migrations"
 	"github.com/pandasWhoCode/paintbar/web"
 )
 
@@ -47,28 +46,8 @@ func main() {
 		"port", cfg.Port,
 	)
 
-	// Connect to PostgreSQL
-	ctx := context.Background()
-	pool, err := repository.NewPostgresPool(ctx, cfg.DatabaseURL)
-	if err != nil {
-		slog.Error("failed to connect to postgres", "error", err)
-		os.Exit(1)
-	}
-	defer pool.Close()
-
-	// Run migrations automatically in local and preview environments
-	if cfg.Env == config.EnvLocal || cfg.Env == config.EnvPreview {
-		if err := repository.RunMigrations(ctx, cfg.DatabaseURL, migrations.FS); err != nil {
-			slog.Error("failed to run migrations", "error", err)
-			os.Exit(1)
-		}
-	}
-
-	// Initialize Postgres repositories
-	sessionRepo := repository.NewSessionRepository(pool)
-	_ = sessionRepo // used in Phase 7 for session management
-
 	// Initialize Firebase clients
+	ctx := context.Background()
 	fbClients, err := repository.NewFirebaseClients(ctx,
 		cfg.FirebaseProjectID,
 		cfg.FirebaseServiceAccountPath,
@@ -144,12 +123,6 @@ func main() {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		dbStatus := "ok"
-		if err := repository.HealthCheck(r.Context(), pool); err != nil {
-			slog.Error("health check: postgres", "error", err)
-			dbStatus = "error"
-		}
-
 		fsStatus := "ok"
 		if err := repository.FirestoreHealthCheck(r.Context(), fbClients.Firestore); err != nil {
 			slog.Error("health check: firestore", "error", err)
@@ -158,7 +131,6 @@ func main() {
 
 		json.NewEncoder(w).Encode(map[string]string{
 			"status":    "ok",
-			"db":        dbStatus,
 			"firestore": fsStatus,
 		})
 	})

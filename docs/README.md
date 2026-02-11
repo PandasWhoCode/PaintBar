@@ -11,7 +11,7 @@ testing, and project structure.
 | 1   | [Architecture](architecture.md)                | System architecture, tech stack, layer diagram, deployment topology   |
 | 2   | [Project Structure](project-structure.md)      | Directory layout, file descriptions, Go package organization          |
 | 3   | [API Reference](api.md)                        | REST API endpoints, request/response schemas, authentication          |
-| 4   | [Database](database.md)                        | Firestore collections, PostgreSQL schema, ER diagrams, security rules |
+| 4   | [Database](database.md)                        | Firestore collections, ER diagrams, security rules                    |
 | 5   | [Authentication](authentication.md)            | Firebase Auth flow, middleware chain, token verification              |
 | 6   | [Frontend](frontend.md)                        | TypeScript canvas app, Go templates, esbuild pipeline, canvas layers  |
 | 7   | [Deployment](deployment.md)                    | Local dev, Docker Compose, Cloud Run, Firebase Hosting, CI/CD         |
@@ -38,9 +38,7 @@ testing, and project structure.
 | **Frontend**       | TypeScript, esbuild, HTML5 Canvas                                 |
 | **SSR**            | Go `html/template`                                                |
 | **Auth**           | Firebase Authentication (client SDK + Admin SDK)                  |
-| **Primary DB**     | Cloud Firestore (users, projects, gallery, NFTs)                  |
-| **Relational DB**  | PostgreSQL 16 via pgx (sessions, rate limits, audit logs)         |
-| **Migrations**     | Goose                                                             |
+| **Database**       | Cloud Firestore (users, projects, gallery, NFTs)                  |
 | **NFT Network**    | Hiero (Hedera) — Hiero Go SDK                                     |
 | **Task Runner**    | [Taskfile](https://taskfile.dev)                                  |
 | **Infrastructure** | Docker Compose (local), Cloud Run + Firebase Hosting (production) |

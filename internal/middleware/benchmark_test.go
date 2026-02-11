@@ -8,8 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/pandasWhoCode/paintbar/internal/repository"
 )
 
 // noopHandler is a minimal handler for benchmarking middleware overhead.
@@ -143,16 +141,6 @@ func BenchmarkFullMiddlewareStack(b *testing.B) {
 		for pb.Next() {
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
-		}
-	})
-}
-
-func BenchmarkHashToken(b *testing.B) {
-	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.test"
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			repository.HashToken(token)
 		}
 	})
 }
