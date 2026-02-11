@@ -160,7 +160,7 @@ paintbar/
 ├── internal/
 │   ├── handler/         # HTTP handlers
 │   ├── middleware/       # Auth, logging, security middleware
-│   ├── repository/      # PostgreSQL data access
+│   ├── repository/      # Firestore + PostgreSQL data access (Admin SDK)
 │   └── service/         # Business logic
 ├── migrations/          # Goose SQL migrations
 ├── web/

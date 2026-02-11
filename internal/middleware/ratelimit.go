@@ -17,6 +17,7 @@ type RateLimiter struct {
 	rate     int           // max requests per window
 	window   time.Duration // window duration
 	cleanup  time.Duration // how often to purge expired entries
+	done     chan struct{} // signals cleanupLoop to stop
 }
 
 type visitor struct {
@@ -32,11 +33,17 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 		rate:     rate,
 		window:   window,
 		cleanup:  window * 2,
+		done:     make(chan struct{}),
 	}
 
 	go rl.cleanupLoop()
 
 	return rl
+}
+
+// Close stops the background cleanup goroutine.
+func (rl *RateLimiter) Close() {
+	close(rl.done)
 }
 
 // Handler returns middleware that enforces the rate limit.
@@ -98,8 +105,13 @@ func (rl *RateLimiter) cleanupLoop() {
 	ticker := time.NewTicker(rl.cleanup)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		rl.purgeExpired()
+	for {
+		select {
+		case <-rl.done:
+			return
+		case <-ticker.C:
+			rl.purgeExpired()
+		}
 	}
 }
 

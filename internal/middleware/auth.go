@@ -75,6 +75,15 @@ func Auth(authService TokenVerifier) func(http.Handler) http.Handler {
 			}
 
 			// Verify token with Firebase
+			if authService == nil {
+				slog.Error("auth service not configured", "path", r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": "authentication service unavailable",
+				})
+				return
+			}
 			userInfo, err := authService.VerifyIDToken(r.Context(), idToken)
 			if err != nil {
 				slog.Warn("token verification failed",

@@ -72,6 +72,9 @@ func (r *firestoreUserRepo) ClaimUsername(ctx context.Context, uid string, usern
 	return r.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		usernameRef := r.client.Collection("usernames").Doc(username)
 		usernameDoc, err := tx.Get(usernameRef)
+		if err != nil && !isNotFoundError(err) {
+			return fmt.Errorf("check username %q: %w", username, err)
+		}
 		if err == nil && usernameDoc.Exists() {
 			return fmt.Errorf("username %q is already taken", username)
 		}

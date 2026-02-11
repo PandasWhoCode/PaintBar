@@ -190,6 +190,20 @@ func TestAuth_FailedTokenVerification(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "invalid or expired token")
 }
 
+func TestAuth_NilAuthService_Returns500(t *testing.T) {
+	handler := Auth(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/profile", nil)
+	req.Header.Set("Authorization", "Bearer some-token")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Contains(t, rr.Body.String(), "authentication service unavailable")
+}
+
 func TestAuth_SingleWordAuth(t *testing.T) {
 	verifier := &mockTokenVerifier{}
 	handler := Auth(verifier)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

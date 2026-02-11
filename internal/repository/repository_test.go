@@ -45,7 +45,9 @@ func testPool(t *testing.T) *pgxpool.Pool {
 // randomToken generates a random hex token for testing.
 func randomToken() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic(fmt.Sprintf("rand.Read failed: %v", err))
+	}
 	return hex.EncodeToString(b)
 }
 

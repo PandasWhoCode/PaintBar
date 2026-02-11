@@ -115,8 +115,14 @@ func TestSecurityHeaders_HSTSInProduction(t *testing.T) {
 
 // --- RateLimiter tests ---
 
+func TestRateLimiter_Close(t *testing.T) {
+	rl := NewRateLimiter(1, time.Minute)
+	rl.Close() // should not panic or block
+}
+
 func TestRateLimiter_AllowsUnderLimit(t *testing.T) {
 	rl := NewRateLimiter(5, time.Minute)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	for i := 0; i < 5; i++ {
@@ -130,6 +136,7 @@ func TestRateLimiter_AllowsUnderLimit(t *testing.T) {
 
 func TestRateLimiter_BlocksOverLimit(t *testing.T) {
 	rl := NewRateLimiter(3, time.Minute)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	for i := 0; i < 3; i++ {
@@ -157,6 +164,7 @@ func TestRateLimiter_BlocksOverLimit(t *testing.T) {
 
 func TestRateLimiter_SkipsStaticAssets(t *testing.T) {
 	rl := NewRateLimiter(1, time.Minute)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	// First non-static request uses the one allowed
@@ -178,6 +186,7 @@ func TestRateLimiter_SkipsStaticAssets(t *testing.T) {
 
 func TestRateLimiter_SkipsHealthEndpoint(t *testing.T) {
 	rl := NewRateLimiter(1, time.Minute)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	// Exhaust the limit
@@ -199,6 +208,7 @@ func TestRateLimiter_SkipsHealthEndpoint(t *testing.T) {
 
 func TestRateLimiter_DifferentIPsIndependent(t *testing.T) {
 	rl := NewRateLimiter(1, time.Minute)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	// IP 1
@@ -220,6 +230,7 @@ func TestRateLimiter_DifferentIPsIndependent(t *testing.T) {
 
 func TestSensitiveEndpoint_BlocksAfterLimit(t *testing.T) {
 	rl := NewRateLimiter(5, time.Minute) // 5 req/min — aggressive
+	defer rl.Close()
 	handler := SensitiveEndpoint(rl)(okHandler())
 
 	// 5 requests should pass
@@ -248,7 +259,9 @@ func TestSensitiveEndpoint_BlocksAfterLimit(t *testing.T) {
 
 func TestSensitiveEndpoint_IndependentFromGlobal(t *testing.T) {
 	globalRL := NewRateLimiter(100, time.Minute)
+	defer globalRL.Close()
 	sensitiveRL := NewRateLimiter(2, time.Minute)
+	defer sensitiveRL.Close()
 
 	// Exhaust the sensitive limiter
 	sensitiveHandler := SensitiveEndpoint(sensitiveRL)(okHandler())
@@ -357,6 +370,7 @@ func TestCORS_PreflightDisallowedOrigin(t *testing.T) {
 func TestRateLimiter_WindowReset(t *testing.T) {
 	// Use a very short window so it resets during the test
 	rl := NewRateLimiter(1, 50*time.Millisecond)
+	defer rl.Close()
 	handler := rl.Handler()(okHandler())
 
 	// First request — allowed
