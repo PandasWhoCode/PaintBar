@@ -1,4 +1,10 @@
-# PaintBar Database Schema
+# PaintBar Database Schema (Legacy)
+
+[← Back to Docs](README.md)
+
+> **Note**: This is the original pre-migration schema reference.
+> For the current schema (including PostgreSQL tables),
+> see [Database](database.md).
 
 This document defines the Firestore database schema for the PaintBar application.
 
@@ -19,22 +25,22 @@ User profile documents. The `userId` is the Firebase Auth UID.
 
 ### Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `uid` | string | Yes | Firebase Auth user ID (matches document ID) |
-| `email` | string | Yes | User's email address from Firebase Auth |
-| `username` | string | No | Unique username (defaults to email prefix) |
-| `displayName` | string | No | User's display name |
-| `bio` | string | No | User biography/description |
-| `location` | string | No | User's location |
-| `website` | string | No | User's personal website URL |
-| `githubUrl` | string | No | GitHub profile URL |
-| `twitterHandle` | string | No | Twitter/X handle (with or without @) |
-| `blueskyHandle` | string | No | Bluesky handle |
-| `instagramHandle` | string | No | Instagram handle |
-| `hbarAddress` | string | No | Hedera HBAR wallet address |
-| `createdAt` | timestamp | Yes | Account creation timestamp |
-| `updatedAt` | timestamp | Yes | Last profile update timestamp |
+| Field             | Type      | Required | Description                                 |
+| ----------------- | --------- | -------- | ------------------------------------------- |
+| `uid`             | string    | Yes      | Firebase Auth user ID (matches document ID) |
+| `email`           | string    | Yes      | User's email address from Firebase Auth     |
+| `username`        | string    | No       | Unique username (defaults to email prefix)  |
+| `displayName`     | string    | No       | User's display name                         |
+| `bio`             | string    | No       | User biography/description                  |
+| `location`        | string    | No       | User's location                             |
+| `website`         | string    | No       | User's personal website URL                 |
+| `githubUrl`       | string    | No       | GitHub profile URL                          |
+| `twitterHandle`   | string    | No       | Twitter/X handle (with or without @)        |
+| `blueskyHandle`   | string    | No       | Bluesky handle                              |
+| `instagramHandle` | string    | No       | Instagram handle                            |
+| `hbarAddress`     | string    | No       | Hedera HBAR wallet address                  |
+| `createdAt`       | timestamp | Yes      | Account creation timestamp                  |
+| `updatedAt`       | timestamp | Yes      | Last profile update timestamp               |
 
 ### Security Rules
 
@@ -72,19 +78,19 @@ User's saved drawing projects from the canvas.
 
 ### Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `userId` | string | Yes | Owner's Firebase Auth UID |
-| `name` | string | Yes | Project name |
-| `description` | string | No | Project description |
-| `imageData` | string | Yes | Canvas image data (base64 or URL) |
-| `thumbnailData` | string | No | Thumbnail for grid display |
-| `width` | number | Yes | Canvas width in pixels |
-| `height` | number | Yes | Canvas height in pixels |
-| `isPublic` | boolean | No | Whether project is visible in public gallery |
-| `tags` | array | No | Array of tag strings |
-| `createdAt` | timestamp | Yes | Project creation timestamp |
-| `updatedAt` | timestamp | Yes | Last modification timestamp |
+| Field           | Type      | Required | Description                                  |
+| --------------- | --------- | -------- | -------------------------------------------- |
+| `userId`        | string    | Yes      | Owner's Firebase Auth UID                    |
+| `name`          | string    | Yes      | Project name                                 |
+| `description`   | string    | No       | Project description                          |
+| `imageData`     | string    | Yes      | Canvas image data (base64 or URL)            |
+| `thumbnailData` | string    | No       | Thumbnail for grid display                   |
+| `width`         | number    | Yes      | Canvas width in pixels                       |
+| `height`        | number    | Yes      | Canvas height in pixels                      |
+| `isPublic`      | boolean   | No       | Whether project is visible in public gallery |
+| `tags`          | array     | No       | Array of tag strings                         |
+| `createdAt`     | timestamp | Yes      | Project creation timestamp                   |
+| `updatedAt`     | timestamp | Yes      | Last modification timestamp                  |
 
 ### Security Rules
 
@@ -107,19 +113,19 @@ Public gallery items shared by users.
 
 ### Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `userId` | string | Yes | Creator's Firebase Auth UID |
-| `projectId` | string | Yes | Reference to original project |
-| `name` | string | Yes | Gallery item name |
-| `description` | string | No | Item description |
-| `imageUrl` | string | Yes | Public image URL |
-| `thumbnailUrl` | string | No | Thumbnail URL |
-| `likes` | number | No | Number of likes (default: 0) |
-| `views` | number | No | Number of views (default: 0) |
-| `tags` | array | No | Array of tag strings |
-| `createdAt` | timestamp | Yes | When shared to gallery |
-| `updatedAt` | timestamp | Yes | Last update timestamp |
+| Field          | Type      | Required | Description                   |
+| -------------- | --------- | -------- | ----------------------------- |
+| `userId`       | string    | Yes      | Creator's Firebase Auth UID   |
+| `projectId`    | string    | Yes      | Reference to original project |
+| `name`         | string    | Yes      | Gallery item name             |
+| `description`  | string    | No       | Item description              |
+| `imageUrl`     | string    | Yes      | Public image URL              |
+| `thumbnailUrl` | string    | No       | Thumbnail URL                 |
+| `likes`        | number    | No       | Number of likes (default: 0)  |
+| `views`        | number    | No       | Number of views (default: 0)  |
+| `tags`         | array     | No       | Array of tag strings          |
+| `createdAt`    | timestamp | Yes      | When shared to gallery        |
+| `updatedAt`    | timestamp | Yes      | Last update timestamp         |
 
 ### Security Rules
 
@@ -143,22 +149,22 @@ NFTs minted through PaintBar on the Hedera network.
 
 ### Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `userId` | string | Yes | Creator's Firebase Auth UID |
-| `projectId` | string | Yes | Reference to original project |
-| `tokenId` | string | Yes | Hedera token ID |
-| `serialNumber` | number | Yes | NFT serial number |
-| `name` | string | Yes | NFT name |
-| `description` | string | No | NFT description |
-| `imageUrl` | string | Yes | IPFS or public image URL |
-| `metadata` | object | No | Additional NFT metadata |
-| `price` | number | No | Listing price in HBAR |
-| `isListed` | boolean | No | Whether NFT is listed for sale |
-| `mintedAt` | timestamp | Yes | Minting timestamp |
-| `transactionId` | string | Yes | Hedera transaction ID |
-| `createdAt` | timestamp | Yes | Document creation timestamp |
-| `updatedAt` | timestamp | Yes | Last update timestamp |
+| Field           | Type      | Required | Description                    |
+| --------------- | --------- | -------- | ------------------------------ |
+| `userId`        | string    | Yes      | Creator's Firebase Auth UID    |
+| `projectId`     | string    | Yes      | Reference to original project  |
+| `tokenId`       | string    | Yes      | Hedera token ID                |
+| `serialNumber`  | number    | Yes      | NFT serial number              |
+| `name`          | string    | Yes      | NFT name                       |
+| `description`   | string    | No       | NFT description                |
+| `imageUrl`      | string    | Yes      | IPFS or public image URL       |
+| `metadata`      | object    | No       | Additional NFT metadata        |
+| `price`         | number    | No       | Listing price in HBAR          |
+| `isListed`      | boolean   | No       | Whether NFT is listed for sale |
+| `mintedAt`      | timestamp | Yes      | Minting timestamp              |
+| `transactionId` | string    | Yes      | Hedera transaction ID          |
+| `createdAt`     | timestamp | Yes      | Document creation timestamp    |
+| `updatedAt`     | timestamp | Yes      | Last update timestamp          |
 
 ### Security Rules
 

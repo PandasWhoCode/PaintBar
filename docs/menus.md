@@ -1,5 +1,7 @@
 # PaintBar Menu Documentation
 
+[← Testing](testing.md) · [Docs Index](README.md)
+
 This document provides detailed information about all menus and features available in PaintBar.
 
 ## Tools Menu
@@ -8,31 +10,31 @@ The Tools menu provides essential drawing and manipulation tools for creating ar
 
 ### Available Tools
 
-#### <img src="../public/images/menus/tools_pencil.png" height="16"/> Pencil
+#### <img src="../web/static/images/menus/tools_pencil.png" height="16" alt="Pencil"/> Pencil
 
 - Primary drawing tool for freehand sketching
 - Adjustable line weight using the Size menu
 - Pressure sensitivity supported on compatible devices
 
-#### <img src="../public/images/menus/tools_eraser.png" height="16"/> Eraser
+#### <img src="../web/static/images/menus/tools_eraser.png" height="16" alt="Eraser"/> Eraser
 
 - Removes drawn content
 - Size adjustable through the Size menu
 - Works on all layers
 
-#### <img src="../public/images/menus/tools_spraycan.png" height="16"/> Spray
+#### <img src="../web/static/images/menus/tools_spraycan.png" height="16" alt="Spray"/> Spray
 
 - Spray paint-style drawing
 - Adjustable spray density and size
 - Works on all layers
 
-#### <img src="../public/images/menus/tools_fill.png" height="16"/> Fill
+#### <img src="../web/static/images/menus/tools_fill.png" height="16" alt="Fill"/> Fill
 
 - Floods an enclosed area with the selected color
 - Works with both simple and complex shapes
 - Respects canvas boundaries and shape edges
 
-#### <img src="../public/images/menus/tools_text.png" height="16"/> Text
+#### <img src="../web/static/images/menus/tools_text.png" height="16" alt="Text"/> Text
 
 - Adds text to the canvas
 - Rich formatting options:
@@ -49,25 +51,25 @@ The Shapes menu provides a collection of geometric tools for creating precise sh
 
 ### Available Shapes
 
-#### <img src="../public/images/menus/shapes_rectangle.png" height="16"/> Rectangle
+#### <img src="../web/static/images/menus/shapes_rectangle.png" height="16" alt="Rectangle"/> Rectangle
 
 - Creates rectangular or square shapes
 - Click and drag to define dimensions
 - Hold Shift for perfect squares
 
-#### <img src="../public/images/menus/shapes_circle.png" height="16"/> Circle
+#### <img src="../web/static/images/menus/shapes_circle.png" height="16" alt="Circle"/> Circle
 
 - Creates circular or elliptical shapes
 - Click and drag to define dimensions
 - Hold Shift for perfect circles
 
-#### <img src="../public/images/menus/shapes_line.png" height="16"/> Line
+#### <img src="../web/static/images/menus/shapes_line.png" height="16" alt="Line"/> Line
 
 - Draws straight lines
 - Click and drag to define length and angle
 - Hold Shift for horizontal, vertical, or 45-degree angles
 
-#### <img src="../public/images/menus/shapes_triangle.png" height="16"/> Triangle
+#### <img src="../web/static/images/menus/shapes_triangle.png" height="16" alt="Triangle"/> Triangle
 
 - Creates triangular shapes with three types:
   - Right Angle: Creates a triangle with one 90-degree angle
@@ -75,7 +77,7 @@ The Shapes menu provides a collection of geometric tools for creating precise sh
   - Equilateral: Creates a triangle with all sides equal
 - Select triangle type from the dropdown menu
 
-#### <img src="../public/images/menus/shapes_arc.png" height="16"/> Arc
+#### <img src="../web/static/images/menus/shapes_arc.png" height="16" alt="Arc"/> Arc
 
 - Draws curved lines or partial circles
 - Click to set center point
@@ -93,17 +95,17 @@ The Actions menu provides tools for manipulating and editing content on the canv
 - Click and drag to create selection area
 - Move, resize, or delete selected content
 
-#### <img src="../public/images/menus/actions_clear.png" height="16"/> Clear
+#### <img src="../web/static/images/menus/actions_clear.png" height="16" alt="Clear"/> Clear
 
 - Clears the entire canvas
 - Warning: This action cannot be undone
 
-#### <img src="../public/images/menus/actions_undo.png" height="16"/> Undo
+#### <img src="../web/static/images/menus/actions_undo.png" height="16" alt="Undo"/> Undo
 
 - Reverts the last action performed
 - Keyboard shortcut: Cmd/Ctrl+Z
 
-#### <img src="../public/images/menus/actions_redo.png" height="16"/> Redo
+#### <img src="../web/static/images/menus/actions_redo.png" height="16" alt="Redo"/> Redo
 
 - Restores previously undone actions
 - Available after using undo
@@ -179,6 +181,7 @@ The File menu handles saving and exporting your artwork.
 ### Features
 
 #### 💾 Save
+
 - Exports your artwork in various formats:
   - PNG (with/without transparency)
   - JPG
@@ -189,3 +192,7 @@ The File menu handles saving and exporting your artwork.
   - Quality settings (for JPG)
 - Maintains original resolution
 - Preserves all layers in final output
+
+---
+
+[← Testing](testing.md) · [Docs Index](README.md)
