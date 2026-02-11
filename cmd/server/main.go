@@ -128,6 +128,11 @@ func main() {
 	fileServer := http.FileServer(http.Dir("web/static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", noDirListing(fileServer)))
 
+	// Favicon (browsers request /favicon.ico at root)
+	r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/static/images/favicon.ico")
+	})
+
 	// Page routes (SSR via Go templates)
 	r.Get("/", pageHandler.Login)
 	r.Get("/login", pageHandler.Login)
