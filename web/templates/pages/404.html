@@ -1,0 +1,23 @@
+{{define "title"}}Page Not Found - PaintBar{{end}}
+
+{{define "head"}}
+    <link rel="stylesheet" href="/static/styles/error.css">
+{{end}}
+
+{{define "body"}}
+    <div class="container">
+        <div class="speech-bubble">
+            <h1>404</h1>
+            <p>Oops! This page seems to be lost!</p>
+        </div>
+        <div class="panda-container">
+            <img src="/static/images/panda.png" alt="Confused Panda" class="panda">
+        </div>
+        <a href="/" class="home-link">Go Back Home</a>
+        <div class="copyright">
+            &copy; 2024-{{currentYear}} PandasWhoCode. All rights reserved.
+        </div>
+    </div>
+{{end}}
+
+{{define "scripts"}}{{end}}

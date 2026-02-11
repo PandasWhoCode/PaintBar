@@ -1,0 +1,367 @@
+{{define "title"}}PaintBar{{end}}
+
+{{define "head"}}
+    <link rel="stylesheet" href="/static/styles/styles.css">
+{{end}}
+
+{{define "body"}}
+    <!-- Canvas Settings Modal - Shown by default -->
+    <div id="canvasSettingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Canvas Settings</h3>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <h4>Canvas Size</h4>
+                    <div class="setting-option">
+                        <label for="canvasWidth">Width:</label>
+                        <input type="number" id="canvasWidth" min="300" max="4096" value="800">
+                        <span>px</span>
+                    </div>
+                    <div class="setting-option">
+                        <label for="canvasHeight">Height:</label>
+                        <input type="number" id="canvasHeight" min="200" max="4096" value="600">
+                        <span>px</span>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h4>Responsive Behavior</h4>
+                    <div class="setting-option">
+                        <label>
+                            <input type="checkbox" id="responsiveCanvas" checked>
+                            Enable responsive canvas
+                        </label>
+                    </div>
+                    <div id="responsiveLimits" class="nested-settings">
+                        <div class="setting-option">
+                            <label for="minWidth">Min Width:</label>
+                            <input type="number" id="minWidth" min="100" max="4096" value="250">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="minHeight">Min Height:</label>
+                            <input type="number" id="minHeight" min="100" max="4096" value="250">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="maxWidth">Max Width:</label>
+                            <input type="number" id="maxWidth" min="300" max="8192" value="4096">
+                            <span>px</span>
+                        </div>
+                        <div class="setting-option">
+                            <label for="maxHeight">Max Height:</label>
+                            <input type="number" id="maxHeight" min="200" max="8192" value="4096">
+                            <span>px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="startPaintBarBtn" class="primary-btn">Start PaintBar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="toolbar-toggle active" id="toolbarToggle">
+            <img src="/static/images/paintbar.logo.png" alt="PaintBar Logo" class="toggle-icon">
+        </div>
+        <div class="toolbar expanded" id="toolbar">
+            <div class="toolbar-handle" id="toolbarHandle">
+                <span class="handle-icon"> </span>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Tools</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="pencilBtn" class="active" title="Pencil">
+                        <img src="/static/images/menus/tools_pencil.png" alt="Pencil Tool" class="menu-icon"> Draw
+                    </button>
+                    <button id="eraserBtn" title="Eraser">
+                        <img src="/static/images/menus/tools_eraser.png" alt="Eraser Tool" class="menu-icon"> Erase
+                    </button>
+                    <button id="sprayBtn" title="Spray">
+                        <img src="/static/images/menus/tools_spraycan.png" alt="Spray Tool" class="menu-icon"> Spray
+                    </button>
+                    <button id="fillBtn" title="Fill">
+                        <img src="/static/images/menus/tools_fill.png" alt="Fill Tool" class="menu-icon"> Fill
+                    </button>
+                    <button id="textBtn" title="Text">
+                        <img src="/static/images/menus/tools_text.png" alt="Text Tool" class="menu-icon"> Text
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Shapes</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="rectangleBtn" title="Rectangle">
+                        <img src="/static/images/menus/shapes_rectangle.png" alt="Rectangle Tool" class="menu-icon"> Rectangle
+                    </button>
+                    <button id="circleBtn" title="Circle">
+                        <img src="/static/images/menus/shapes_circle.png" alt="Circle Tool" class="menu-icon"> Circle
+                    </button>
+                    <button id="lineBtn" title="Line">
+                        <img src="/static/images/menus/shapes_line.png" alt="Line Tool" class="menu-icon"> Line
+                    </button>
+                    <button id="triangleBtn" title="Triangle">
+                        <img src="/static/images/menus/shapes_triangle.png" alt="Triangle Tool" class="menu-icon"> Triangle
+                    </button>
+                    <button id="arcBtn" title="Arc">
+                        <img src="/static/images/menus/shapes_arc.png" alt="Arc Tool" class="menu-icon"> Arc
+                    </button>
+                    <select id="triangle-type" class="tool-select">
+                        <option value="right">Right Angle</option>
+                        <option value="isosceles">Isosceles</option>
+                        <option value="equilateral" selected>Equilateral</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Actions</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <div class="action-group">
+                        <button id="selectBtn" title="Select Area" disabled>&#x25F0;</button>
+                        <button id="pasteBtn" title="Paste Image" disabled>&#x1F4CB;</button>
+                        <button id="clearBtn" title="Clear Canvas">
+                            <img src="/static/images/menus/actions_clear.png" alt="Clear Canvas" class="menu-icon"> Clear
+                        </button>
+                        <button id="undoBtn" title="Undo (Cmd/Ctrl+Z)">
+                            <img src="/static/images/menus/actions_undo.png" alt="Undo" class="menu-icon"> Undo
+                        </button>
+                        <button id="redoBtn" title="Redo (Cmd/Ctrl+Shift+Z)">
+                            <img src="/static/images/menus/actions_redo.png" alt="Redo" class="menu-icon"> Redo
+                        </button>
+                        <button id="gridBtn" title="Toggle Grid" disabled>&#x1F4CF;</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Colors</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <div class="color-controls">
+                        <div class="color-picker-container">
+                            <div class="color-picker-wrapper">
+                                <div id="color-picker"></div>
+                                <div class="color-input-wrapper">
+                                    <input type="text" id="hexInput" class="hex-input" maxlength="7" placeholder="#000000">
+                                </div>
+                                <div class="color-info">
+                                    <div class="color-preview" id="color-preview"></div>
+                                    <button id="eyedropperBtn" class="tool-btn" title="Pick Color (I)">&#x1F50D;</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="recent-colors-section">
+                        <label>Recent Colors</label>
+                        <div id="recentColors" class="recent-colors"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Size</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <span title="Line Weight">&#x2194;&#xFE0F; Line Weight</span>
+                    <input type="range" id="brushSize" min="1" max="100" value="25" title="Line Weight">
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>File</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="saveBtn" title="Save">&#x1F4BE; Save</button>
+                </div>
+            </div>
+
+            <div class="toolbar-section">
+                <div class="submenu-header">
+                    <span>Profile</span>
+                    <span class="submenu-toggle">&#x25BC;</span>
+                </div>
+                <div class="submenu-content">
+                    <button id="loginBtn" title="Login">Login</button>
+                    <button id="profileBtn" title="Profile" class="hidden">Profile</button>
+                    <button id="logoutBtn" title="Logout" class="hidden">Logout</button>
+                </div>
+            </div>
+
+            <div class="toolbar-footer">
+                <div class="footer-content">
+                    &copy; 2024-{{currentYear}} PandasWhoCode. All rights reserved.
+                </div>
+            </div>
+        </div>
+        <div class="canvas-container toolbar-visible">
+            <div class="canvas-wrapper">
+                <canvas id="transparentBackgroundCanvas" class="canvas-layer"></canvas>
+                <canvas id="opaqueBackgroundCanvas" class="canvas-layer"></canvas>
+                <canvas id="drawingCanvas" class="canvas-layer"></canvas>
+                <canvas id="selectionOverlay" class="canvas-layer"></canvas>
+            </div>
+        </div>
+        <div id="textModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Text</h3>
+                    <button id="closeTextBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-input-container">
+                        <textarea id="textInput" placeholder="Enter your text here" style="width: 100%; min-height: 80px; resize: vertical;"></textarea>
+                    </div>
+                    <div class="text-options">
+                        <div class="option-row">
+                            <label for="fontFamily">Font:</label>
+                            <select id="fontFamily" style="width: 120px">
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                            </select>
+                        </div>
+                        <div class="option-row">
+                            <label for="fontSize">Size:</label>
+                            <input type="number" id="fontSize" value="20" min="8" max="200">
+                        </div>
+                        <div class="option-row">
+                            <label>Style:</label>
+                            <div class="text-style-buttons" style="display: flex; gap: 4px;">
+                                <button id="boldBtn" class="style-btn" title="Bold" style="min-width: 30px;">B</button>
+                                <button id="italicBtn" class="style-btn" title="Italic" style="min-width: 30px; font-style: italic;">I</button>
+                                <button id="underlineBtn" class="style-btn" title="Underline" style="min-width: 30px; text-decoration: underline;">U</button>
+                                <button id="strikeBtn" class="style-btn" title="Strikethrough" style="min-width: 30px; text-decoration: line-through;">S</button>
+                            </div>
+                        </div>
+                        <div class="option-row">
+                            <label for="textColor">Color:</label>
+                            <input type="color" id="textColor" value="#000000">
+                        </div>
+                        <div class="option-row">
+                            <label for="textRotation">Rotation:</label>
+                            <input type="range" id="textRotation" min="0" max="360" value="0" step="1" style="accent-color: cyan; width: 100px">
+                            <div style="display: flex; align-items: center; gap: 2px">
+                                <input type="number" id="rotationValue" value="0" min="0" max="360" style="width: 7ch">
+                                <span>&deg;</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="applyTextBtn" class="btn">Apply</button>
+                    <button id="cancelTextBtn" class="btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="saveModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Save Image</h3>
+                    <button id="closeSaveBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="save-options">
+                        <div class="option-row">
+                            <button id="savePng" class="save-option">
+                                <span class="save-icon">&#x1F4C4;</span>
+                                <div class="save-details">
+                                    <span class="save-name">PNG</span>
+                                    <span class="save-desc">Standard image format</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="option-row">
+                            <button id="savePngTransparent" class="save-option">
+                                <span class="save-icon">&#x1F4C4;</span>
+                                <div class="save-details">
+                                    <span class="save-name">Transparency (PNG)</span>
+                                    <span class="save-desc">Best for images with transparency</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="option-row">
+                            <button id="saveJpg" class="save-option">
+                                <span class="save-icon">&#x1F4C4;</span>
+                                <div class="save-details">
+                                    <span class="save-name">JPG</span>
+                                    <span class="save-desc">Best for photos</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="option-row">
+                            <button id="saveIco" class="save-option">
+                                <span class="save-icon">&#x1F4C4;</span>
+                                <div class="save-details">
+                                    <span class="save-name">ICO</span>
+                                    <span class="save-desc">Windows icon format</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="option-row">
+                            <button id="saveIcoTransparent" class="save-option">
+                                <span class="save-icon">&#x1F4C4;</span>
+                                <div class="save-details">
+                                    <span class="save-name">Transparency (ICO)</span>
+                                    <span class="save-desc">Windows icon with transparency</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelSave" class="btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="textPreviewOverlay" class="text-preview-overlay hidden">
+            <div class="preview-actions">
+                <button id="applyTextBtn" class="action-btn apply-btn">Apply Text</button>
+                <button id="editTextBtn" class="action-btn edit-btn">Edit Text</button>
+                <button id="cancelPreviewBtn" class="action-btn cancel-btn">Cancel</button>
+            </div>
+        </div>
+        <div id="cropOverlay" class="hidden">
+            <div id="cropBox">
+                <div class="crop-handle" data-handle="top-left"></div>
+                <div class="crop-handle" data-handle="top-right"></div>
+                <div class="crop-handle" data-handle="bottom-left"></div>
+                <div class="crop-handle" data-handle="bottom-right"></div>
+            </div>
+            <div class="crop-controls">
+                <button id="squareCropBtn">1:1</button>
+                <button id="mobileCropBtn">9:16</button>
+                <button id="applyCropBtn">&#x2705;</button>
+                <button id="cancelCropBtn">&#x274C;</button>
+            </div>
+        </div>
+    </div><!-- end of container -->
+{{end}}
+
+{{define "scripts"}}
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5.5.2" integrity="sha384-oZxUObEswsFY+jlvIkPj4iWF3WW1I6vMNyzoakb3v99l1DtAoF/VyBTrNKtSCVoa" crossorigin="anonymous"></script>
+    <script type="module" src="/static/dist/canvas/app.js"></script>
+{{end}}

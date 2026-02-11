@@ -1,0 +1,38 @@
+# gcloud deploy ignore file
+# Based on .gitignore but allows firebase-config files needed for Docker build
+
+node_modules/
+firebase-debug.log*
+.firebase/
+firebase-service-account.json
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+.windsurf/
+*.swp
+*.swo
+.DS_Store
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.html
+web/static/dist/
+pgdata/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.temp/
+.git/
+
+# NOTE: firebase-config.ts and firebase-config.js are intentionally NOT ignored here
+# so they are included in the Cloud Build context for the Docker TS build stage.

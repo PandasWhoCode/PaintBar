@@ -1,0 +1,184 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  BINARY_NAME: paintbar
+  BINARY_PATH: bin/{{.BINARY_NAME}}
+
+tasks:
+  build:
+    desc: Build the Go server binary
+    cmds:
+      - go build -o {{.BINARY_PATH}} ./cmd/server
+
+  run:
+    desc: Run the Go server locally
+    cmds:
+      - go run ./cmd/server
+
+  test:
+    desc: Run all Go tests
+    cmds:
+      - go test ./... -v -race
+
+  test-short:
+    desc: Run Go tests (skip integration)
+    cmds:
+      - go test ./... -v -short
+
+  test-integration:
+    desc: Run integration tests against local Postgres
+    deps: [docker:up]
+    env:
+      DATABASE_URL: postgres://paintbar:paintbar@localhost:5432/paintbar?sslmode=disable
+    cmds:
+      - go test ./internal/repository/ -v -race
+
+  bench:
+    desc: Run Go benchmarks
+    cmds:
+      - go test ./... -bench=. -benchmem -run=^$ -count=1
+
+  lint:
+    desc: Run Go linters
+    cmds:
+      - go vet ./...
+
+  migrate:
+    desc: Run Goose migrations up
+    cmds:
+      - goose -dir migrations postgres "$DATABASE_URL" up
+
+  migrate-down:
+    desc: Rollback last Goose migration
+    cmds:
+      - goose -dir migrations postgres "$DATABASE_URL" down
+
+  migrate-status:
+    desc: Show Goose migration status
+    cmds:
+      - goose -dir migrations postgres "$DATABASE_URL" status
+
+  migrate-create:
+    desc: Create a new Goose migration
+    cmds:
+      - goose -dir migrations create {{.CLI_ARGS}} sql
+
+  ts-build:
+    desc: Build TypeScript with esbuild (dev — includes source maps)
+    cmds:
+      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify --sourcemap
+    sources:
+      - web/ts/**/*.ts
+
+  ts-build:prod:
+    desc: Build TypeScript with esbuild (production — no source maps)
+    cmds:
+      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify
+
+  ts-check:
+    desc: TypeScript type checking (no emit)
+    cmds:
+      - npx tsc --project web/ts/tsconfig.json --noEmit
+
+  ts-install:
+    desc: Install TypeScript dev dependencies
+    cmds:
+      - npm install --save-dev typescript esbuild @types/node
+    status:
+      - test -d node_modules/typescript
+
+  run:local:
+    desc: Start Docker deps, build TS, and run the Go server locally
+    deps: [docker:up, ts-build]
+    cmds:
+      - go run ./cmd/server
+
+  stop:local:
+    desc: Stop the local Go server and Docker deps
+    cmds:
+      - |
+        PID=$(lsof -ti:8080) && kill $PID 2>/dev/null && echo "server stopped (pid $PID)" || echo "no server running on :8080"
+      - docker compose down
+
+  restart:local:
+    desc: Restart the local Go server (rebuild + relaunch)
+    cmds:
+      - |
+        PID=$(lsof -ti:8080) && kill $PID 2>/dev/null && echo "server stopped (pid $PID)" || echo "no server running on :8080"
+      - sleep 1
+      - task: run:local
+
+  dev:
+    desc: Run the dev server (with TS build)
+    deps: [ts-build]
+    cmds:
+      - go run ./cmd/server
+
+  docker:up:
+    desc: Start dev dependencies (postgres + firebase)
+    cmds:
+      - docker compose up postgres firebase -d
+
+  docker:down:
+    desc: Stop dev dependencies
+    cmds:
+      - docker compose down
+
+  docker:up-all:
+    desc: Start all Docker services including app
+    cmds:
+      - docker compose up -d --build
+
+  docker:down-all:
+    desc: Stop all Docker services
+    cmds:
+      - docker compose down
+
+  docker-logs:
+    desc: Tail Docker service logs
+    cmds:
+      - docker compose logs -f
+
+  docker:reset-postgres:
+    desc: Reset only Postgres (wipe data, restart)
+    cmds:
+      - docker compose stop postgres
+      - docker compose rm -f -v postgres
+      - docker compose up postgres -d
+
+  docker:reset-firebase:
+    desc: Reset only Firebase emulator (wipe data, restart)
+    cmds:
+      - docker compose stop firebase
+      - docker compose rm -f -v firebase
+      - docker compose up firebase -d
+
+  docker-clean:
+    desc: Stop services and remove volumes
+    aliases: ['docker:clean-all']
+    cmds:
+      - docker compose down -v --remove-orphans
+
+  deploy-preview:
+    desc: Deploy to Firebase preview channel + Cloud Run
+    cmds:
+      - task ts-build:prod
+      - gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated
+      - firebase hosting:channel:deploy preview-{{.GIT_BRANCH}}
+    vars:
+      GIT_BRANCH:
+        sh: git rev-parse --abbrev-ref HEAD
+
+  deploy-prod:
+    desc: Deploy to production (Cloud Run + Firebase Hosting)
+    cmds:
+      - task ts-build:prod
+      - gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated
+      - firebase deploy --only hosting
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/ web/static/dist/

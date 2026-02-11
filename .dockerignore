@@ -1,0 +1,35 @@
+# Docker ignore — based on .gitignore but allows firebase-config files
+# needed for the esbuild TS stage
+
+node_modules/
+firebase-debug.log*
+.firebase/
+firebase-service-account.json
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+.windsurf/
+*.swp
+*.swo
+.DS_Store
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.html
+web/static/dist/
+pgdata/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.temp/
+.git/
