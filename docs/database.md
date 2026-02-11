@@ -2,10 +2,9 @@
 
 [← API Reference](api.md) · [Docs Index](README.md) · [Authentication →](authentication.md)
 
-PaintBar uses a dual-database architecture:
-
-- **Cloud Firestore** — Primary database for user-facing data (profiles, projects, gallery, NFTs)
-- **PostgreSQL 16** — Relational database for server-side concerns (sessions, rate limits, audit logs)
+PaintBar uses **Cloud Firestore** as its sole database for all
+persistent data (profiles, projects, gallery, NFTs). Rate limiting
+is handled in-memory by the Go middleware.
 
 ## Entity Relationship Diagram
 
@@ -57,23 +56,6 @@ PaintBar uses a dual-database architecture:
 │                      │  createdAt   │                                  │
 │                      │  updatedAt   │                                  │
 │                      └──────────────┘                                  │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           POSTGRESQL 16                                 │
-│                                                                         │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │
-│  │    sessions       │  │   rate_limits    │  │    audit_logs        │  │
-│  │                   │  │                  │  │                      │  │
-│  │  id (UUID PK)     │  │  id (BIGSERIAL)  │  │  id (BIGSERIAL PK)  │  │
-│  │  user_id (TEXT)   │  │  key (TEXT)      │  │  user_id (TEXT)      │  │
-│  │  token_hash (UNQ) │  │  window_start   │  │  action (TEXT)       │  │
-│  │  ip_address (INET)│  │  request_count  │  │  resource_type (TEXT)│  │
-│  │  user_agent (TEXT)│  │                  │  │  resource_id (TEXT)  │  │
-│  │  expires_at (TSZ) │  │  UNQ(key,       │  │  details (JSONB)     │  │
-│  │  created_at (TSZ) │  │    window_start)│  │  ip_address (INET)   │  │
-│  └──────────────────┘  └──────────────────┘  │  created_at (TSZ)    │  │
-│                                               └──────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,74 +194,6 @@ Defined in [`firestore.indexes.json`](../firestore.indexes.json):
 | `nfts`     | `userId` ASC, `createdAt` DESC | List user's NFTs sorted by newest          |
 
 Deploy: `firebase deploy --only firestore:indexes`
-
----
-
-## PostgreSQL Schema
-
-Managed by [Goose](https://github.com/pressly/goose) migrations in `migrations/`.
-
-### `sessions`
-
-Server-side session storage (Phase 7 — future use).
-
-```sql
-CREATE TABLE sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,
-    token_hash TEXT NOT NULL UNIQUE,
-    ip_address INET,
-    user_agent TEXT,
-    expires_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Indexes: idx_sessions_user_id, idx_sessions_expires_at
-```
-
-### `rate_limits`
-
-Postgres-backed rate limiting (Phase 2 — future replacement for in-memory limiter).
-
-```sql
-CREATE TABLE rate_limits (
-    id BIGSERIAL PRIMARY KEY,
-    key TEXT NOT NULL,
-    window_start TIMESTAMPTZ NOT NULL,
-    request_count INT NOT NULL DEFAULT 1,
-    UNIQUE(key, window_start)
-);
--- Index: idx_rate_limits_key_window
-```
-
-### `audit_logs`
-
-Audit trail for security-sensitive operations.
-
-```sql
-CREATE TABLE audit_logs (
-    id BIGSERIAL PRIMARY KEY,
-    user_id TEXT,
-    action TEXT NOT NULL,
-    resource_type TEXT,
-    resource_id TEXT,
-    details JSONB,
-    ip_address INET,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Indexes: idx_audit_logs_user_id, idx_audit_logs_created_at
-```
-
-### Running Migrations
-
-```bash
-# Auto-run in local/preview environments on server startup
-
-# Manual commands via Taskfile:
-task migrate              # Run all pending migrations
-task migrate-down         # Rollback last migration
-task migrate-status       # Show migration status
-task migrate-create -- add_new_table  # Create new migration file
-```
 
 ---
 

@@ -10,7 +10,6 @@ import (
 )
 
 // RateLimiter implements an in-memory token bucket rate limiter.
-// Phase 2 will replace this with a Postgres-backed implementation.
 type RateLimiter struct {
 	mu       sync.Mutex
 	visitors map[string]*visitor

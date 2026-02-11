@@ -4,11 +4,11 @@
 
 ## Environments
 
-| Environment    | `ENV`        | Backend               | Database        | Firebase                   | Hiero         |
-| -------------- | ------------ | --------------------- | --------------- | -------------------------- | ------------- |
-| **Local**      | `local`      | `go run ./cmd/server` | Docker Postgres | Emulator (Docker)          | Solo (Docker) |
-| **Preview**    | `preview`    | Cloud Run             | Cloud SQL       | Production Firestore (ADC) | Testnet       |
-| **Production** | `production` | Cloud Run             | Cloud SQL       | Production Firestore       | Mainnet       |
+| Environment    | `ENV`        | Backend               | Database                    | Hiero         |
+| -------------- | ------------ | --------------------- | --------------------------- | ------------- |
+| **Local**      | `local`      | `go run ./cmd/server` | Firestore Emulator (Docker) | Solo (Docker) |
+| **Preview**    | `preview`    | Cloud Run             | Production Firestore (ADC)  | Testnet       |
+| **Production** | `production` | Cloud Run             | Production Firestore        | Mainnet       |
 
 ---
 
@@ -34,7 +34,7 @@ cp .env.example .env
 # 3. Install Node dependencies (esbuild, TypeScript)
 npm install
 
-# 4. Start Docker dependencies (Postgres + Firebase Emulator)
+# 4. Start Docker dependencies (Firebase Emulator)
 task docker:up
 
 # 5. Build TypeScript and start the Go server
@@ -47,14 +47,12 @@ The server starts at `http://localhost:8080`.
 
 ```yaml
 services:
-  postgres: # PostgreSQL 16 — localhost:5432
   firebase: # Firebase Emulator — localhost:4000 (UI), :9099 (Auth), :8081 (Firestore)
   solo: # Hiero Solo — localhost:50211 (gRPC), :5551 (Mirror), :8545 (JSON-RPC)
 ```
 
 | Service              | Host Port | Purpose                                         |
 | -------------------- | --------- | ----------------------------------------------- |
-| Postgres             | 5432      | Sessions, rate limits, audit logs               |
 | Firebase Emulator UI | 4000      | Visual emulator dashboard                       |
 | Firebase Auth        | 9099      | Authentication emulator                         |
 | Firestore            | 8081      | Firestore emulator (mapped from container 8080) |
@@ -90,7 +88,6 @@ services:
 | ----------------------- | ----------------------------- |
 | `task test`             | Run all Go tests (`-v -race`) |
 | `task test-short`       | Skip integration tests        |
-| `task test-integration` | Run against local Postgres    |
 | `task bench`            | Run Go benchmarks             |
 
 #### Linting
@@ -105,25 +102,15 @@ services:
 | `task lint-fix:ts`  | Auto-fix TypeScript (Prettier)                 |
 | `task lint-fix:all` | Auto-fix all (Markdown + TypeScript)           |
 
-#### Database
-
-| Command                       | Description                  |
-| ----------------------------- | ---------------------------- |
-| `task migrate`                | Run pending Goose migrations |
-| `task migrate-down`           | Rollback last migration      |
-| `task migrate-status`         | Show migration status        |
-| `task migrate-create -- name` | Create new migration file    |
-
 #### Docker
 
 | Command                      | Description                      |
 | ---------------------------- | -------------------------------- |
-| `task docker:up`             | Start Postgres + Firebase        |
+| `task docker:up`             | Start Firebase emulator          |
 | `task docker:down`           | Stop all services                |
 | `task docker:up-all`         | Start all services including app |
 | `task docker:down-all`       | Stop all services                |
 | `task docker-logs`           | Tail service logs                |
-| `task docker:reset-postgres` | Wipe Postgres data + restart     |
 | `task docker:reset-firebase` | Wipe Firebase data + restart     |
 | `task docker-clean`          | Stop + remove volumes            |
 
@@ -145,7 +132,6 @@ Defined in `.env` (local) or Cloud Run environment (preview/production).
 | ------------------------------- | ------------------------- | --------------- | ----------------------------------- |
 | `ENV`                           | `local`                   | ✅              | `local`, `preview`, or `production` |
 | `PORT`                          | `8080`                    | ✅              | HTTP server port                    |
-| `DATABASE_URL`                  | `postgres://paintbar:...` | ✅              | PostgreSQL connection string        |
 | `FIREBASE_PROJECT_ID`           | `paintbar-7f887`          | ✅              | Firebase project ID                 |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | —                         | Production only | Path to service account JSON        |
 | `FIRESTORE_EMULATOR_HOST`       | Auto: `localhost:8081`    | Local only      | Firestore emulator address          |
@@ -174,7 +160,6 @@ Stage 3: Runtime (alpine:latest)
   ├── Copy static assets from source
   ├── Copy esbuild output from Stage 2
   ├── Copy templates from source
-  ├── Copy migrations from source
   └── ENTRYPOINT ["/app/paintbar"]
 ```
 
@@ -200,7 +185,6 @@ Cloud Run builds the Docker image using Cloud Build, then deploys a new revision
 
 - Cloud Run auto-sets `PORT` — do not pass it via `--set-env-vars`
 - Preview environment uses Application Default Credentials (ADC) — no service account file needed
-- Cloud SQL connection via Unix socket: `host=/cloudsql/paintbar-7f887:us-central1:paintbar-db`
 
 ### Firebase Hosting
 
@@ -280,7 +264,7 @@ The Go server handles `SIGINT` and `SIGTERM` for graceful shutdown:
 
 1. Stop accepting new connections
 2. Wait up to 30 seconds for in-flight requests to complete
-3. Close database connections (Postgres pool + Firestore client)
+3. Close Firestore client connection
 4. Exit cleanly
 
 This is critical for Cloud Run, which sends `SIGTERM` before terminating instances.

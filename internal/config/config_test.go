@@ -12,7 +12,6 @@ func TestLoad_Defaults(t *testing.T) {
 	// Clear env to test defaults
 	os.Unsetenv("ENV")
 	os.Unsetenv("PORT")
-	os.Unsetenv("DATABASE_URL")
 	os.Unsetenv("FIREBASE_PROJECT_ID")
 
 	cfg, err := Load()

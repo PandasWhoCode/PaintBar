@@ -10,11 +10,11 @@ Built by [PandasWhoCode](https://github.com/pandasWhoCode).
 
 | Layer              | Technology                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------------------ |
-| **Backend**        | Go (net/http), Goose migrations                                                            |
+| **Backend**        | Go (net/http)                                                                              |
 | **Frontend**       | TypeScript, esbuild (bundler), HTML5 Canvas                                                |
 | **Auth**           | Firebase Authentication                                                                    |
-| **Database**       | Firestore (users, projects, gallery, NFTs), PostgreSQL (sessions, rate limits, audit logs) |
-| **Infrastructure** | Docker Compose, Google Cloud Run, Cloud SQL, Firebase Hosting                              |
+| **Database**       | Cloud Firestore (users, projects, gallery, NFTs)                                           |
+| **Infrastructure** | Docker Compose, Google Cloud Run, Firebase Hosting                                         |
 
 ## Features
 
@@ -90,8 +90,8 @@ cp web/static/scripts/firebase-config.template.js web/static/scripts/firebase-co
 cp web/static/scripts/firebase-config.template.js web/ts/shared/firebase-config.ts
 # Edit both files with your Firebase project credentials
 
-# Create a .env file with your DATABASE_URL and other secrets
-cp .env.example .env  # if available, otherwise create manually
+# Create a .env file
+cp .env.example .env
 
 # Build TypeScript and start everything
 task dev
@@ -119,22 +119,12 @@ task dev
 | `task ts-check`      | Type-check with tsc (no emit)                   |
 | `task ts-install`    | Install TypeScript dev dependencies             |
 
-#### Database
-
-| Command                         | Description             |
-| ------------------------------- | ----------------------- |
-| `task migrate`                  | Run Goose migrations up |
-| `task migrate-down`             | Rollback last migration |
-| `task migrate-status`           | Show migration status   |
-| `task migrate-create -- <name>` | Create a new migration  |
-
 #### Docker
 
 | Command                      | Description                             |
 | ---------------------------- | --------------------------------------- |
-| `task docker:up`             | Start Postgres + Firebase emulators     |
-| `task docker:down`           | Stop Postgres + Firebase                |
-| `task docker:reset-postgres` | Wipe and restart Postgres only          |
+| `task docker:up`             | Start Firebase emulator                 |
+| `task docker:down`           | Stop Docker services                    |
 | `task docker:reset-firebase` | Wipe and restart Firebase emulator only |
 | `task docker-clean`          | Stop all + remove all volumes           |
 | `task docker-logs`           | Tail container logs                     |
@@ -145,7 +135,6 @@ task dev
 | ----------------------- | -------------------------------------------- |
 | `task test`             | Run all Go tests (with race detector)        |
 | `task test-short`       | Run Go tests (skip integration)              |
-| `task test-integration` | Run integration tests against local Postgres |
 | `task bench`            | Run Go benchmarks                            |
 | `task lint`             | Run all linters (Go, TypeScript, Markdown)   |
 
@@ -165,9 +154,8 @@ paintbar/
 ├── internal/
 │   ├── handler/         # HTTP handlers
 │   ├── middleware/       # Auth, logging, security middleware
-│   ├── repository/      # Firestore + PostgreSQL data access (Admin SDK)
+│   ├── repository/      # Firestore data access (Admin SDK)
 │   └── service/         # Business logic
-├── migrations/          # Goose SQL migrations
 ├── web/
 │   ├── templates/       # Go HTML templates
 │   ├── ts/              # TypeScript source

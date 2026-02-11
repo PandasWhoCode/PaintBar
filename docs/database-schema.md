@@ -3,8 +3,7 @@
 [← Back to Docs](README.md)
 
 > **Note**: This is the original pre-migration schema reference.
-> For the current schema (including PostgreSQL tables),
-> see [Database](database.md).
+> For the current schema, see [Database](database.md).
 
 This document defines the Firestore database schema for the PaintBar application.
 

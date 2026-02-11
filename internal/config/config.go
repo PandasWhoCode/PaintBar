@@ -20,9 +20,6 @@ type Config struct {
 	// HTTP server port
 	Port string
 
-	// PostgreSQL connection string
-	DatabaseURL string
-
 	// Firebase
 	FirebaseProjectID          string
 	FirebaseServiceAccountPath string
@@ -44,7 +41,6 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Env:                        getEnv("ENV", EnvLocal),
 		Port:                       getEnv("PORT", "8080"),
-		DatabaseURL:                getEnv("DATABASE_URL", "postgres://paintbar:paintbar@localhost:5432/paintbar?sslmode=disable"),
 		FirebaseProjectID:          getEnv("FIREBASE_PROJECT_ID", "paintbar-7f887"),
 		FirebaseServiceAccountPath: getEnv("FIREBASE_SERVICE_ACCOUNT_PATH", ""),
 		FirestoreEmulatorHost:      getEnv("FIRESTORE_EMULATOR_HOST", ""),

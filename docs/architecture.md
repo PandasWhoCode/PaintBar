@@ -5,8 +5,8 @@
 ## System Overview
 
 PaintBar is a web-based pixel art platform with a Go backend, TypeScript
-frontend, Firebase authentication, dual-database persistence
-(Firestore + PostgreSQL), and NFT minting via the Hiero network.
+frontend, Firebase authentication, Firestore persistence,
+and NFT minting via the Hiero network.
 
 ## High-Level Architecture
 
@@ -30,21 +30,19 @@ frontend, Firebase authentication, dual-database persistence
 │                          └─────────┬─────────┘                  │
 │                          ┌─────────┴─────────┐                  │
 │                          │  Repository Layer  │                  │
-│                          └────┬──────────┬───┘                  │
-└───────────────────────────────┼──────────┼──────────────────────┘
-                                │          │
-                    ┌───────────┘          └───────────┐
-                    ▼                                  ▼
-          ┌──────────────────┐              ┌──────────────────┐
-          │  Cloud Firestore │              │  Cloud SQL       │
-          │  (Primary DB)    │              │  PostgreSQL 16   │
-          │                  │              │                  │
-          │  • users         │              │  • sessions      │
-          │  • usernames     │              │  • rate_limits   │
-          │  • projects      │              │  • audit_logs    │
-          │  • gallery       │              │                  │
-          │  • nfts          │              │                  │
-          └──────────────────┘              └──────────────────┘
+│                          └─────────┬─────────┘                  │
+└────────────────────────────────────┼────────────────────────────┘
+                                     │
+                                     ▼
+                           ┌──────────────────┐
+                           │  Cloud Firestore │
+                           │                  │
+                           │  • users         │
+                           │  • usernames     │
+                           │  • projects      │
+                           │  • gallery       │
+                           │  • nfts          │
+                           └──────────────────┘
 ```
 
 ## Go Backend Layers
@@ -84,19 +82,15 @@ The backend follows a clean **Handler → Service → Repository** architecture:
        │
        ▼
 ┌──────────────┐     ┌──────────────┐
-│ repository/  │     │   model/     │
-│ (Firestore   │────▶│  (structs,   │
-│  + Postgres  │     │   validation,│
-│  persistence)│     │   sanitize)  │
-│  user.go     │     │  user.go     │
-│  project.go  │     │  project.go  │
-│  gallery.go  │     │  gallery.go  │
-│  nft.go      │     │  nft.go      │
-│  session.go  │     └──────────────┘
-│  postgres.go │
-│  firestore.go│
-│  migrate.go  │
-└──────────────┘
+│ (Firestore   │     │   model/     │
+│  persistence)│     │  (structs,   │
+│  user.go     │     │   validation,│
+│  project.go  │     │   sanitize)  │
+│  gallery.go  │     │  user.go     │
+│  nft.go      │     │  project.go  │
+│  firestore.go│     │  gallery.go  │
+└──────────────┘     │  nft.go      │
+                     └──────────────┘
 ```
 
 ### Layer Responsibilities
@@ -107,7 +101,7 @@ The backend follows a clean **Handler → Service → Repository** architecture:
 | **Middleware** | `internal/middleware` | Auth, rate limiting, security headers, CORS, logging, recovery  |
 | **Handler**    | `internal/handler`    | HTTP request/response, JSON encoding, pagination, SSR rendering |
 | **Service**    | `internal/service`    | Business logic, input validation, authorization checks          |
-| **Repository** | `internal/repository` | Firestore/Postgres CRUD, connection pooling, migrations         |
+| **Repository** | `internal/repository` | Firestore CRUD, Firebase client initialization                  |
 | **Model**      | `internal/model`      | Domain structs, field validation, sanitization, update maps     |
 
 ## Middleware Stack
@@ -166,13 +160,10 @@ Browser (fetch + Bearer token) → Firebase Hosting → Cloud Run → chi Router
 | ------------------- | ----------------- | -------------------------------------------------------------------- |
 | **Router**          | go-chi/chi        | Lightweight, stdlib-compatible, middleware chaining                  |
 | **Logging**         | log/slog (stdlib) | Structured JSON logging, zero dependencies                           |
-| **Postgres driver** | jackc/pgx/v5      | High-performance, pure Go, connection pooling                        |
-| **Migrations**      | pressly/goose     | SQL-based, embedded FS support, simple CLI                           |
 | **TS bundler**      | esbuild           | Sub-100ms builds, code splitting, tree shaking                       |
 | **Task runner**     | Taskfile          | YAML-based, cross-platform, dependency graph                         |
 | **Auth**            | Firebase Auth     | Free tier, Google/email providers, Admin SDK for server verification |
-| **Primary DB**      | Firestore         | Real-time listeners, offline support, auto-scaling                   |
-| **Relational DB**   | PostgreSQL        | ACID transactions for sessions, rate limits, audit logs              |
+| **Database**        | Firestore         | Real-time listeners, offline support, auto-scaling                   |
 
 ## Deployment Topology
 
@@ -182,16 +173,15 @@ Browser (fetch + Bearer token) → Firebase Hosting → Cloud Run → chi Router
 ┌─────────────────────────────────────────────┐
 │              Docker Compose                  │
 │                                              │
-│  ┌──────────┐  ┌──────────┐  ┌───────────┐  │
-│  │ Postgres │  │ Firebase │  │  Hiero    │  │
-│  │ :5432    │  │ Emulator │  │  Solo     │  │
-│  │          │  │ :4000 UI │  │  :50211   │  │
-│  │          │  │ :9099 Auth│  │           │  │
-│  │          │  │ :8081 FS │  │           │  │
-│  └──────────┘  └──────────┘  └───────────┘  │
+│  ┌──────────┐  ┌───────────┐               │
+│  │ Firebase │  │  Hiero    │               │
+│  │ Emulator │  │  Solo     │               │
+│  │ :4000 UI │  │  :50211   │               │
+│  │ :9099 Auth│  │           │               │
+│  │ :8081 FS │  │           │               │
+│  └──────────┘  └───────────┘               │
 └─────────────────────────────────────────────┘
-        │              │
-        └──────┬───────┘
+               │
                ▼
      ┌──────────────────┐
      │  Go Server       │
@@ -207,25 +197,24 @@ Browser (fetch + Bearer token) → Firebase Hosting → Cloud Run → chi Router
 │ Firebase Hosting │────▶│   Cloud Run      │
 │ (CDN + proxy)    │     │   (Go binary)    │
 │ paintbar.web.app │     │                  │
-└──────────────────┘     └────┬────────┬────┘
-                              │        │
-                    ┌─────────┘        └─────────┐
-                    ▼                            ▼
-          ┌──────────────────┐        ┌──────────────────┐
-          │ Cloud Firestore  │        │ Cloud SQL        │
-          │ (production)     │        │ PostgreSQL 16    │
-          └──────────────────┘        └──────────────────┘
+└──────────────────┘     └────────┬─────────┘
+                                  │
+                                  ▼
+                        ┌──────────────────┐
+                        │ Cloud Firestore  │
+                        │ (production)     │
+                        └──────────────────┘
 ```
 
 ## Environment Configuration
 
 The server supports three environments controlled by the `ENV` variable:
 
-| Environment    | `ENV` value  | Emulators       | Migrations | Swagger UI | HSTS |
-| -------------- | ------------ | --------------- | ---------- | ---------- | ---- |
-| **Local**      | `local`      | Auto-configured | Auto-run   | Enabled    | Off  |
-| **Preview**    | `preview`    | Off (uses ADC)  | Auto-run   | Enabled    | Off  |
-| **Production** | `production` | Off             | Manual     | Disabled   | On   |
+| Environment    | `ENV` value  | Emulators       | Swagger UI | HSTS |
+| -------------- | ------------ | --------------- | ---------- | ---- |
+| **Local**      | `local`      | Auto-configured | Enabled    | Off  |
+| **Preview**    | `preview`    | Off (uses ADC)  | Enabled    | Off  |
+| **Production** | `production` | Off             | Disabled   | On   |
 
 See [Deployment](deployment.md) for full environment variable reference.
 
