@@ -9,6 +9,15 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "paintbar",
+          "region": "us-central1"
+        }
+      }
     ]
   }
 }
