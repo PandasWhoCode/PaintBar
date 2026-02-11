@@ -1,15 +1,18 @@
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
 firebase-debug.log*
 firebase-debug.*.log*
 
 # Firebase cache
 .firebase/
 
-# Firebase config
+# Firebase config (client-side config — generated from env vars)
 public/scripts/firebase-config.js
+web/static/scripts/firebase-config.js
+web/ts/shared/firebase-config.ts
+
+# Firebase service account (sensitive)
+firebase-service-account.json
 
 # Uncomment this if you'd like others to create their own Firebase project.
 # For a team working on the same Firebase project(s), it is recommended to leave
@@ -28,6 +31,25 @@ public/scripts/firebase-config.js
 *.swp
 *.swo
 .DS_Store
+
+# Go build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test cache
+*.test
+*.out
+coverage.html
+
+# TypeScript / esbuild build output
+web/static/dist/
+
+# Docker volumes
+pgdata/
 
 # Build/Deploy
 dist/

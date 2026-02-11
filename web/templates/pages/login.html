@@ -1,0 +1,51 @@
+{{define "title"}}Login - PaintBar{{end}}
+
+{{define "head"}}
+    <link rel="stylesheet" href="/static/styles/error.css">
+    <link rel="stylesheet" href="/static/styles/login.css">
+{{end}}
+
+{{define "body"}}
+    <div class="container">
+        <div class="speech-bubble">
+            <h1 id="formTitle">Login</h1>
+            <form id="loginForm" class="auth-form" method="POST" action="javascript:void(0)">
+                <div class="form-group">
+                    <input type="email" id="email" name="email" placeholder="Email" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="home-link login-button" disabled>Sign In</button>
+            </form>
+            <form id="signupForm" class="auth-form hidden" method="POST" action="javascript:void(0)">
+                <div class="form-group">
+                    <input type="email" id="signupEmail" name="email" placeholder="Email" autocomplete="email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signupPassword" name="password" placeholder="Password" autocomplete="new-password" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="home-link login-button" disabled>Sign Up</button>
+            </form>
+            <p class="toggle-text" id="loginToggle">
+                Don't have an account? <a href="#" class="toggle-link">Sign Up</a>
+            </p>
+            <p class="toggle-text hidden" id="signupToggle">
+                Already have an account? <a href="#" class="toggle-link">Sign In</a>
+            </p>
+        </div>
+        <div class="panda-container">
+            <img src="/static/images/panda.png" alt="Friendly Panda" class="panda">
+        </div>
+        <div class="copyright">
+            &copy; 2024-{{currentYear}} PandasWhoCode. All rights reserved.
+        </div>
+    </div>
+{{end}}
+
+{{define "scripts"}}
+    <script type="module" src="/static/dist/auth/login.js"></script>
+{{end}}

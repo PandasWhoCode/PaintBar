@@ -1,108 +1,194 @@
 # PaintBar
 
-Welcome to Paintbar! :paintbar: 
+A free, browser-based drawing application with user profiles, project management, a community gallery, and NFT minting on the Hedera / Hiero-Ledger network.
 
-We're glad you're here! Paintbar is a brand new tool that is targeting anyone who wants to draw with a simple, free, interface. This project has started off as a free time experiment but I think it will be excellent through the roof.
+Built by [PandasWhoCode](https://github.com/pandasWhoCode).
 
-Paintbar is also an interface to the world of Web3 and NFTs. 
+## Architecture
 
-When the product is ready for it's first major version it will support the following features:
-
-A full set of drawing tools
-A dedicated user profile
-The ability to save, name, and edit projects to your profile
-The ability to publish projects to a community gallery in the Paintbar Gallery
-The ability sell your art as an NFT on the Hedera / Hiero-Ledger network
-The ability to browse all NFTs minted through Paintbar on the Paintbar Browser
-
-For now explore the feature-set that is available today:
+| Layer | Technology |
+|---|---|
+| **Backend** | Go (net/http), Goose migrations |
+| **Frontend** | TypeScript, esbuild (bundler), HTML5 Canvas |
+| **Auth** | Firebase Authentication |
+| **Database** | Firestore (users, projects, gallery, NFTs), PostgreSQL (sessions, rate limits, audit logs) |
+| **Infrastructure** | Docker Compose, Google Cloud Run, Cloud SQL, Firebase Hosting |
 
 ## Features
 
-### Tools Menu
+### Drawing Tools
 
-- <img src="public/images/menus/tools_pencil.png" height="16"/> - Pencil tool :: For free-form drawing
-- <img src="public/images/menus/tools_eraser.png" height="16"/> - Eraser tool :: Free form eraser
-- <img src="public/images/menus/tools_spray.png" height="16"/> - Spray tool :: Free form spray-can drawing
-- <img src="public/images/menus/tools_fill.png" height="16"/> - Flood-Fill tool :: Fill to colored edges
-- <img src="public/images/menus/tools_text.png" height="16"/> - Text tool :: Opens the text modal and allows creator to add text to the clicked canvas point.
+- <img src="web/static/images/menus/tools_pencil.png" height="16"/> **Pencil** — Free-form drawing
+- <img src="web/static/images/menus/tools_eraser.png" height="16"/> **Eraser** — Free-form eraser
+- <img src="web/static/images/menus/tools_spraycan.png" height="16"/> **Spray** — Spray-can drawing
+- <img src="web/static/images/menus/tools_fill.png" height="16"/> **Fill** — Flood-fill to colored edges
+- <img src="web/static/images/menus/tools_text.png" height="16"/> **Text** — Rich text with font, size, style, color, and rotation
 
-### Shapes Menu
+### Shapes
 
-- <img src="public/images/menus/shapes_rectangle.png" height="16"/> - Rectangle :: Draw a rectangle
-- <img src="public/images/menus/shapes_circle.png" height="16"/> - Circle :: Draw a circle
-- <img src="public/images/menus/shapes_line.png" height="16"/> - Line :: Draw a line
-- <img src="public/images/menus/shapes_triangle.png" height="16"/> - Triangle :: Draw a triangle (choose equilateral, isosceles, or right angle triangle)
-- <img src="public/images/menus/shapes_arc.png" height="16"/> - Arc :: Draw an arc (click and drag to end point, next click will set the depth and angle of the arc)
+- <img src="web/static/images/menus/shapes_rectangle.png" height="16"/> **Rectangle**
+- <img src="web/static/images/menus/shapes_circle.png" height="16"/> **Circle**
+- <img src="web/static/images/menus/shapes_line.png" height="16"/> **Line**
+- <img src="web/static/images/menus/shapes_triangle.png" height="16"/> **Triangle** — Equilateral, isosceles, or right angle
+- <img src="web/static/images/menus/shapes_arc.png" height="16"/> **Arc** — Click-drag endpoint, then set curve depth
 
-### Actions Menu
+### Actions
 
-- <img src="public/images/menus/actions_clear.png" height="16"/> - Clear :: Clear the canvas
-- <img src="public/images/menus/actions_undo.png" height="16"/> - Undo :: Undo last operation
-- <img src="public/images/menus/actions_redo.png" height="16"/> - Redo :: Redo last operation which was undone
+- <img src="web/static/images/menus/actions_clear.png" height="16"/> **Clear** canvas
+- <img src="web/static/images/menus/actions_undo.png" height="16"/> **Undo** (Cmd/Ctrl+Z)
+- <img src="web/static/images/menus/actions_redo.png" height="16"/> **Redo** (Cmd/Ctrl+Shift+Z)
 
 ### Colors
 
-- 🎨 Advanced color picker
+- Advanced color picker (iro.js wheel + hex input)
 - Recent colors palette
-- 🔍 Eyedropper tool for color sampling
-
-### Size
-Set the size of the drawn edges for all tools and shapes (except :text:)
-
-### File
-- 💾 Save :: Save the canvas (choose png, transparent png, jpg, ico, transparent ico)
-
-Thank you for supporting PandasWhoCode :pwc: and the Paintbar :paintbar: application! 
+- Eyedropper tool (shortcut: I)
 
 ### Canvas Settings
-- Configurable canvas dimensions
-- Responsive canvas support
-  - Auto-resize while maintaining aspect ratio
-  - Configurable minimum and maximum dimensions
-  - Enable/disable responsive behavior
-- Smart tool availability based on canvas size
 
-### Text Features <img src="public/images/menus/tools_text.png" height="16"/>
-- Rich text formatting:
-  - Bold, Italic, Underline, and Strikethrough styles
-  - Multiple font families (Arial, Times New Roman, Courier New, Georgia, Verdana)
-  - Adjustable font size (8px to 200px)
-  - Custom text color
-  - Text rotation (0° to 360°)
-- Real-time text preview
-- Easy text editing and positioning
+- Configurable dimensions (up to 4096×4096)
+- Responsive mode with min/max constraints
 
-## Documentation
+### Save / Export
 
-Detailed documentation for all menus and features can be found in the [Menu Documentation](docs/menus.md) file.
+- PNG, PNG (transparent), JPG, ICO, ICO (transparent)
+
+### User Profile
+
+- Firebase-authenticated accounts
+- Editable profile (display name, bio, location, social links)
+- Project management (save, name, edit)
+- Community gallery
+- NFT minting (Hedera / Hiero-Ledger)
 
 ## Getting Started
 
-1. Clone the repository
-2. Open `index.html` in your web browser
-3. Configure your canvas settings:
-   - Set desired canvas dimensions
-   - Enable/disable responsive mode
-   - Configure min/max dimensions if using responsive mode
-4. Start creating!
+### Prerequisites
+
+- **Go** 1.21+
+- **Node.js** 18+ and npm
+- **Docker** and Docker Compose
+- **Task** ([taskfile.dev](https://taskfile.dev))
+
+### Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/pandasWhoCode/paintbar.git
+cd paintbar
+
+# Install TS dev dependencies
+task ts-install
+
+# Copy Firebase config template and fill in your values
+cp web/static/scripts/firebase-config.template.js web/static/scripts/firebase-config.js
+cp web/static/scripts/firebase-config.template.js web/ts/shared/firebase-config.ts
+# Edit both files with your Firebase project credentials
+
+# Create a .env file with your DATABASE_URL and other secrets
+cp .env.example .env  # if available, otherwise create manually
+
+# Build TypeScript and start everything
+task dev
+```
+
+### Task Commands
+
+#### Server
+
+| Command | Description |
+|---|---|
+| `task dev` | Build TS + start Go server |
+| `task run:local` | Start Docker deps + build TS + run server |
+| `task restart:local` | Kill running server + restart |
+| `task stop:local` | Stop server + Docker deps |
+| `task build` | Build Go binary to `bin/` |
+| `task run` | Run Go server (no Docker deps) |
+
+#### TypeScript
+
+| Command | Description |
+|---|---|
+| `task ts-build` | Build with esbuild (dev, includes source maps) |
+| `task ts-build:prod` | Build with esbuild (production, no source maps) |
+| `task ts-check` | Type-check with tsc (no emit) |
+| `task ts-install` | Install TypeScript dev dependencies |
+
+#### Database
+
+| Command | Description |
+|---|---|
+| `task migrate` | Run Goose migrations up |
+| `task migrate-down` | Rollback last migration |
+| `task migrate-status` | Show migration status |
+| `task migrate-create -- <name>` | Create a new migration |
+
+#### Docker
+
+| Command | Description |
+|---|---|
+| `task docker:up` | Start Postgres + Firebase emulators |
+| `task docker:down` | Stop Postgres + Firebase |
+| `task docker:reset-postgres` | Wipe and restart Postgres only |
+| `task docker:reset-firebase` | Wipe and restart Firebase emulator only |
+| `task docker-clean` | Stop all + remove all volumes |
+| `task docker-logs` | Tail container logs |
+
+#### Testing
+
+| Command | Description |
+|---|---|
+| `task test` | Run all Go tests (with race detector) |
+| `task test-short` | Run Go tests (skip integration) |
+| `task test-integration` | Run integration tests against local Postgres |
+| `task bench` | Run Go benchmarks |
+| `task lint` | Run Go linters |
+
+#### Deploy
+
+| Command | Description |
+|---|---|
+| `task deploy-preview` | Deploy to Firebase preview channel + Cloud Run |
+| `task deploy-prod` | Deploy to production |
+| `task clean` | Remove build artifacts (`bin/`, `web/static/dist/`) |
+
+## Project Structure
+
+```
+paintbar/
+├── cmd/server/          # Go server entrypoint
+├── internal/
+│   ├── handler/         # HTTP handlers
+│   ├── middleware/       # Auth, logging, security middleware
+│   ├── repository/      # PostgreSQL data access
+│   └── service/         # Business logic
+├── migrations/          # Goose SQL migrations
+├── web/
+│   ├── templates/       # Go HTML templates
+│   ├── ts/              # TypeScript source
+│   │   ├── shared/      # Types, Firebase init, errors
+│   │   ├── canvas/      # Drawing tools, managers, app entry
+│   │   ├── auth/        # Login entry point
+│   │   └── profile/     # Profile entry point
+│   └── static/
+│       ├── dist/        # esbuild output (gitignored)
+│       ├── styles/      # CSS
+│       └── images/      # Static assets
+├── api/                 # OpenAPI spec
+├── docs/                # Documentation
+├── Taskfile.yml         # Task runner config
+├── docker-compose.yml   # Local dev services
+└── Dockerfile           # Production container
+```
+
+## Documentation
+
+Detailed documentation for all menus and features: [Menu Documentation](docs/menus.md)
 
 ## Browser Compatibility
 
-PaintBar works best in modern browsers that support HTML5 Canvas and ES6+ JavaScript features.
-
-PaintBar is not compatible with mobile web browsers at this time.
-
-## Dependencies
-
-- html2canvas (v1.4.1) - For image export functionality
-- iro.js (v5) - For the color picker interface
-- Firebase - For analytics
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
+PaintBar works best in modern browsers that support HTML5 Canvas and ES modules. Not yet compatible with mobile browsers.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
+Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE) for details.

@@ -1,0 +1,67 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=local
+      - PORT=8080
+      - DATABASE_URL=postgres://paintbar:paintbar@postgres:5432/paintbar?sslmode=disable
+      - FIREBASE_PROJECT_ID=paintbar-7f887
+      - FIRESTORE_EMULATOR_HOST=firebase:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+      - HIERO_NETWORK=local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      firebase:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: paintbar
+      POSTGRES_PASSWORD: paintbar
+      POSTGRES_DB: paintbar
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paintbar -d paintbar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  firebase:
+    build:
+      context: .
+      dockerfile: Dockerfile.firebase
+    ports:
+      - "4000:4000"   # Emulator UI
+      - "9099:9099"   # Auth emulator
+      - "8081:8080"   # Firestore emulator (mapped to 8081 on host to avoid conflict)
+    volumes:
+      - ./testdata/firestore:/app/testdata
+      - ./firestore.rules:/app/firestore.rules:ro
+      - ./firestore.indexes.json:/app/firestore.indexes.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4000 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  solo:
+    image: ghcr.io/hiero-ledger/solo:v0.54.0
+    ports:
+      - "50211:50211"  # gRPC
+      - "5551:5551"    # Mirror node REST
+      - "8545:8545"    # JSON-RPC relay
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,807 @@
+openapi: 3.1.0
+info:
+  title: PaintBar API
+  description: API for the PaintBar pixel art platform. Manages user profiles, canvas projects, gallery items, and NFTs.
+  version: 0.1.0
+  contact:
+    name: pandasWhoCode
+    url: https://github.com/pandasWhoCode/paintbar
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://paintbar.art
+    description: Production
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: Server health checks
+  - name: Profile
+    description: User profile management
+  - name: Projects
+    description: Canvas project CRUD
+  - name: Gallery
+    description: Public gallery sharing
+  - name: NFTs
+    description: NFT management (Hiero network)
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Server status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  env:
+                    type: string
+                    example: local
+                  db:
+                    type: string
+                    example: ok
+                  firestore:
+                    type: string
+                    example: ok
+
+  /api/profile:
+    get:
+      tags: [Profile]
+      summary: Get current user's profile
+      operationId: getProfile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Profile]
+      summary: Update current user's profile
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/claim-username:
+    post:
+      tags: [Profile]
+      summary: Claim a username (one-time, immutable)
+      operationId: claimUsername
+      description: |
+        Atomically claims a username for the authenticated user.
+        Usernames are immutable once set. Rate limited to 5 requests/minute.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                  pattern: "^[a-z0-9_-]{3,30}$"
+                  description: 3-30 lowercase alphanumeric, underscores, or hyphens
+                  example: cool_artist
+      responses:
+        "200":
+          description: Username claimed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: claimed
+                  username:
+                    type: string
+                    example: cool_artist
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List current user's projects
+      operationId: listProjects
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/StartAfter"
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Projects]
+      summary: Create a new project
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/projects/count:
+    get:
+      tags: [Projects]
+      summary: Get project count for current user
+      operationId: countProjects
+      responses:
+        "200":
+          $ref: "#/components/responses/Count"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Get a project by ID
+      operationId: getProject
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Projects]
+      summary: Update a project
+      operationId: updateProject
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Projects]
+      summary: Delete a project
+      operationId: deleteProject
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          $ref: "#/components/responses/Deleted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/gallery:
+    get:
+      tags: [Gallery]
+      summary: List current user's gallery items
+      operationId: listGalleryItems
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/StartAfter"
+      responses:
+        "200":
+          description: List of gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Gallery]
+      summary: Share artwork to gallery
+      operationId: shareToGallery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GalleryItemCreate"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/gallery/count:
+    get:
+      tags: [Gallery]
+      summary: Get gallery item count for current user
+      operationId: countGalleryItems
+      responses:
+        "200":
+          $ref: "#/components/responses/Count"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/gallery/{id}:
+    get:
+      tags: [Gallery]
+      summary: Get a gallery item by ID
+      operationId: getGalleryItem
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          description: Gallery item details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Gallery]
+      summary: Delete a gallery item
+      operationId: deleteGalleryItem
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          $ref: "#/components/responses/Deleted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/nfts:
+    get:
+      tags: [NFTs]
+      summary: List current user's NFTs
+      operationId: listNFTs
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/StartAfter"
+      responses:
+        "200":
+          description: List of NFTs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NFT"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [NFTs]
+      summary: Create an NFT record
+      operationId: createNFT
+      description: Creates an NFT record in Firestore. Does NOT mint on-chain (Hiero minting TBD).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NFTCreate"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/nfts/count:
+    get:
+      tags: [NFTs]
+      summary: Get NFT count for current user
+      operationId: countNFTs
+      responses:
+        "200":
+          $ref: "#/components/responses/Count"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/nfts/{id}:
+    get:
+      tags: [NFTs]
+      summary: Get an NFT by ID
+      operationId: getNFT
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          description: NFT details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NFT"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [NFTs]
+      summary: Delete an NFT record
+      operationId: deleteNFT
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      responses:
+        "200":
+          $ref: "#/components/responses/Deleted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID Token
+      description: Firebase Auth ID token obtained from client SDK
+
+  parameters:
+    ResourceID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Firestore document ID
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
+      description: Number of items per page (default 10, max 50)
+    StartAfter:
+      name: startAfter
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Cursor for pagination (last document ID from previous page)
+
+  schemas:
+    User:
+      type: object
+      properties:
+        uid:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          pattern: "^[a-z0-9_-]{3,30}$"
+        displayName:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 500
+        location:
+          type: string
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+        githubUrl:
+          type: string
+          format: uri
+        twitterHandle:
+          type: string
+        blueskyHandle:
+          type: string
+        instagramHandle:
+          type: string
+        hbarAddress:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserUpdate:
+      type: object
+      description: Partial update — only provided fields are changed
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 500
+        location:
+          type: string
+          maxLength: 100
+        website:
+          type: string
+          format: uri
+        githubUrl:
+          type: string
+          format: uri
+        twitterHandle:
+          type: string
+        blueskyHandle:
+          type: string
+        instagramHandle:
+          type: string
+        hbarAddress:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        imageData:
+          type: string
+          description: Base64-encoded canvas image data
+        thumbnailData:
+          type: string
+          description: Base64-encoded thumbnail
+        width:
+          type: integer
+        height:
+          type: integer
+        isPublic:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        imageData:
+          type: string
+        thumbnailData:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        isPublic:
+          type: boolean
+          default: false
+        tags:
+          type: array
+          items:
+            type: string
+
+    ProjectUpdate:
+      type: object
+      description: Partial update — only provided fields are changed
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        imageData:
+          type: string
+        thumbnailData:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        isPublic:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+
+    GalleryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        imageData:
+          type: string
+        thumbnailData:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    GalleryItemCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        projectId:
+          type: string
+        imageData:
+          type: string
+        thumbnailData:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+    NFT:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        imageData:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        thumbnailData:
+          type: string
+        metadata:
+          type: string
+        price:
+          type: number
+          minimum: 0
+        isListed:
+          type: boolean
+        tokenId:
+          type: string
+          description: Hiero network token ID
+        serialNumber:
+          type: integer
+          description: Hiero NFT serial number
+        transactionId:
+          type: string
+          description: Hiero transaction ID
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    NFTCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        imageData:
+          type: string
+        price:
+          type: number
+          minimum: 0
+          default: 0
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+  responses:
+    StatusOK:
+      description: Operation successful
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: updated
+    Created:
+      description: Resource created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+                description: ID of the created resource
+    Deleted:
+      description: Resource deleted
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: deleted
+    Count:
+      description: Resource count
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated but not authorized for this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadRequest:
+      description: Invalid request (validation error, bad JSON, etc.)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Resource conflict (e.g., username already taken)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
