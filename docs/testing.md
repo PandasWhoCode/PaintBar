@@ -1,19 +1,19 @@
 # Testing
 
-[← Back to Docs](README.md)
+[← Deployment](deployment.md) · [Docs Index](README.md) · [Menu Reference →](menus.md)
 
 ## Test Strategy
 
 PaintBar uses a layered testing approach:
 
-| Layer | Framework | What's Tested |
-|---|---|---|
-| **Model** | Go `testing` + testify | Struct validation, sanitization, update maps |
-| **Service** | Go `testing` + testify | Business logic with mock repositories |
-| **Handler** | Go `testing` + testify + httptest | HTTP request/response, JSON encoding, error mapping |
-| **Middleware** | Go `testing` + testify + httptest | Auth, rate limiting, CORS, security headers, recovery |
-| **Repository** | Go `testing` + testify | Firestore operations (requires emulator for integration) |
-| **Config** | Go `testing` + testify | Environment variable loading + validation |
+| Layer          | Framework                         | What's Tested                                            |
+| -------------- | --------------------------------- | -------------------------------------------------------- |
+| **Model**      | Go `testing` + testify            | Struct validation, sanitization, update maps             |
+| **Service**    | Go `testing` + testify            | Business logic with mock repositories                    |
+| **Handler**    | Go `testing` + testify + httptest | HTTP request/response, JSON encoding, error mapping      |
+| **Middleware** | Go `testing` + testify + httptest | Auth, rate limiting, CORS, security headers, recovery    |
+| **Repository** | Go `testing` + testify            | Firestore operations (requires emulator for integration) |
+| **Config**     | Go `testing` + testify            | Environment variable loading + validation                |
 
 ## Running Tests
 
@@ -64,8 +64,11 @@ task bench
 ### Linting
 
 ```bash
-task lint
-# Equivalent to: go vet ./...
+task lint:go       # Go vet
+task lint:ts       # TypeScript type checking (tsc --noEmit)
+task lint:md       # Markdown linting (markdownlint)
+task lint:all      # Run all three
+task lint-fix:all  # Auto-fix Markdown + TypeScript (Prettier)
 ```
 
 ---
@@ -96,6 +99,7 @@ func authenticatedRequest(method, path string, body io.Reader) *http.Request {
 ```
 
 **What's tested**:
+
 - All CRUD endpoints (profile, projects, gallery, NFTs)
 - Authentication requirement (401 when no user in context)
 - Input validation (400 for bad JSON, missing fields, invalid values)
@@ -116,6 +120,7 @@ type mockTokenVerifier struct {
 ```
 
 **What's tested**:
+
 - Auth middleware: skip paths, valid token, invalid token, missing header, nil auth service
 - Rate limiter: allow/deny, window reset, cleanup, Close method
 - Sensitive endpoint rate limiter
@@ -138,6 +143,7 @@ type mockUserRepo struct {
 ```
 
 **What's tested**:
+
 - Profile CRUD with validation
 - Username claiming (format validation, already-set check, atomicity)
 - Input sanitization (trimming, handle normalization)
@@ -147,6 +153,7 @@ type mockUserRepo struct {
 ### Model Tests (`internal/model/model_test.go`)
 
 **What's tested**:
+
 - Field validation (required fields, max lengths, URL format)
 - Username regex validation
 - Sanitization (whitespace trimming, handle @ stripping)
@@ -155,6 +162,7 @@ type mockUserRepo struct {
 ### Repository Tests (`internal/repository/repository_test.go`)
 
 **What's tested**:
+
 - Firestore CRUD operations (requires emulator)
 - PostgreSQL health check
 - Connection pool creation
@@ -251,3 +259,7 @@ task ts-check
 ```
 
 This catches type errors without producing output files (esbuild handles bundling).
+
+---
+
+[← Deployment](deployment.md) · [Docs Index](README.md) · [Menu Reference →](menus.md)

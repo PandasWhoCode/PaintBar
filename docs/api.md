@@ -1,6 +1,6 @@
 # API Reference
 
-[← Back to Docs](README.md)
+[← Project Structure](project-structure.md) · [Docs Index](README.md) · [Database →](database.md)
 
 > **Full OpenAPI 3.1 spec**: [`api/openapi.yaml`](../api/openapi.yaml)
 >
@@ -8,22 +8,25 @@
 
 ## Base URL
 
-| Environment | URL |
-|---|---|
-| Local | `http://localhost:8080` |
-| Production | `https://paintbar-461183067730.us-central1.run.app` |
+| Environment | URL                                                 |
+| ----------- | --------------------------------------------------- |
+| Local       | `http://localhost:8080`                             |
+| Production  | `https://paintbar-461183067730.us-central1.run.app` |
 
 ## Authentication
 
 All `/api/*` endpoints require a Firebase ID token in the `Authorization` header:
 
-```
+```text
 Authorization: Bearer <firebase-id-token>
 ```
 
-The token is obtained client-side via the Firebase Auth SDK and verified server-side by the Go middleware using the Firebase Admin SDK. See [Authentication](authentication.md) for details.
+The token is obtained client-side via the Firebase Auth SDK and verified
+server-side by the Go middleware using the Firebase Admin SDK.
+See [Authentication](authentication.md) for details.
 
 **Exceptions** (no auth required):
+
 - `GET /health`
 - `GET /` , `/login`, `/profile`, `/canvas` (SSR pages)
 - `GET /static/*` (static assets)
@@ -55,24 +58,24 @@ The token is obtained client-side via the Firebase Auth SDK and verified server-
 
 HTTP status codes are mapped from error message patterns:
 
-| Pattern | Status |
-|---|---|
-| `"not found"` | 404 |
-| `"unauthorized"` | 403 |
-| `"already taken"` / `"already set"` / `"already exists"` | 409 |
-| `"is required"` / `"validation"` / `"must be"` / `"invalid"` | 400 |
-| Everything else | 500 (generic message returned to client) |
+| Pattern                                                      | Status                                   |
+| ------------------------------------------------------------ | ---------------------------------------- |
+| `"not found"`                                                | 404                                      |
+| `"unauthorized"`                                             | 403                                      |
+| `"already taken"` / `"already set"` / `"already exists"`     | 409                                      |
+| `"is required"` / `"validation"` / `"must be"` / `"invalid"` | 400                                      |
+| Everything else                                              | 500 (generic message returned to client) |
 
 ## Pagination
 
 List endpoints support cursor-based pagination:
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `limit` | integer | 10 | Items per page (1–50) |
-| `startAfter` | string | — | Document ID cursor from previous page |
+| Parameter    | Type    | Default | Description                           |
+| ------------ | ------- | ------- | ------------------------------------- |
+| `limit`      | integer | 10      | Items per page (1–50)                 |
+| `startAfter` | string  | —       | Document ID cursor from previous page |
 
-```
+```text
 GET /api/projects?limit=20&startAfter=abc123
 ```
 
@@ -87,6 +90,7 @@ GET /api/projects?limit=20&startAfter=abc123
 No authentication required.
 
 **Response** `200`
+
 ```json
 {
   "status": "ok",
@@ -104,6 +108,7 @@ No authentication required.
 Get the authenticated user's profile. Creates a new profile document if one doesn't exist.
 
 **Response** `200`
+
 ```json
 {
   "uid": "firebase-uid",
@@ -128,6 +133,7 @@ Get the authenticated user's profile. Creates a new profile document if one does
 Partial update — only provided fields are changed. Pointer semantics: omitted fields are untouched, `""` clears a field.
 
 **Request Body**
+
 ```json
 {
   "displayName": "New Name",
@@ -136,6 +142,7 @@ Partial update — only provided fields are changed. Pointer semantics: omitted 
 ```
 
 **Response** `200`
+
 ```json
 { "status": "updated" }
 ```
@@ -145,6 +152,7 @@ Partial update — only provided fields are changed. Pointer semantics: omitted 
 Atomically claim a username. Immutable once set. Rate limited to **5 requests/minute**.
 
 **Request Body**
+
 ```json
 { "username": "cool_artist" }
 ```
@@ -152,6 +160,7 @@ Atomically claim a username. Immutable once set. Rate limited to **5 requests/mi
 **Validation**: `^[a-z0-9_-]{3,30}$`
 
 **Response** `200`
+
 ```json
 { "status": "claimed", "username": "cool_artist" }
 ```
@@ -173,6 +182,7 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 #### `POST /api/projects`
 
 **Request Body**
+
 ```json
 {
   "name": "My Artwork",
@@ -189,6 +199,7 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 **Required**: `name`
 
 **Response** `201`
+
 ```json
 { "id": "new-project-id" }
 ```
@@ -196,6 +207,7 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 #### `GET /api/projects/count`
 
 **Response** `200`
+
 ```json
 { "count": 12 }
 ```
@@ -213,6 +225,7 @@ Partial update. Must be the owner.
 Delete a project. Must be the owner.
 
 **Response** `200`
+
 ```json
 { "status": "deleted" }
 ```
@@ -232,6 +245,7 @@ List the authenticated user's gallery items.
 Share artwork to the public gallery.
 
 **Request Body**
+
 ```json
 {
   "name": "Sunset Pixel Art",
@@ -248,7 +262,9 @@ Share artwork to the public gallery.
 **Required**: `name`
 
 #### `GET /api/gallery/count`
+
 #### `GET /api/gallery/{id}`
+
 #### `DELETE /api/gallery/{id}`
 
 Same patterns as Projects.
@@ -268,6 +284,7 @@ List the authenticated user's NFTs.
 Create an NFT record.
 
 **Request Body**
+
 ```json
 {
   "name": "Rare Panda #1",
@@ -280,7 +297,9 @@ Create an NFT record.
 **Required**: `name`
 
 #### `GET /api/nfts/count`
+
 #### `GET /api/nfts/{id}`
+
 #### `DELETE /api/nfts/{id}`
 
 Same patterns as Projects. Listed NFTs (`isListed: true`) are readable by any authenticated user.
@@ -289,10 +308,10 @@ Same patterns as Projects. Listed NFTs (`isListed: true`) are readable by any au
 
 ## Rate Limiting
 
-| Scope | Limit | Window |
-|---|---|---|
-| **Global** (per IP) | 100 requests | 1 minute |
-| **Sensitive** (`/api/claim-username`) | 5 requests | 1 minute |
+| Scope                                 | Limit        | Window   |
+| ------------------------------------- | ------------ | -------- |
+| **Global** (per IP)                   | 100 requests | 1 minute |
+| **Sensitive** (`/api/claim-username`) | 5 requests   | 1 minute |
 
 Rate-limited responses return `429 Too Many Requests` with a `Retry-After: 60` header.
 
@@ -304,13 +323,17 @@ Request bodies are limited to **1 MB** (`maxRequestBodySize`). Exceeding this re
 
 All responses include:
 
-| Header | Value |
-|---|---|
-| `X-Frame-Options` | `DENY` |
-| `X-Content-Type-Options` | `nosniff` |
-| `X-XSS-Protection` | `0` (rely on CSP) |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
-| `Content-Security-Policy` | See [Architecture](architecture.md) |
-| `Strict-Transport-Security` | Production only: `max-age=63072000` |
-| `Cache-Control` | `no-store` (API responses) |
+| Header                      | Value                                      |
+| --------------------------- | ------------------------------------------ |
+| `X-Frame-Options`           | `DENY`                                     |
+| `X-Content-Type-Options`    | `nosniff`                                  |
+| `X-XSS-Protection`          | `0` (rely on CSP)                          |
+| `Referrer-Policy`           | `strict-origin-when-cross-origin`          |
+| `Permissions-Policy`        | `camera=(), microphone=(), geolocation=()` |
+| `Content-Security-Policy`   | See [Architecture](architecture.md)        |
+| `Strict-Transport-Security` | Production only: `max-age=63072000`        |
+| `Cache-Control`             | `no-store` (API responses)                 |
+
+---
+
+[← Project Structure](project-structure.md) · [Docs Index](README.md) · [Database →](database.md)

@@ -1,6 +1,6 @@
 # Authentication
 
-[← Back to Docs](README.md)
+[← Database](database.md) · [Docs Index](README.md) · [Frontend →](frontend.md)
 
 ## Overview
 
@@ -11,7 +11,7 @@ PaintBar uses **Firebase Authentication** for identity management with a split c
 
 ## Authentication Flow
 
-```
+```text
 ┌──────────┐     ┌──────────────────┐     ┌──────────────────┐
 │  Browser  │     │  Firebase Auth   │     │   Go Server      │
 │           │     │  (Google Cloud)  │     │   (Cloud Run)    │
@@ -48,13 +48,14 @@ PaintBar uses **Firebase Authentication** for identity management with a split c
 
 ### Firebase Initialization
 
-Firebase is initialized in `web/ts/shared/firebase-init.ts` with the project config from `firebase-config.ts` (gitignored, generated from template).
+Firebase is initialized in `web/ts/shared/firebase-init.ts` with the project
+config from `firebase-config.ts` (gitignored, generated from template).
 
 ```typescript
 // firebase-init.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { firebaseConfig } from './firebase-config';
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { firebaseConfig } from "./firebase-config";
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -68,11 +69,11 @@ Protected pages use `onAuthStateChanged` to redirect unauthenticated users:
 ```typescript
 // In canvas app.ts DOMContentLoaded
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        window.location.replace('/login');  // replace prevents back-button trap
-        return;
-    }
-    // User is authenticated — show the app
+  if (!user) {
+    window.location.replace("/login"); // replace prevents back-button trap
+    return;
+  }
+  // User is authenticated — show the app
 });
 ```
 
@@ -80,8 +81,8 @@ onAuthStateChanged(auth, (user) => {
 
 ```typescript
 const token = await auth.currentUser.getIdToken();
-const response = await fetch('/api/profile', {
-    headers: { 'Authorization': `Bearer ${token}` }
+const response = await fetch("/api/profile", {
+  headers: { Authorization: `Bearer ${token}` },
 });
 ```
 
@@ -91,7 +92,7 @@ const response = await fetch('/api/profile', {
 
 Defined in `internal/middleware/auth.go`. Applied to all `/api/*` routes.
 
-```
+```text
 Request → Auth Middleware → Handler
                 │
                 ├── Skip paths: /, /health, /favicon.ico, /static/*
@@ -142,12 +143,12 @@ func (h *ProfileHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 The auth middleware skips these paths (no token required):
 
-| Path | Reason |
-|---|---|
-| `/` | Login page (SSR) |
-| `/health` | Health check endpoint |
-| `/favicon.ico` | Browser favicon request |
-| `/static/*` | Static assets (CSS, JS, images) |
+| Path           | Reason                          |
+| -------------- | ------------------------------- |
+| `/`            | Login page (SSR)                |
+| `/health`      | Health check endpoint           |
+| `/favicon.ico` | Browser favicon request         |
+| `/static/*`    | Static assets (CSS, JS, images) |
 
 All other paths (including `/api/*`) require a valid Bearer token.
 
@@ -155,30 +156,38 @@ All other paths (including `/api/*`) require a valid Bearer token.
 
 The Go server initializes Firebase clients in `internal/repository/firestore.go`:
 
-| Environment | Auth Method |
-|---|---|
-| **Local** | Emulator (`FIREBASE_AUTH_EMULATOR_HOST`) |
-| **Preview** | Application Default Credentials (ADC on Cloud Run) |
+| Environment    | Auth Method                                            |
+| -------------- | ------------------------------------------------------ |
+| **Local**      | Emulator (`FIREBASE_AUTH_EMULATOR_HOST`)               |
+| **Preview**    | Application Default Credentials (ADC on Cloud Run)     |
 | **Production** | Service account JSON (`FIREBASE_SERVICE_ACCOUNT_PATH`) |
 
 ### Emulator Configuration
 
-In local development, the Firebase Auth emulator runs at `localhost:9099` (Docker Compose). The Go server auto-configures the emulator host when `ENV=local`.
+In local development, the Firebase Auth emulator runs at `localhost:9099`
+(Docker Compose). The Go server auto-configures the emulator host
+when `ENV=local`.
 
 ## Error Responses
 
-| Scenario | Status | Error Message |
-|---|---|---|
-| Missing `Authorization` header | 401 | `"missing authorization header"` |
-| Malformed header (not `Bearer <token>`) | 401 | `"invalid authorization header format"` |
-| Empty token | 401 | `"empty token"` |
-| Invalid/expired token | 401 | `"invalid or expired token"` |
-| Auth service not configured (nil) | 500 | `"authentication service unavailable"` |
+| Scenario                                | Status | Error Message                           |
+| --------------------------------------- | ------ | --------------------------------------- |
+| Missing `Authorization` header          | 401    | `"missing authorization header"`        |
+| Malformed header (not `Bearer <token>`) | 401    | `"invalid authorization header format"` |
+| Empty token                             | 401    | `"empty token"`                         |
+| Invalid/expired token                   | 401    | `"invalid or expired token"`            |
+| Auth service not configured (nil)       | 500    | `"authentication service unavailable"`  |
 
 ## Rate Limiting on Sensitive Endpoints
 
-The `POST /api/claim-username` endpoint has an additional rate limiter (5 req/min per IP) applied via `mw.SensitiveEndpoint(sensitiveLimiter)`. This is layered on top of the global rate limiter.
+The `POST /api/claim-username` endpoint has an additional rate limiter
+(5 req/min per IP) applied via `mw.SensitiveEndpoint(sensitiveLimiter)`.
+This is layered on top of the global rate limiter.
 
 ```go
 r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/claim-username", profileHandler.ClaimUsername)
 ```
+
+---
+
+[← Database](database.md) · [Docs Index](README.md) · [Frontend →](frontend.md)

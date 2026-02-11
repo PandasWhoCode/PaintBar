@@ -1,10 +1,10 @@
 # Project Structure
 
-[← Back to Docs](README.md)
+[← Architecture](architecture.md) · [Docs Index](README.md) · [API Reference →](api.md)
 
 ## Directory Layout
 
-```
+```text
 paintbar/
 ├── api/                          # OpenAPI specification
 │   ├── openapi.yaml              # OpenAPI 3.1 spec (source of truth for API)
@@ -139,6 +139,12 @@ paintbar/
 
 - **`internal/`** — All Go business logic is under `internal/` to prevent external imports
 - **`go:embed`** — Templates, migrations, and the OpenAPI spec are embedded into the binary at compile time
-- **Interface-driven repositories** — Each repository defines an interface (e.g., `UserRepository`) with a Firestore implementation, enabling mock-based testing
-- **Pointer fields for partial updates** — `*string` fields in update structs distinguish "not provided" (`nil`) from "set to empty" (`""`)
+- **Interface-driven repositories** — Each repository defines an interface
+  (e.g., `UserRepository`) with a Firestore implementation, enabling mock-based testing
+- **Pointer fields for partial updates** — `*string` fields in update structs
+  distinguish "not provided" (`nil`) from "set to empty" (`""`)
 - **Firestore document IDs** — The `ID` field uses `firestore:"-"` tag (excluded from Firestore data, set from `doc.Ref.ID`)
+
+---
+
+[← Architecture](architecture.md) · [Docs Index](README.md) · [API Reference →](api.md)

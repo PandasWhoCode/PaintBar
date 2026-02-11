@@ -40,10 +40,44 @@ tasks:
     cmds:
       - go test ./... -bench=. -benchmem -run=^$ -count=1
 
-  lint:
+  lint:go:
     desc: Run Go linters
     cmds:
       - go vet ./...
+
+  lint:ts:
+    desc: Run TypeScript type checking
+    cmds:
+      - npx tsc --project web/ts/tsconfig.json --noEmit
+
+  lint:md:
+    desc: Lint Markdown files
+    cmds:
+      - npx markdownlint docs/*.md
+
+  lint:all:
+    desc: Run all linters (Go, TypeScript, Markdown)
+    cmds:
+      - task: lint:go
+      - task: lint:ts
+      - task: lint:md
+
+  lint-fix:md:
+    desc: Auto-fix Markdown lint issues and format with Prettier
+    cmds:
+      - npx prettier --write docs/*.md
+      - npx markdownlint --fix docs/*.md
+
+  lint-fix:ts:
+    desc: Auto-fix TypeScript lint issues with Prettier
+    cmds:
+      - npx prettier --write web/ts/**/*.ts
+
+  lint-fix:all:
+    desc: Auto-fix all lint issues (Markdown, TypeScript)
+    cmds:
+      - task: lint-fix:md
+      - task: lint-fix:ts
 
   migrate:
     desc: Run Goose migrations up

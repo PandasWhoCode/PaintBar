@@ -1,6 +1,6 @@
 # Frontend
 
-[← Back to Docs](README.md)
+[← Authentication](authentication.md) · [Docs Index](README.md) · [Deployment →](deployment.md)
 
 ## Overview
 
@@ -20,33 +20,36 @@ All pages extend `web/templates/layouts/base.html`, which defines three blocks:
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{block "title" .}}PaintBar{{end}}</title>
-    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
-    {{block "head" .}}{{end}}       <!-- Page-specific CSS/meta -->
-</head>
-<body>
-    {{block "body" .}}{{end}}       <!-- Page content -->
-    {{block "scripts" .}}{{end}}    <!-- Page-specific JS -->
-</body>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+    {{block "head" .}}{{end}}
+    <!-- Page-specific CSS/meta -->
+  </head>
+  <body>
+    {{block "body" .}}{{end}}
+    <!-- Page content -->
+    {{block "scripts" .}}{{end}}
+    <!-- Page-specific JS -->
+  </body>
 </html>
 ```
 
 ### Page Templates
 
-| Template | Route | Description |
-|---|---|---|
-| `pages/login.html` | `/`, `/login` | Firebase Auth sign-in |
-| `pages/profile.html` | `/profile` | User profile with edit modal |
-| `pages/canvas.html` | `/canvas` | PaintBar drawing app |
-| `pages/404.html` | (catch-all) | Not found page |
+| Template             | Route         | Description                  |
+| -------------------- | ------------- | ---------------------------- |
+| `pages/login.html`   | `/`, `/login` | Firebase Auth sign-in        |
+| `pages/profile.html` | `/profile`    | User profile with edit modal |
+| `pages/canvas.html`  | `/canvas`     | PaintBar drawing app         |
+| `pages/404.html`     | (catch-all)   | Not found page               |
 
 ### Template Functions
 
-| Function | Usage | Description |
-|---|---|---|
+| Function      | Usage             | Description                          |
+| ------------- | ----------------- | ------------------------------------ |
 | `currentYear` | `{{currentYear}}` | Returns current year (for copyright) |
 
 ### PageData
@@ -69,15 +72,15 @@ type PageData struct {
 
 esbuild bundles three entry points:
 
-| Entry | Output | Page |
-|---|---|---|
-| `web/ts/canvas/app.ts` | `web/static/dist/canvas/app.js` | Canvas app |
-| `web/ts/auth/login.ts` | `web/static/dist/auth/login.js` | Login page |
+| Entry                       | Output                               | Page         |
+| --------------------------- | ------------------------------------ | ------------ |
+| `web/ts/canvas/app.ts`      | `web/static/dist/canvas/app.js`      | Canvas app   |
+| `web/ts/auth/login.ts`      | `web/static/dist/auth/login.js`      | Login page   |
 | `web/ts/profile/profile.ts` | `web/static/dist/profile/profile.js` | Profile page |
 
 ### Build Pipeline
 
-```
+```text
 web/ts/**/*.ts
       │
       ▼
@@ -110,6 +113,7 @@ task ts-check          # TypeScript type checking only (no emit)
 ### TypeScript Configuration
 
 `web/ts/tsconfig.json`:
+
 - **Target**: ES2022
 - **Module**: ES2022 with bundler resolution
 - **Strict mode**: enabled
@@ -122,7 +126,7 @@ task ts-check          # TypeScript type checking only (no emit)
 
 ### Class Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                       PaintBar                           │
 │                                                          │
@@ -180,7 +184,7 @@ task ts-check          # TypeScript type checking only (no emit)
 
 The drawing surface uses four stacked `<canvas>` elements:
 
-```
+```text
 ┌─────────────────────────────────────┐  ← selectionOverlay (top)
 │  Selection rectangles, guides       │     overlayCtx
 ├─────────────────────────────────────┤
@@ -199,7 +203,7 @@ All four canvases share the same dimensions and are positioned absolutely on top
 
 ### Canvas Initialization Flow
 
-```
+```text
 DOMContentLoaded
   │
   ├── Hide settings modal
@@ -239,10 +243,10 @@ All tools implement the `Tool` interface from `genericTool.ts`:
 
 ```typescript
 interface Tool {
-    onMouseDown(point: Point): void;
-    onMouseMove(point: Point): void;
-    onMouseUp(point: Point): void;
-    cursor: string;
+  onMouseDown(point: Point): void;
+  onMouseMove(point: Point): void;
+  onMouseUp(point: Point): void;
+  cursor: string;
 }
 ```
 
@@ -250,11 +254,11 @@ interface Tool {
 
 `SaveManager` supports exporting in three formats:
 
-| Format | Extension | Method |
-|---|---|---|
-| PNG | `.png` | `canvas.toDataURL('image/png')` |
-| JPEG | `.jpg` | White background fill + `toDataURL('image/jpeg', 0.9)` |
-| ICO | `.ico` | 64×64 center-cropped PNG (browser limitation) |
+| Format | Extension | Method                                                 |
+| ------ | --------- | ------------------------------------------------------ |
+| PNG    | `.png`    | `canvas.toDataURL('image/png')`                        |
+| JPEG   | `.jpg`    | White background fill + `toDataURL('image/jpeg', 0.9)` |
+| ICO    | `.ico`    | 64×64 center-cropped PNG (browser limitation)          |
 
 Each format supports transparent and opaque variants.
 
@@ -270,19 +274,19 @@ Each format supports transparent and opaque variants.
 
 Defined in `web/ts/shared/types.ts`:
 
-| Type | Description |
-|---|---|
-| `Point` | `{ x, y }` — 2D canvas coordinate |
+| Type            | Description                                             |
+| --------------- | ------------------------------------------------------- |
+| `Point`         | `{ x, y }` — 2D canvas coordinate                       |
 | `CanvasOptions` | Width, height, responsive, min/max dimensions, isSquare |
-| `User` | Firestore user profile fields |
-| `UserUpdate` | Partial profile update payload |
-| `TextState` | Text tool state (font, size, color, rotation, style) |
-| `RGBA` | `{ r, g, b, a }` color |
-| `ImageFormat` | `'png' | 'jpg' | 'ico'` |
-| `TriangleType` | `'right' | 'isosceles' | 'equilateral'` |
-| `ToolName` | Union of all tool names |
-| `CanvasLayers` | Named canvas element references |
-| `SelectionArea` | `{ x, y, width, height }` |
+| `User`          | Firestore user profile fields                           |
+| `UserUpdate`    | Partial profile update payload                          |
+| `TextState`     | Text tool state (font, size, color, rotation, style)    |
+| `RGBA`          | `{ r, g, b, a }` color                                  |
+| `ImageFormat`   | `'png' \| 'jpg' \| 'ico'`                               |
+| `TriangleType`  | `'right' \| 'isosceles' \| 'equilateral'`               |
+| `ToolName`      | Union of all tool names                                 |
+| `CanvasLayers`  | Named canvas element references                         |
+| `SelectionArea` | `{ x, y, width, height }`                               |
 
 ---
 
@@ -290,7 +294,7 @@ Defined in `web/ts/shared/types.ts`:
 
 Served by the Go file server at `/static/*` from `web/static/`:
 
-```
+```text
 web/static/
 ├── dist/           # esbuild output (gitignored)
 ├── images/
@@ -310,3 +314,7 @@ web/static/
 ```
 
 Directory listing is disabled (`noDirListing` wrapper in `main.go`).
+
+---
+
+[← Authentication](authentication.md) · [Docs Index](README.md) · [Deployment →](deployment.md)

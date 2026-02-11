@@ -1,14 +1,14 @@
 # Deployment
 
-[← Back to Docs](README.md)
+[← Frontend](frontend.md) · [Docs Index](README.md) · [Testing →](testing.md)
 
 ## Environments
 
-| Environment | `ENV` | Backend | Database | Firebase | Hiero |
-|---|---|---|---|---|---|
-| **Local** | `local` | `go run ./cmd/server` | Docker Postgres | Emulator (Docker) | Solo (Docker) |
-| **Preview** | `preview` | Cloud Run | Cloud SQL | Production Firestore (ADC) | Testnet |
-| **Production** | `production` | Cloud Run | Cloud SQL | Production Firestore | Mainnet |
+| Environment    | `ENV`        | Backend               | Database        | Firebase                   | Hiero         |
+| -------------- | ------------ | --------------------- | --------------- | -------------------------- | ------------- |
+| **Local**      | `local`      | `go run ./cmd/server` | Docker Postgres | Emulator (Docker)          | Solo (Docker) |
+| **Preview**    | `preview`    | Cloud Run             | Cloud SQL       | Production Firestore (ADC) | Testnet       |
+| **Production** | `production` | Cloud Run             | Cloud SQL       | Production Firestore       | Mainnet       |
 
 ---
 
@@ -47,82 +47,93 @@ The server starts at `http://localhost:8080`.
 
 ```yaml
 services:
-  postgres:     # PostgreSQL 16 — localhost:5432
-  firebase:     # Firebase Emulator — localhost:4000 (UI), :9099 (Auth), :8081 (Firestore)
-  solo:         # Hiero Solo — localhost:50211 (gRPC), :5551 (Mirror), :8545 (JSON-RPC)
+  postgres: # PostgreSQL 16 — localhost:5432
+  firebase: # Firebase Emulator — localhost:4000 (UI), :9099 (Auth), :8081 (Firestore)
+  solo: # Hiero Solo — localhost:50211 (gRPC), :5551 (Mirror), :8545 (JSON-RPC)
 ```
 
-| Service | Host Port | Purpose |
-|---|---|---|
-| Postgres | 5432 | Sessions, rate limits, audit logs |
-| Firebase Emulator UI | 4000 | Visual emulator dashboard |
-| Firebase Auth | 9099 | Authentication emulator |
-| Firestore | 8081 | Firestore emulator (mapped from container 8080) |
-| Hiero Solo gRPC | 50211 | Local Hiero network |
-| Hiero Mirror REST | 5551 | Mirror node API |
-| Hiero JSON-RPC | 8545 | JSON-RPC relay |
+| Service              | Host Port | Purpose                                         |
+| -------------------- | --------- | ----------------------------------------------- |
+| Postgres             | 5432      | Sessions, rate limits, audit logs               |
+| Firebase Emulator UI | 4000      | Visual emulator dashboard                       |
+| Firebase Auth        | 9099      | Authentication emulator                         |
+| Firestore            | 8081      | Firestore emulator (mapped from container 8080) |
+| Hiero Solo gRPC      | 50211     | Local Hiero network                             |
+| Hiero Mirror REST    | 5551      | Mirror node API                                 |
+| Hiero JSON-RPC       | 8545      | JSON-RPC relay                                  |
 
 ### Taskfile Commands
 
 #### Server
 
-| Command | Description |
-|---|---|
-| `task run` | Run Go server directly |
-| `task dev` | Build TS + run Go server |
-| `task run:local` | Start Docker deps + build TS + run server |
-| `task stop:local` | Kill server on :8080 + stop Docker |
-| `task restart:local` | Stop + restart everything |
-| `task build` | Build Go binary to `bin/paintbar` |
+| Command              | Description                               |
+| -------------------- | ----------------------------------------- |
+| `task run`           | Run Go server directly                    |
+| `task dev`           | Build TS + run Go server                  |
+| `task run:local`     | Start Docker deps + build TS + run server |
+| `task stop:local`    | Kill server on :8080 + stop Docker        |
+| `task restart:local` | Stop + restart everything                 |
+| `task build`         | Build Go binary to `bin/paintbar`         |
 
 #### TypeScript
 
-| Command | Description |
-|---|---|
-| `task ts-build` | Dev build (with source maps) |
+| Command              | Description                       |
+| -------------------- | --------------------------------- |
+| `task ts-build`      | Dev build (with source maps)      |
 | `task ts-build:prod` | Production build (no source maps) |
-| `task ts-check` | Type checking only (no emit) |
-| `task ts-install` | Install TS dev dependencies |
+| `task ts-check`      | Type checking only (no emit)      |
+| `task ts-install`    | Install TS dev dependencies       |
 
 #### Testing
 
-| Command | Description |
-|---|---|
-| `task test` | Run all Go tests (`-v -race`) |
-| `task test-short` | Skip integration tests |
-| `task test-integration` | Run against local Postgres |
-| `task bench` | Run Go benchmarks |
-| `task lint` | Run `go vet` |
+| Command                 | Description                   |
+| ----------------------- | ----------------------------- |
+| `task test`             | Run all Go tests (`-v -race`) |
+| `task test-short`       | Skip integration tests        |
+| `task test-integration` | Run against local Postgres    |
+| `task bench`            | Run Go benchmarks             |
+
+#### Linting
+
+| Command              | Description                                  |
+| -------------------- | -------------------------------------------- |
+| `task lint:go`       | Run `go vet`                                 |
+| `task lint:ts`       | TypeScript type checking (`tsc --noEmit`)    |
+| `task lint:md`       | Lint Markdown files (`markdownlint`)         |
+| `task lint:all`      | Run all linters (Go, TypeScript, Markdown)   |
+| `task lint-fix:md`   | Auto-fix Markdown (Prettier + markdownlint)  |
+| `task lint-fix:ts`   | Auto-fix TypeScript (Prettier)               |
+| `task lint-fix:all`  | Auto-fix all (Markdown + TypeScript)         |
 
 #### Database
 
-| Command | Description |
-|---|---|
-| `task migrate` | Run pending Goose migrations |
-| `task migrate-down` | Rollback last migration |
-| `task migrate-status` | Show migration status |
-| `task migrate-create -- name` | Create new migration file |
+| Command                       | Description                  |
+| ----------------------------- | ---------------------------- |
+| `task migrate`                | Run pending Goose migrations |
+| `task migrate-down`           | Rollback last migration      |
+| `task migrate-status`         | Show migration status        |
+| `task migrate-create -- name` | Create new migration file    |
 
 #### Docker
 
-| Command | Description |
-|---|---|
-| `task docker:up` | Start Postgres + Firebase |
-| `task docker:down` | Stop all services |
-| `task docker:up-all` | Start all services including app |
-| `task docker:down-all` | Stop all services |
-| `task docker-logs` | Tail service logs |
-| `task docker:reset-postgres` | Wipe Postgres data + restart |
-| `task docker:reset-firebase` | Wipe Firebase data + restart |
-| `task docker-clean` | Stop + remove volumes |
+| Command                      | Description                      |
+| ---------------------------- | -------------------------------- |
+| `task docker:up`             | Start Postgres + Firebase        |
+| `task docker:down`           | Stop all services                |
+| `task docker:up-all`         | Start all services including app |
+| `task docker:down-all`       | Stop all services                |
+| `task docker-logs`           | Tail service logs                |
+| `task docker:reset-postgres` | Wipe Postgres data + restart     |
+| `task docker:reset-firebase` | Wipe Firebase data + restart     |
+| `task docker-clean`          | Stop + remove volumes            |
 
 #### Deploy
 
-| Command | Description |
-|---|---|
-| `task deploy-preview` | Deploy to preview (Cloud Run + Firebase preview channel) |
-| `task deploy-prod` | Deploy to production (Cloud Run + Firebase Hosting + Firestore rules) |
-| `task clean` | Remove `bin/` and `web/static/dist/` |
+| Command               | Description                                                           |
+| --------------------- | --------------------------------------------------------------------- |
+| `task deploy-preview` | Deploy to preview (Cloud Run + Firebase preview channel)              |
+| `task deploy-prod`    | Deploy to production (Cloud Run + Firebase Hosting + Firestore rules) |
+| `task clean`          | Remove `bin/` and `web/static/dist/`                                  |
 
 ---
 
@@ -130,18 +141,18 @@ services:
 
 Defined in `.env` (local) or Cloud Run environment (preview/production).
 
-| Variable | Default | Required | Description |
-|---|---|---|---|
-| `ENV` | `local` | ✅ | `local`, `preview`, or `production` |
-| `PORT` | `8080` | ✅ | HTTP server port |
-| `DATABASE_URL` | `postgres://paintbar:...` | ✅ | PostgreSQL connection string |
-| `FIREBASE_PROJECT_ID` | `paintbar-7f887` | ✅ | Firebase project ID |
-| `FIREBASE_SERVICE_ACCOUNT_PATH` | — | Production only | Path to service account JSON |
-| `FIRESTORE_EMULATOR_HOST` | Auto: `localhost:8081` | Local only | Firestore emulator address |
-| `FIREBASE_AUTH_EMULATOR_HOST` | Auto: `localhost:9099` | Local only | Auth emulator address |
-| `HIERO_NETWORK` | `local` | | `local`, `testnet`, or `mainnet` |
-| `HIERO_OPERATOR_ID` | — | Production only | Hiero operator account ID |
-| `HIERO_OPERATOR_KEY` | — | Production only | Hiero operator private key |
+| Variable                        | Default                   | Required        | Description                         |
+| ------------------------------- | ------------------------- | --------------- | ----------------------------------- |
+| `ENV`                           | `local`                   | ✅              | `local`, `preview`, or `production` |
+| `PORT`                          | `8080`                    | ✅              | HTTP server port                    |
+| `DATABASE_URL`                  | `postgres://paintbar:...` | ✅              | PostgreSQL connection string        |
+| `FIREBASE_PROJECT_ID`           | `paintbar-7f887`          | ✅              | Firebase project ID                 |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | —                         | Production only | Path to service account JSON        |
+| `FIRESTORE_EMULATOR_HOST`       | Auto: `localhost:8081`    | Local only      | Firestore emulator address          |
+| `FIREBASE_AUTH_EMULATOR_HOST`   | Auto: `localhost:9099`    | Local only      | Auth emulator address               |
+| `HIERO_NETWORK`                 | `local`                   |                 | `local`, `testnet`, or `mainnet`    |
+| `HIERO_OPERATOR_ID`             | —                         | Production only | Hiero operator account ID           |
+| `HIERO_OPERATOR_KEY`            | —                         | Production only | Hiero operator private key          |
 
 ---
 
@@ -149,7 +160,7 @@ Defined in `.env` (local) or Cloud Run environment (preview/production).
 
 Three-stage multi-stage build:
 
-```
+```text
 Stage 1: Go Builder (golang:1.25-alpine)
   ├── Download Go modules
   └── Build binary: CGO_ENABLED=0 go build -o /bin/paintbar ./cmd/server
@@ -186,6 +197,7 @@ gcloud run deploy paintbar \
 Cloud Run builds the Docker image using Cloud Build, then deploys a new revision.
 
 **Key settings**:
+
 - Cloud Run auto-sets `PORT` — do not pass it via `--set-env-vars`
 - Preview environment uses Application Default Credentials (ADC) — no service account file needed
 - Cloud SQL connection via Unix socket: `host=/cloudsql/paintbar-7f887:us-central1:paintbar-db`
@@ -199,13 +211,15 @@ Firebase Hosting acts as a CDN proxy. All requests are rewritten to Cloud Run:
 {
   "hosting": {
     "public": "public",
-    "rewrites": [{
-      "source": "**",
-      "run": {
-        "serviceId": "paintbar",
-        "region": "us-central1"
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "paintbar",
+          "region": "us-central1"
+        }
       }
-    }]
+    ]
   }
 }
 ```
@@ -237,6 +251,7 @@ task deploy-prod
 ```
 
 This runs:
+
 1. `task ts-build:prod` — Build TypeScript (no source maps)
 2. `gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated`
 3. `firebase deploy --only firestore:rules,hosting`
@@ -250,6 +265,7 @@ task deploy-preview
 ```
 
 This runs:
+
 1. `task ts-build:prod`
 2. `gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated`
 3. `firebase hosting:channel:deploy preview-<branch-name>`
@@ -283,3 +299,7 @@ srv := &http.Server{
     MaxHeaderBytes:    1 << 20, // 1 MB
 }
 ```
+
+---
+
+[← Frontend](frontend.md) · [Docs Index](README.md) · [Testing →](testing.md)
