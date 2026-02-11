@@ -106,15 +106,26 @@ tasks:
     desc: Stop the local Go server and Docker deps
     cmds:
       - |
-        PID=$(lsof -ti:8080) && kill $PID 2>/dev/null && echo "server stopped (pid $PID)" || echo "no server running on :8080"
-      - docker compose down
+        PIDS=$(lsof -ti:8080 2>/dev/null)
+        if [ -n "$PIDS" ]; then
+          echo "$PIDS" | xargs kill -INT 2>/dev/null
+          echo "server stopped (pids: $(echo $PIDS | tr '\n' ' '))"
+          for i in $(seq 1 10); do lsof -ti:8080 >/dev/null 2>&1 || break; sleep 0.5; done
+        else
+          echo "no server running on :8080"
+        fi
+      - docker compose down --remove-orphans
 
   restart:local:
     desc: Restart the local Go server (rebuild + relaunch)
     cmds:
       - |
-        PID=$(lsof -ti:8080) && kill $PID 2>/dev/null && echo "server stopped (pid $PID)" || echo "no server running on :8080"
-      - sleep 1
+        PIDS=$(lsof -ti:8080 2>/dev/null)
+        if [ -n "$PIDS" ]; then
+          echo "$PIDS" | xargs kill -INT 2>/dev/null
+          echo "server stopped (pids: $(echo $PIDS | tr '\n' ' '))"
+        fi
+        for i in $(seq 1 10); do lsof -ti:8080 >/dev/null 2>&1 || break; sleep 0.5; done
       - task: run:local
 
   dev:
