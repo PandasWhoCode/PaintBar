@@ -176,7 +176,7 @@ tasks:
     cmds:
       - task ts-build:prod
       - gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated
-      - firebase deploy --only hosting
+      - firebase deploy --only hosting,firestore
 
   clean:
     desc: Remove build artifacts
