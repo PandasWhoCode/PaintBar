@@ -173,18 +173,20 @@ tasks:
       - docker compose down -v --remove-orphans
 
   deploy-preview:
-    desc: Deploy to Firebase preview channel
+    desc: Deploy to Firebase preview channel + Cloud Run
     cmds:
       - task ts-build:prod
+      - gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated
       - firebase hosting:channel:deploy preview-{{.GIT_BRANCH}}
     vars:
       GIT_BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
 
   deploy-prod:
-    desc: Deploy to production (Firebase Hosting + Firestore rules)
+    desc: Deploy to production (Cloud Run + Firebase Hosting)
     cmds:
       - task ts-build:prod
+      - gcloud run deploy paintbar --source . --region us-central1 --allow-unauthenticated
       - firebase deploy --only firestore:rules,hosting
 
   clean:
