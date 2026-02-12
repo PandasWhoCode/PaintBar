@@ -95,7 +95,7 @@ func main() {
 
 	// Set up rate limiters (relaxed in local env for development)
 	rateLimiter := mw.NewRateLimiter(100, time.Minute)
-	sensitiveRate := 5
+	sensitiveRate := 20
 	if cfg.Env == "local" {
 		sensitiveRate = 60
 	}
