@@ -1485,6 +1485,142 @@ body {
     color: white;
 }
 
+/* Save Project Modal */
+#saveProjectModal .modal-content {
+    min-width: 400px;
+    max-width: 500px;
+    background: rgba(49, 35, 58, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+#saveProjectModal .modal-header {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#saveProjectModal .modal-header h3 {
+    margin: 0;
+    color: white;
+}
+
+#saveProjectModal .modal-body {
+    padding: 16px;
+}
+
+#saveProjectModal .close-btn {
+    color: white;
+    opacity: 0.8;
+}
+
+#saveProjectModal .close-btn:hover {
+    opacity: 1;
+}
+
+.save-project-form .form-group {
+    margin-bottom: 16px;
+}
+
+.save-project-form .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.save-project-form .form-group .hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.save-project-form .form-group input[type="text"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.save-project-form .form-group input[type="text"]:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.save-project-form .form-group input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #7c3aed;
+}
+
+.save-project-status {
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.save-project-status.info {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+}
+
+.save-project-status.success {
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #86efac;
+}
+
+.save-project-status.error {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+#saveProjectModal .modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#saveProjectModal .modal-footer button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#saveProjectModal .modal-footer .btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+#saveProjectModal .modal-footer .btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#saveProjectModal .modal-footer .primary-btn {
+    background: #7c3aed;
+    color: white;
+}
+
+#saveProjectModal .modal-footer .primary-btn:hover {
+    background: #6d28d9;
+}
+
+#saveProjectModal .modal-footer .primary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .menu-icon {
     width: 24px;
     height: 24px;

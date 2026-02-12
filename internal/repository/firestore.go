@@ -7,27 +7,32 @@ import (
 	"os"
 
 	"cloud.google.com/go/firestore"
+	gcs "cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"google.golang.org/api/option"
 )
 
-// FirebaseClients holds the initialized Firebase Auth and Firestore clients.
+// FirebaseClients holds the initialized Firebase Auth, Firestore, and Storage clients.
 type FirebaseClients struct {
 	Auth      *auth.Client
 	Firestore *firestore.Client
+	Storage   *gcs.BucketHandle
 	app       *firebase.App
 }
 
-// NewFirebaseClients initializes the Firebase Admin SDK and returns Auth + Firestore clients.
+// NewFirebaseClients initializes the Firebase Admin SDK and returns Auth, Firestore, and Storage clients.
 // In local mode, it connects to the emulators via environment variables.
 // In preview/production, it uses the service account credentials file.
 // Coverage: requires Firebase emulator — tested via integration tests.
-func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, firestoreEmulatorHost, authEmulatorHost string) (*FirebaseClients, error) {
+func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, storageBucket, firestoreEmulatorHost, authEmulatorHost, storageEmulatorHost string) (*FirebaseClients, error) {
 	var app *firebase.App
 	var err error
 
-	conf := &firebase.Config{ProjectID: projectID}
+	conf := &firebase.Config{
+		ProjectID:     projectID,
+		StorageBucket: storageBucket,
+	}
 
 	if serviceAccountPath != "" {
 		// Production / Preview: use service account
@@ -40,6 +45,9 @@ func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, fire
 		}
 		if authEmulatorHost != "" {
 			os.Setenv("FIREBASE_AUTH_EMULATOR_HOST", authEmulatorHost)
+		}
+		if storageEmulatorHost != "" {
+			os.Setenv("FIREBASE_STORAGE_EMULATOR_HOST", storageEmulatorHost)
 		}
 		app, err = firebase.NewApp(ctx, conf)
 	}
@@ -58,15 +66,29 @@ func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, fire
 		return nil, fmt.Errorf("initialize firestore client: %w", err)
 	}
 
+	// Initialize Cloud Storage via Firebase Admin SDK
+	storageClient, err := app.Storage(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("initialize firebase storage client: %w", err)
+	}
+
+	bucket, err := storageClient.DefaultBucket()
+	if err != nil {
+		return nil, fmt.Errorf("get default storage bucket: %w", err)
+	}
+
 	slog.Info("firebase clients initialized",
 		"project_id", projectID,
+		"storage_bucket", storageBucket,
 		"emulator_firestore", firestoreEmulatorHost,
 		"emulator_auth", authEmulatorHost,
+		"emulator_storage", storageEmulatorHost,
 	)
 
 	return &FirebaseClients{
 		Auth:      authClient,
 		Firestore: fsClient,
+		Storage:   bucket,
 		app:       app,
 	}, nil
 }

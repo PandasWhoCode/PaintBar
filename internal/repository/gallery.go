@@ -54,7 +54,7 @@ func (r *firestoreGalleryRepo) List(ctx context.Context, userID string, pageLimi
 	if startAfter != "" {
 		cursorDoc, err := r.client.Collection("gallery").Doc(startAfter).Get(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("get cursor doc %s: %w", startAfter, err)
+			return []*model.GalleryItem{}, nil
 		}
 		q = q.StartAfter(cursorDoc)
 	}

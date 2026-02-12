@@ -24,26 +24,25 @@ is handled in-memory by the Go middleware.
 │  │  website     │◄──────────▶│  projects    │                          │
 │  │  githubUrl   │            │              │                          │
 │  │  twitterHdl  │            │  id (auto)   │                          │
-│  │  blueskyHdl  │            │  userId      │──┐                      │
-│  │  instagramHdl│            │  name        │  │                      │
-│  │  hbarAddress │            │  description │  │  1:N                  │
-│  │  createdAt   │            │  imageData   │  │  (via projectId)     │
-│  │  updatedAt   │            │  thumbnailDt │  │  ┌──────────────┐    │
-│  └──────────────┘            │  width       │  └─▶│  gallery     │    │
+│  │  instagramHdl│            │  userId      │──┐                      │
+│  │  hbarAddress │            │  title       │  │                      │
+│  │  createdAt   │            │  contentHash │  │  1:N                  │
+│  │  updatedAt   │            │  storageURL  │  │  (via projectId)     │
+│  └──────────────┘            │  thumbnailDt │  │  ┌──────────────┐    │
+│         │                    │  width       │  └─▶│  gallery     │    │
 │         │                    │  height      │     │              │    │
 │         │                    │  isPublic    │     │  id (auto)   │    │
 │         │                    │  tags[]      │     │  userId      │    │
 │         │                    │  createdAt   │     │  projectId   │    │
-│         │                    │  updatedAt   │     │  name        │    │
-│         │                    └──────────────┘     │  description │    │
-│         │                                         │  imageData   │    │
-│         │    1:N     ┌──────────────┐             │  thumbnailDt │    │
-│         └───────────▶│    nfts      │             │  width       │    │
-│                      │              │             │  height      │    │
-│                      │  id (auto)   │             │  tags[]      │    │
-│                      │  userId      │             │  createdAt   │    │
-│                      │  name        │             └──────────────┘    │
-│                      │  description │                                  │
+│         │                    └──────────────┘     │  name        │    │
+│         │                                         │  description │    │
+│         │    1:N     ┌──────────────┐             │  imageData   │    │
+│         └───────────▶│    nfts      │             │  thumbnailDt │    │
+│                      │              │             │  width       │    │
+│                      │  id (auto)   │             │  height      │    │
+│                      │  userId      │             │  tags[]      │    │
+│                      │  name        │             │  createdAt   │    │
+│                      │  description │             └──────────────┘    │
 │                      │  imageData   │                                  │
 │                      │  imageUrl    │                                  │
 │                      │  thumbnailDt │                                  │
@@ -103,19 +102,19 @@ Lookup collection for username uniqueness enforcement. Keyed by the username str
 
 Canvas projects. Auto-generated document IDs.
 
-| Field           | Type            | Required | Description                              |
-| --------------- | --------------- | -------- | ---------------------------------------- |
-| `userId`        | string          | ✅       | Owner's Firebase Auth UID                |
-| `name`          | string          | ✅       | Project name (max 200 chars)             |
-| `description`   | string          |          | Description (max 2000 chars)             |
-| `imageData`     | string          |          | Base64-encoded canvas image              |
-| `thumbnailData` | string          |          | Base64-encoded thumbnail                 |
-| `width`         | integer         |          | Canvas width in pixels                   |
-| `height`        | integer         |          | Canvas height in pixels                  |
-| `isPublic`      | boolean         |          | Public visibility flag (default `false`) |
-| `tags`          | array\<string\> |          | Tags (max 20, each max 50 chars)         |
-| `createdAt`     | timestamp       | ✅       | Creation timestamp                       |
-| `updatedAt`     | timestamp       | ✅       | Last update timestamp                    |
+| Field           | Type            | Required | Description                                    |
+| --------------- | --------------- | -------- | ---------------------------------------------- |
+| `userId`        | string          | ✅       | Owner's Firebase Auth UID                      |
+| `title`         | string          | ✅       | Project title (max 200 chars)                  |
+| `contentHash`   | string          | ✅       | SHA-256 hex of canvas PNG (64 chars)           |
+| `storageURL`    | string          |          | Firebase Storage download URL                  |
+| `thumbnailData` | string          |          | Base64 data:image/ URI (500 KB, 200px max)     |
+| `width`         | integer         |          | Canvas width in pixels                         |
+| `height`        | integer         |          | Canvas height in pixels                        |
+| `isPublic`      | boolean         |          | Public visibility flag (default `false`)       |
+| `tags`          | array\<string\> |          | Tags (max 20, each max 50 chars)               |
+| `createdAt`     | timestamp       | ✅       | Creation timestamp                             |
+| `updatedAt`     | timestamp       | ✅       | Last update timestamp                          |
 
 **Composite index**: `userId ASC, createdAt DESC` (for user's project listing)
 
@@ -123,18 +122,18 @@ Canvas projects. Auto-generated document IDs.
 
 Public gallery items. Sharing to gallery is an explicit user action that opts the item into public visibility.
 
-| Field           | Type            | Required | Description                  |
-| --------------- | --------------- | -------- | ---------------------------- |
-| `userId`        | string          | ✅       | Owner's Firebase Auth UID    |
-| `projectId`     | string          |          | Source project ID            |
-| `name`          | string          | ✅       | Item name (max 200 chars)    |
-| `description`   | string          |          | Description (max 2000 chars) |
-| `imageData`     | string          |          | Base64-encoded image         |
-| `thumbnailData` | string          |          | Base64-encoded thumbnail     |
-| `width`         | integer         |          | Image width                  |
-| `height`        | integer         |          | Image height                 |
-| `tags`          | array\<string\> |          | Tags                         |
-| `createdAt`     | timestamp       | ✅       | Creation timestamp           |
+| Field           | Type            | Required | Description                                   |
+| --------------- | --------------- | -------- | --------------------------------------------- |
+| `userId`        | string          | ✅       | Owner's Firebase Auth UID                     |
+| `projectId`     | string          |          | Source project ID                             |
+| `name`          | string          | ✅       | Item name (max 200 chars)                     |
+| `description`   | string          |          | Description (max 2000 chars)                  |
+| `imageData`     | string          |          | Base64-encoded image (max 500 KB)             |
+| `thumbnailData` | string          |          | Base64 data:image/ URI thumbnail (max 500 KB) |
+| `width`         | integer         |          | Image width                                   |
+| `height`        | integer         |          | Image height                                  |
+| `tags`          | array\<string\> |          | Tags                                          |
+| `createdAt`     | timestamp       | ✅       | Creation timestamp                            |
 
 **Composite index**: `userId ASC, createdAt DESC`
 
@@ -142,22 +141,22 @@ Public gallery items. Sharing to gallery is an explicit user action that opts th
 
 NFT records with Hiero (Hedera) network metadata.
 
-| Field           | Type      | Required | Description               |
-| --------------- | --------- | -------- | ------------------------- |
-| `userId`        | string    | ✅       | Owner's Firebase Auth UID |
-| `name`          | string    | ✅       | NFT name (max 200 chars)  |
-| `description`   | string    |          | Description               |
-| `imageData`     | string    |          | Base64-encoded image      |
-| `imageUrl`      | string    |          | External image URL        |
-| `thumbnailData` | string    |          | Base64-encoded thumbnail  |
-| `metadata`      | string    |          | NFT metadata JSON         |
-| `price`         | number    |          | Price in HBAR (≥ 0)       |
-| `isListed`      | boolean   |          | Whether listed for sale   |
-| `tokenId`       | string    |          | Hiero network token ID    |
-| `serialNumber`  | integer   |          | Hiero NFT serial number   |
-| `transactionId` | string    |          | Hiero transaction ID      |
-| `createdAt`     | timestamp | ✅       | Creation timestamp        |
-| `updatedAt`     | timestamp | ✅       | Last update timestamp     |
+| Field           | Type      | Required | Description                                   |
+| --------------- | --------- | -------- | --------------------------------------------- |
+| `userId`        | string    | ✅       | Owner's Firebase Auth UID                     |
+| `name`          | string    | ✅       | NFT name (max 200 chars)                      |
+| `description`   | string    |          | Description                                   |
+| `imageData`     | string    |          | Base64-encoded image (max 500 KB)             |
+| `imageUrl`      | string    |          | External image URL (http/https only)          |
+| `thumbnailData` | string    |          | Base64 data:image/ URI thumbnail (max 500 KB) |
+| `metadata`      | string    |          | NFT metadata JSON                             |
+| `price`         | number    |          | Price in HBAR (≥ 0)                           |
+| `isListed`      | boolean   |          | Whether listed for sale                       |
+| `tokenId`       | string    |          | Hiero network token ID                        |
+| `serialNumber`  | integer   |          | Hiero NFT serial number                       |
+| `transactionId` | string    |          | Hiero transaction ID                          |
+| `createdAt`     | timestamp | ✅       | Creation timestamp                            |
+| `updatedAt`     | timestamp | ✅       | Last update timestamp                         |
 
 **Composite index**: `userId ASC, createdAt DESC`
 
@@ -168,14 +167,17 @@ NFT records with Hiero (Hedera) network metadata.
 Rules are defined in [`firestore.rules`](../firestore.rules) and deployed via `firebase deploy --only firestore:rules`.
 
 ```text
-Collection     Read                                    Write                              Create
-─────────────  ──────────────────────────────────────  ─────────────────────────────────  ──────────────────────────
-usernames      Any authenticated user                  ✗ (updates forbidden)              Owner only (uid match)
-users          Owner only                              Owner only                         Owner only
-projects       Owner OR isPublic == true               Owner only                         Owner only (userId match)
-gallery        Any authenticated user (public by       Owner only                         Owner only (userId match)
+Collection     Read                                    Create                             Update                                Delete
+─────────────  ──────────────────────────────────────  ─────────────────────────────────  ────────────────────────────────────  ──────────────
+usernames      Any authenticated user                  Owner only (uid match)              ✗ (forbidden)                         Owner only
+users          Owner only                              Owner only                         Owner only                            Owner only
+projects       Owner OR isPublic == true               Owner only (userId match)           Owner only; userId & contentHash      Owner only
+                                                                                          immutable; only title, isPublic,
+                                                                                          tags, storageURL, updatedAt,
+                                                                                          thumbnailData may change
+gallery        Any authenticated user (public by       Owner only (userId match)           Owner only                            Owner only
                design — sharing = opting in)
-nfts           Owner OR isListed == true               Owner only                         Owner only (userId match)
+nfts           Owner OR isListed == true               Owner only (userId match)           Owner only                            Owner only
 ```
 
 > **Note**: The Go backend uses the Firebase Admin SDK, which **bypasses**

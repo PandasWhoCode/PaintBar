@@ -89,35 +89,35 @@ func TestUserUpdate_ToUpdateMap(t *testing.T) {
 func TestProject_Validate_Valid(t *testing.T) {
 	p := &Project{
 		UserID: "user1",
-		Name:   "My Art",
+		Title:  "My Art",
 		Tags:   []string{"pixel", "art"},
 	}
 	assert.NoError(t, p.Validate())
 }
 
 func TestProject_Validate_MissingUserID(t *testing.T) {
-	p := &Project{Name: "test"}
+	p := &Project{Title: "test"}
 	assert.ErrorContains(t, p.Validate(), "userId is required")
 }
 
-func TestProject_Validate_MissingName(t *testing.T) {
-	p := &Project{UserID: "user1", Name: "   "}
-	assert.ErrorContains(t, p.Validate(), "name is required")
+func TestProject_Validate_MissingTitle(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "   "}
+	assert.ErrorContains(t, p.Validate(), "title is required")
 }
 
 func TestProject_Validate_TooManyTags(t *testing.T) {
-	p := &Project{UserID: "user1", Name: "test"}
+	p := &Project{UserID: "user1", Title: "test"}
 	p.Tags = make([]string, 21)
 	assert.ErrorContains(t, p.Validate(), "maximum 20 tags")
 }
 
 func TestProject_Sanitize(t *testing.T) {
 	p := &Project{
-		Name: "  My Art  ",
-		Tags: []string{"  Pixel  ", "  ART  "},
+		Title: "  My Art  ",
+		Tags:  []string{"  Pixel  ", "  ART  "},
 	}
 	p.Sanitize()
-	assert.Equal(t, "My Art", p.Name)
+	assert.Equal(t, "My Art", p.Title)
 	assert.Equal(t, []string{"pixel", "art"}, p.Tags)
 }
 
@@ -174,32 +174,17 @@ func TestGalleryItem_Sanitize_EmptyTags(t *testing.T) {
 // --- ProjectUpdate tests ---
 
 func TestProjectUpdate_ToUpdateMap_AllFields(t *testing.T) {
-	name := "New Name"
-	desc := "New Desc"
-	imgData := "base64data"
-	thumbData := "thumbdata"
-	width := 800
-	height := 600
+	title := "New Title"
 	isPublic := true
 	tags := []string{"pixel", "art"}
 
 	update := &ProjectUpdate{
-		Name:          &name,
-		Description:   &desc,
-		ImageData:     &imgData,
-		ThumbnailData: &thumbData,
-		Width:         &width,
-		Height:        &height,
-		IsPublic:      &isPublic,
-		Tags:          tags,
+		Title:    &title,
+		IsPublic: &isPublic,
+		Tags:     tags,
 	}
 	m := update.ToUpdateMap()
-	assert.Equal(t, "New Name", m["name"])
-	assert.Equal(t, "New Desc", m["description"])
-	assert.Equal(t, "base64data", m["imageData"])
-	assert.Equal(t, "thumbdata", m["thumbnailData"])
-	assert.Equal(t, 800, m["width"])
-	assert.Equal(t, 600, m["height"])
+	assert.Equal(t, "New Title", m["title"])
 	assert.Equal(t, true, m["isPublic"])
 	assert.Equal(t, []string{"pixel", "art"}, m["tags"])
 	assert.Contains(t, m, "updatedAt")
@@ -215,18 +200,28 @@ func TestProjectUpdate_ToUpdateMap_Empty(t *testing.T) {
 
 // --- Project validation edge cases ---
 
-func TestProject_Validate_LongName(t *testing.T) {
-	p := &Project{UserID: "user1", Name: string(make([]byte, 201))}
-	assert.ErrorContains(t, p.Validate(), "name must be 200 characters or less")
+func TestProject_Validate_LongTitle(t *testing.T) {
+	p := &Project{UserID: "user1", Title: string(make([]byte, 201))}
+	assert.ErrorContains(t, p.Validate(), "title must be 200 characters or less")
 }
 
-func TestProject_Validate_LongDescription(t *testing.T) {
-	p := &Project{UserID: "user1", Name: "Art", Description: string(make([]byte, 2001))}
-	assert.ErrorContains(t, p.Validate(), "description must be 2000 characters or less")
+func TestProject_Validate_ValidContentHash(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ContentHash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"}
+	assert.NoError(t, p.Validate())
+}
+
+func TestProject_Validate_InvalidContentHash(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ContentHash: "not-a-valid-hash"}
+	assert.ErrorContains(t, p.Validate(), "contentHash must be a 64-character lowercase hex string")
+}
+
+func TestProject_Validate_EmptyContentHash_OK(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ContentHash: ""}
+	assert.NoError(t, p.Validate())
 }
 
 func TestProject_Validate_LongTag(t *testing.T) {
-	p := &Project{UserID: "user1", Name: "Art", Tags: []string{string(make([]byte, 51))}}
+	p := &Project{UserID: "user1", Title: "Art", Tags: []string{string(make([]byte, 51))}}
 	assert.ErrorContains(t, p.Validate(), "each tag must be 50 characters or less")
 }
 
@@ -384,4 +379,140 @@ func TestNormalizeHandle(t *testing.T) {
 	assert.Equal(t, "alice", normalizeHandle("alice"))
 	assert.Equal(t, "", normalizeHandle(""))
 	assert.Equal(t, "", normalizeHandle("  "))
+}
+
+// --- ValidateThumbnailData tests ---
+
+func TestValidateThumbnailData_Valid(t *testing.T) {
+	assert.NoError(t, ValidateThumbnailData("data:image/png;base64,iVBOR="))
+	assert.NoError(t, ValidateThumbnailData("data:image/jpeg;base64,/9j/4="))
+}
+
+func TestValidateThumbnailData_BadPrefix(t *testing.T) {
+	assert.ErrorContains(t, ValidateThumbnailData("javascript:alert(1)"), "must be a data:image/ URI")
+	assert.ErrorContains(t, ValidateThumbnailData("https://evil.com/img.png"), "must be a data:image/ URI")
+	assert.ErrorContains(t, ValidateThumbnailData("data:text/html,<script>"), "must be a data:image/ URI")
+}
+
+func TestValidateThumbnailData_TooLarge(t *testing.T) {
+	huge := "data:image/png;base64," + string(make([]byte, MaxThumbnailDataLen+1))
+	assert.ErrorContains(t, ValidateThumbnailData(huge), "bytes or less")
+}
+
+func TestValidateThumbnailData_ExactLimit(t *testing.T) {
+	prefix := "data:image/png;base64,"
+	data := prefix + string(make([]byte, MaxThumbnailDataLen-len(prefix)))
+	assert.NoError(t, ValidateThumbnailData(data))
+}
+
+// --- Project ThumbnailData validation ---
+
+func TestProject_Validate_ValidThumbnail(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ThumbnailData: "data:image/png;base64,abc"}
+	assert.NoError(t, p.Validate())
+}
+
+func TestProject_Validate_BadThumbnail(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ThumbnailData: "javascript:alert(1)"}
+	assert.ErrorContains(t, p.Validate(), "must be a data:image/ URI")
+}
+
+func TestProject_Validate_EmptyThumbnail_OK(t *testing.T) {
+	p := &Project{UserID: "user1", Title: "Art", ThumbnailData: ""}
+	assert.NoError(t, p.Validate())
+}
+
+// --- ProjectUpdate.Validate() tests ---
+
+func TestProjectUpdate_Validate_Valid(t *testing.T) {
+	title := "New Title"
+	update := &ProjectUpdate{Title: &title, Tags: []string{"pixel", "art"}}
+	assert.NoError(t, update.Validate())
+}
+
+func TestProjectUpdate_Validate_EmptyTitle(t *testing.T) {
+	title := "   "
+	update := &ProjectUpdate{Title: &title}
+	assert.ErrorContains(t, update.Validate(), "title is required")
+}
+
+func TestProjectUpdate_Validate_LongTitle(t *testing.T) {
+	title := string(make([]byte, 201))
+	update := &ProjectUpdate{Title: &title}
+	assert.ErrorContains(t, update.Validate(), "title must be 200 characters or less")
+}
+
+func TestProjectUpdate_Validate_TooManyTags(t *testing.T) {
+	update := &ProjectUpdate{Tags: make([]string, 21)}
+	assert.ErrorContains(t, update.Validate(), "maximum 20 tags")
+}
+
+func TestProjectUpdate_Validate_LongTag(t *testing.T) {
+	update := &ProjectUpdate{Tags: []string{string(make([]byte, 51))}}
+	assert.ErrorContains(t, update.Validate(), "each tag must be 50 characters or less")
+}
+
+func TestProjectUpdate_Validate_NilFields_OK(t *testing.T) {
+	update := &ProjectUpdate{}
+	assert.NoError(t, update.Validate())
+}
+
+func TestProjectUpdate_Validate_OnlyIsPublic_OK(t *testing.T) {
+	isPublic := true
+	update := &ProjectUpdate{IsPublic: &isPublic}
+	assert.NoError(t, update.Validate())
+}
+
+// --- GalleryItem ThumbnailData/ImageData validation ---
+
+func TestGalleryItem_Validate_BadThumbnail(t *testing.T) {
+	g := &GalleryItem{UserID: "user1", Name: "Art", ThumbnailData: "javascript:alert(1)"}
+	assert.ErrorContains(t, g.Validate(), "must be a data:image/ URI")
+}
+
+func TestGalleryItem_Validate_ValidThumbnail(t *testing.T) {
+	g := &GalleryItem{UserID: "user1", Name: "Art", ThumbnailData: "data:image/png;base64,abc"}
+	assert.NoError(t, g.Validate())
+}
+
+func TestGalleryItem_Validate_LargeImageData(t *testing.T) {
+	g := &GalleryItem{UserID: "user1", Name: "Art", ImageData: string(make([]byte, MaxThumbnailDataLen+1))}
+	assert.ErrorContains(t, g.Validate(), "imageData must be")
+}
+
+func TestGalleryItem_Validate_ImageData_OK(t *testing.T) {
+	g := &GalleryItem{UserID: "user1", Name: "Art", ImageData: "data:image/png;base64,small"}
+	assert.NoError(t, g.Validate())
+}
+
+// --- NFT ThumbnailData/ImageData/ImageURL validation ---
+
+func TestNFT_Validate_BadThumbnail(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ThumbnailData: "javascript:alert(1)"}
+	assert.ErrorContains(t, n.Validate(), "must be a data:image/ URI")
+}
+
+func TestNFT_Validate_LargeImageData(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ImageData: string(make([]byte, MaxThumbnailDataLen+1))}
+	assert.ErrorContains(t, n.Validate(), "imageData must be")
+}
+
+func TestNFT_Validate_ValidImageURL(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ImageURL: "https://example.com/img.png"}
+	assert.NoError(t, n.Validate())
+}
+
+func TestNFT_Validate_BadImageURL_Scheme(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ImageURL: "javascript:alert(1)"}
+	assert.ErrorContains(t, n.Validate(), "invalid image URL")
+}
+
+func TestNFT_Validate_BadImageURL_FTP(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ImageURL: "ftp://evil.com/img.png"}
+	assert.ErrorContains(t, n.Validate(), "invalid image URL")
+}
+
+func TestNFT_Validate_EmptyImageURL_OK(t *testing.T) {
+	n := &NFT{UserID: "user1", Name: "NFT", ImageURL: ""}
+	assert.NoError(t, n.Validate())
 }

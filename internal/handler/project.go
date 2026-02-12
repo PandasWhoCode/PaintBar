@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -54,6 +55,28 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, project)
 }
 
+// GetProjectByTitle handles GET /api/projects/by-title?title=...
+func (h *ProjectHandler) GetProjectByTitle(w http.ResponseWriter, r *http.Request) {
+	user := requireUser(w, r)
+	if user == nil {
+		return
+	}
+
+	title := r.URL.Query().Get("title")
+	if title == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "title query parameter is required"})
+		return
+	}
+
+	project, err := h.projectService.GetProjectByTitle(r.Context(), user.UID, title)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, project)
+}
+
 // CreateProject handles POST /api/projects
 func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	user := requireUser(w, r)
@@ -66,13 +89,30 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.projectService.CreateProject(r.Context(), user.UID, &project)
+	result, err := h.projectService.CreateProject(r.Context(), user.UID, &project)
 	if err != nil {
 		respondError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, map[string]string{"id": id})
+	respondJSON(w, http.StatusCreated, result)
+}
+
+// ConfirmUpload handles POST /api/projects/{id}/confirm-upload
+func (h *ProjectHandler) ConfirmUpload(w http.ResponseWriter, r *http.Request) {
+	user := requireUser(w, r)
+	if user == nil {
+		return
+	}
+
+	projectID := chi.URLParam(r, "id")
+
+	if err := h.projectService.ConfirmUpload(r.Context(), user.UID, projectID); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "confirmed"})
 }
 
 // UpdateProject handles PUT /api/projects/{id}
@@ -112,6 +152,30 @@ func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// DownloadBlob handles GET /api/projects/{id}/blob — streams the project PNG
+// from Storage through the API so the browser never hits the storage emulator
+// directly (avoids CORS and auth issues).
+func (h *ProjectHandler) DownloadBlob(w http.ResponseWriter, r *http.Request) {
+	user := requireUser(w, r)
+	if user == nil {
+		return
+	}
+
+	projectID := chi.URLParam(r, "id")
+
+	reader, err := h.projectService.DownloadBlob(r.Context(), user.UID, projectID)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	defer reader.Close()
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	io.Copy(w, reader)
 }
 
 // CountProjects handles GET /api/projects/count

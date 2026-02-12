@@ -11,6 +11,8 @@ services:
       - FIREBASE_PROJECT_ID=paintbar-7f887
       - FIRESTORE_EMULATOR_HOST=firebase:8080
       - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+      - FIREBASE_STORAGE_EMULATOR_HOST=firebase:9199
+      - FIREBASE_STORAGE_BUCKET=paintbar-7f887.firebasestorage.app
       - HIERO_NETWORK=local
     depends_on:
       firebase:
@@ -26,10 +28,12 @@ services:
       - "4000:4000"   # Emulator UI
       - "9099:9099"   # Auth emulator
       - "8081:8080"   # Firestore emulator (mapped to 8081 on host to avoid conflict)
+      - "9199:9199"   # Storage emulator
     volumes:
       - ./testdata/firestore:/app/testdata
       - ./firestore.rules:/app/firestore.rules:ro
       - ./firestore.indexes.json:/app/firestore.indexes.json:ro
+      - ./storage.rules:/app/storage.rules:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4000 || exit 1"]
       interval: 5s

@@ -35,6 +35,16 @@ func (g *GalleryItem) Validate() error {
 	if len(g.Description) > 2000 {
 		return fmt.Errorf("description must be 2000 characters or less")
 	}
+	if g.ThumbnailData != "" {
+		if err := ValidateThumbnailData(g.ThumbnailData); err != nil {
+			return err
+		}
+	}
+	if g.ImageData != "" {
+		if len(g.ImageData) > MaxThumbnailDataLen {
+			return fmt.Errorf("imageData must be %d bytes or less", MaxThumbnailDataLen)
+		}
+	}
 	return nil
 }
 

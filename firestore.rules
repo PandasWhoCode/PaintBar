@@ -28,8 +28,15 @@ service cloud.firestore {
     // Projects collection
     match /projects/{projectId} {
       allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || resource.data.isPublic == true);
-      allow write: if isAuthenticated() && request.auth.uid == resource.data.userId;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Only allow updating safe fields — storageURL, contentHash, userId are immutable after creation
+      allow update: if isAuthenticated()
+                    && request.auth.uid == resource.data.userId
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.contentHash == resource.data.contentHash
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['title', 'isPublic', 'tags', 'storageURL', 'updatedAt', 'thumbnailData']);
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
 
     // Gallery collection — sharing to gallery is an explicit user action that

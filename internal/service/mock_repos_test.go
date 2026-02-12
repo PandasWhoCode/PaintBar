@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
+	"time"
 
 	"github.com/pandasWhoCode/paintbar/internal/model"
 )
@@ -105,6 +107,30 @@ func (r *mockProjectRepo) GetByID(_ context.Context, projectID string) (*model.P
 	return &copy, nil
 }
 
+func (r *mockProjectRepo) FindByContentHash(_ context.Context, userID, contentHash string) (*model.Project, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, p := range r.projects {
+		if p.UserID == userID && p.ContentHash == contentHash {
+			copy := *p
+			return &copy, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *mockProjectRepo) FindByTitle(_ context.Context, userID, title string) (*model.Project, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, p := range r.projects {
+		if p.UserID == userID && p.Title == title {
+			copy := *p
+			return &copy, nil
+		}
+	}
+	return nil, nil
+}
+
 func (r *mockProjectRepo) List(_ context.Context, userID string, limit int, _ string) ([]*model.Project, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -148,6 +174,37 @@ func (r *mockProjectRepo) Update(_ context.Context, projectID string, _ *model.P
 	defer r.mu.Unlock()
 	if _, ok := r.projects[projectID]; !ok {
 		return fmt.Errorf("project %s not found", projectID)
+	}
+	return nil
+}
+
+func (r *mockProjectRepo) UpdateRaw(_ context.Context, projectID string, fields map[string]interface{}) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	p, ok := r.projects[projectID]
+	if !ok {
+		return fmt.Errorf("project %s not found", projectID)
+	}
+	if v, ok := fields["storageURL"]; ok {
+		p.StorageURL = v.(string)
+	}
+	if v, ok := fields["contentHash"]; ok {
+		p.ContentHash = v.(string)
+	}
+	if v, ok := fields["thumbnailData"]; ok {
+		p.ThumbnailData = v.(string)
+	}
+	if v, ok := fields["width"]; ok {
+		p.Width = v.(int)
+	}
+	if v, ok := fields["height"]; ok {
+		p.Height = v.(int)
+	}
+	if v, ok := fields["isPublic"]; ok {
+		p.IsPublic = v.(bool)
+	}
+	if v, ok := fields["tags"]; ok {
+		p.Tags = v.([]string)
 	}
 	return nil
 }
@@ -315,4 +372,48 @@ func (r *mockNFTRepo) Delete(_ context.Context, nftID string) error {
 	}
 	delete(r.nfts, nftID)
 	return nil
+}
+
+// --- Failing mock variants for error-path coverage ---
+
+// failingFindByContentHashRepo fails on FindByContentHash.
+type failingFindByContentHashRepo struct{ mockProjectRepo }
+
+func (r *failingFindByContentHashRepo) FindByContentHash(_ context.Context, _, _ string) (*model.Project, error) {
+	return nil, fmt.Errorf("firestore unavailable")
+}
+
+// failingFindByTitleRepo fails on FindByTitle.
+type failingFindByTitleRepo struct{ mockProjectRepo }
+
+func (r *failingFindByTitleRepo) FindByTitle(_ context.Context, _, _ string) (*model.Project, error) {
+	return nil, fmt.Errorf("firestore unavailable")
+}
+
+// failingUploadStorageClient fails on GenerateUploadURL.
+type failingUploadStorageClient struct{ mockStorageClient }
+
+func (c *failingUploadStorageClient) GenerateUploadURL(_ string, _ time.Duration) (string, error) {
+	return "", fmt.Errorf("storage unavailable")
+}
+
+// failingReadObjectStorageClient fails on ReadObject.
+type failingReadObjectStorageClient struct{ mockStorageClient }
+
+func (c *failingReadObjectStorageClient) ReadObject(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, fmt.Errorf("storage read failed")
+}
+
+// failingObjectExistsStorageClient fails on ObjectExists.
+type failingObjectExistsStorageClient struct{ mockStorageClient }
+
+func (c *failingObjectExistsStorageClient) ObjectExists(_ context.Context, _ string) (bool, error) {
+	return false, fmt.Errorf("storage check failed")
+}
+
+// failingDownloadURLStorageClient fails on GenerateDownloadURL.
+type failingDownloadURLStorageClient struct{ mockStorageClient }
+
+func (c *failingDownloadURLStorageClient) GenerateDownloadURL(_ string, _ time.Duration) (string, error) {
+	return "", fmt.Errorf("download url failed")
 }

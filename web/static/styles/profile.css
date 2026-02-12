@@ -374,13 +374,14 @@ body {
 }
 
 .project-card {
-    aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--border-color);
     background: var(--card-background);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .project-card:hover {
@@ -391,8 +392,62 @@ body {
 
 .project-card img {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1;
     object-fit: cover;
+}
+
+.project-info {
+    padding: 0.5rem 0.6rem 0.25rem;
+}
+
+.project-info h3 {
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+}
+
+.project-date {
+    font-size: 0.7rem;
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+.project-actions {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem 0.5rem;
+}
+
+.project-action-btn {
+    flex: 1;
+    padding: 0.3rem 0;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.project-action-btn.open-btn {
+    background: var(--primary-color);
+    color: #000;
+}
+
+.project-action-btn.open-btn:hover {
+    background: #00e5e5;
+}
+
+.project-action-btn.delete-btn {
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+}
+
+.project-action-btn.delete-btn:hover {
+    background: rgba(255, 107, 107, 0.15);
 }
 
 .copyright {

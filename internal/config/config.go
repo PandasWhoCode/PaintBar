@@ -30,6 +30,12 @@ type Config struct {
 	// Firebase Auth emulator (local only, set automatically)
 	FirebaseAuthEmulatorHost string
 
+	// Firebase Storage bucket name
+	FirebaseStorageBucket string
+
+	// Firebase Storage emulator host (local only, set automatically)
+	FirebaseStorageEmulatorHost string
+
 	// Hiero network configuration
 	HieroNetwork     string // local, testnet, mainnet
 	HieroOperatorID  string
@@ -39,15 +45,17 @@ type Config struct {
 // Load reads configuration from environment variables and validates it.
 func Load() (*Config, error) {
 	cfg := &Config{
-		Env:                        getEnv("ENV", EnvLocal),
-		Port:                       getEnv("PORT", "8080"),
-		FirebaseProjectID:          getEnv("FIREBASE_PROJECT_ID", "paintbar-7f887"),
-		FirebaseServiceAccountPath: getEnv("FIREBASE_SERVICE_ACCOUNT_PATH", ""),
-		FirestoreEmulatorHost:      getEnv("FIRESTORE_EMULATOR_HOST", ""),
-		FirebaseAuthEmulatorHost:   getEnv("FIREBASE_AUTH_EMULATOR_HOST", ""),
-		HieroNetwork:               getEnv("HIERO_NETWORK", "local"),
-		HieroOperatorID:            getEnv("HIERO_OPERATOR_ID", ""),
-		HieroOperatorKey:           getEnv("HIERO_OPERATOR_KEY", ""),
+		Env:                         getEnv("ENV", EnvLocal),
+		Port:                        getEnv("PORT", "8080"),
+		FirebaseProjectID:           getEnv("FIREBASE_PROJECT_ID", "paintbar-7f887"),
+		FirebaseServiceAccountPath:  getEnv("FIREBASE_SERVICE_ACCOUNT_PATH", ""),
+		FirestoreEmulatorHost:       getEnv("FIRESTORE_EMULATOR_HOST", ""),
+		FirebaseAuthEmulatorHost:    getEnv("FIREBASE_AUTH_EMULATOR_HOST", ""),
+		FirebaseStorageBucket:       getEnv("FIREBASE_STORAGE_BUCKET", "paintbar-7f887.firebasestorage.app"),
+		FirebaseStorageEmulatorHost: getEnv("FIREBASE_STORAGE_EMULATOR_HOST", ""),
+		HieroNetwork:                getEnv("HIERO_NETWORK", "local"),
+		HieroOperatorID:             getEnv("HIERO_OPERATOR_ID", ""),
+		HieroOperatorKey:            getEnv("HIERO_OPERATOR_KEY", ""),
 	}
 
 	// Auto-configure emulator hosts for local environment
@@ -57,6 +65,9 @@ func Load() (*Config, error) {
 		}
 		if cfg.FirebaseAuthEmulatorHost == "" {
 			cfg.FirebaseAuthEmulatorHost = "localhost:9099"
+		}
+		if cfg.FirebaseStorageEmulatorHost == "" {
+			cfg.FirebaseStorageEmulatorHost = "localhost:9199"
 		}
 		if cfg.HieroNetwork == "" {
 			cfg.HieroNetwork = "local"
