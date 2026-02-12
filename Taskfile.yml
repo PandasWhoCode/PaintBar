@@ -185,7 +185,7 @@ tasks:
     desc: Deploy to production (Firebase Hosting + Firestore rules)
     cmds:
       - task ts-build:prod
-      - firebase deploy --only firestore:rules,firestore:indexes,hosting
+      - firebase deploy --only firestore:rules,hosting
 
   clean:
     desc: Remove build artifacts
