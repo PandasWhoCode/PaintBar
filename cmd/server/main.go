@@ -69,7 +69,7 @@ func main() {
 	nftRepo := repository.NewNFTRepository(fbClients.Firestore)
 
 	// Initialize Storage service
-	storageSvc := repository.NewStorageService(fbClients.Storage, cfg.FirebaseStorageBucket, cfg.FirebaseStorageEmulatorHost)
+	storageSvc := repository.NewStorageService(cfg.FirebaseStorageBucket, cfg.FirebaseStorageEmulatorHost)
 
 	// Initialize services
 	authService := service.NewAuthService(fbClients.Auth)

@@ -92,19 +92,19 @@ func TestProjectObjectPath_TraversalInContentHash(t *testing.T) {
 }
 
 func TestNewStorageService(t *testing.T) {
-	svc := NewStorageService(nil, "test-bucket", "")
+	svc := NewStorageService("test-bucket", "")
 	assert.NotNil(t, svc)
 }
 
 func TestStorageService_EmulatorUploadURL(t *testing.T) {
-	svc := NewStorageService(nil, "my-bucket.appspot.com", "localhost:9199")
+	svc := NewStorageService("my-bucket.appspot.com", "localhost:9199")
 	url, err := svc.GenerateUploadURL("projects/uid1/abc123.png", 15*time.Minute)
 	assert.NoError(t, err)
 	assert.Equal(t, "http://localhost:9199/upload/storage/v1/b/my-bucket.appspot.com/o?uploadType=media&name=projects%2Fuid1%2Fabc123.png", url)
 }
 
 func TestStorageService_EmulatorDownloadURL(t *testing.T) {
-	svc := NewStorageService(nil, "my-bucket.appspot.com", "localhost:9199")
+	svc := NewStorageService("my-bucket.appspot.com", "localhost:9199")
 	url, err := svc.GenerateDownloadURL("projects/uid1/abc123.png", 15*time.Minute)
 	assert.NoError(t, err)
 	assert.Equal(t, "http://localhost:9199/v0/b/my-bucket.appspot.com/o/projects%2Fuid1%2Fabc123.png?alt=media", url)

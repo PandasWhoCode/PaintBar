@@ -7,17 +7,16 @@ import (
 	"os"
 
 	"cloud.google.com/go/firestore"
-	gcs "cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"google.golang.org/api/option"
 )
 
-// FirebaseClients holds the initialized Firebase Auth, Firestore, and Storage clients.
+// FirebaseClients holds the initialized Firebase Auth and Firestore clients.
+// Storage is handled separately by StorageService using the Firebase REST API.
 type FirebaseClients struct {
 	Auth      *auth.Client
 	Firestore *firestore.Client
-	Storage   *gcs.BucketHandle
 	app       *firebase.App
 }
 
@@ -66,17 +65,6 @@ func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, stor
 		return nil, fmt.Errorf("initialize firestore client: %w", err)
 	}
 
-	// Initialize Cloud Storage via Firebase Admin SDK
-	storageClient, err := app.Storage(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("initialize firebase storage client: %w", err)
-	}
-
-	bucket, err := storageClient.DefaultBucket()
-	if err != nil {
-		return nil, fmt.Errorf("get default storage bucket: %w", err)
-	}
-
 	slog.Info("firebase clients initialized",
 		"project_id", projectID,
 		"storage_bucket", storageBucket,
@@ -88,7 +76,6 @@ func NewFirebaseClients(ctx context.Context, projectID, serviceAccountPath, stor
 	return &FirebaseClients{
 		Auth:      authClient,
 		Firestore: fsClient,
-		Storage:   bucket,
 		app:       app,
 	}, nil
 }
