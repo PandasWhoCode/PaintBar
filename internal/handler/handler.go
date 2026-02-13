@@ -50,7 +50,9 @@ func errorStatus(msg string) int {
 	switch {
 	case strings.Contains(lower, "unauthorized"):
 		return http.StatusForbidden
-	case strings.Contains(lower, "not found"):
+	case strings.Contains(lower, "not found"),
+		strings.Contains(lower, "doesn't exist"),
+		strings.Contains(lower, "does not exist"):
 		return http.StatusNotFound
 	case strings.Contains(lower, "already taken"),
 		strings.Contains(lower, "already set"),
