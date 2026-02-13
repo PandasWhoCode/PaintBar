@@ -8,7 +8,6 @@ import type { PaintBar } from "./app";
 /** Response from POST /api/projects */
 interface CreateProjectResult {
   projectId: string;
-  uploadURL?: string;
   duplicate: boolean;
 }
 
@@ -19,9 +18,8 @@ const THUMBNAIL_MAX_SIZE = 256;
  * ProjectManager handles the full save-project flow:
  * 1. Hash the canvas PNG blob (SHA-256)
  * 2. Generate a thumbnail
- * 3. POST /api/projects (dedup check + get signed upload URL)
- * 4. PUT the PNG blob to the signed URL
- * 5. POST /api/projects/{id}/confirm-upload
+ * 3. POST /api/projects (dedup check + create/upsert record)
+ * 4. POST /api/projects/{id}/upload-blob (server proxies to Storage)
  */
 export class ProjectManager {
   private paintBar: PaintBar;
@@ -267,37 +265,26 @@ export class ProjectManager {
         return;
       }
 
-      // Step 3: Upload blob to signed URL (POST for emulator, PUT for production)
-      if (result.uploadURL) {
-        this.setStatus("Uploading canvas...", "info");
-        const isEmulator = result.uploadURL.includes("uploadType=media");
-        const uploadRes = await fetch(result.uploadURL, {
-          method: isEmulator ? "POST" : "PUT",
-          headers: { "Content-Type": "image/png" },
-          body: blob,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error(`Upload failed (${uploadRes.status})`);
-        }
-
-        // Step 4: Confirm upload
-        this.setStatus("Confirming upload...", "info");
-        const confirmRes = await fetch(
-          `/api/projects/${result.projectId}/confirm-upload`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+      // Step 3: Upload blob via server proxy
+      this.setStatus("Uploading canvas...", "info");
+      const uploadRes = await fetch(
+        `/api/projects/${result.projectId}/upload-blob`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "image/png",
+            Authorization: `Bearer ${token}`,
           },
-        );
+          body: blob,
+        },
+      );
 
-        if (!confirmRes.ok) {
-          const err = await confirmRes.json().catch(() => ({}));
-          throw new Error(
-            (err as { error?: string }).error ||
-              `Confirm failed (${confirmRes.status})`,
-          );
-        }
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(
+          (err as { error?: string }).error ||
+            `Upload failed (${uploadRes.status})`,
+        );
       }
 
       this.setStatus("Project saved!", "success");

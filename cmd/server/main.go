@@ -175,6 +175,7 @@ func main() {
 		r.Put("/projects/{id}", projectHandler.UpdateProject)
 		r.Delete("/projects/{id}", projectHandler.DeleteProject)
 		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects/{id}/confirm-upload", projectHandler.ConfirmUpload)
+		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects/{id}/upload-blob", projectHandler.UploadBlob)
 		r.Get("/projects/{id}/blob", projectHandler.DownloadBlob)
 
 		// Gallery

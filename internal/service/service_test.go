@@ -441,6 +441,11 @@ func (m *mockStorageClient) ReadObject(_ context.Context, objectPath string) (io
 	return nil, fmt.Errorf("object not found: %s", objectPath)
 }
 
+func (m *mockStorageClient) WriteObject(_ context.Context, objectPath string, _ io.Reader, _ string) error {
+	m.objects[objectPath] = true
+	return nil
+}
+
 func (m *mockStorageClient) DeleteObject(_ context.Context, objectPath string) error {
 	delete(m.objects, objectPath)
 	return nil
@@ -460,9 +465,7 @@ func TestProjectService_CreateProject_WithStorage(t *testing.T) {
 	result, err := svc.CreateProject(context.Background(), "user1", project)
 	require.NoError(t, err)
 	assert.NotEmpty(t, result.ProjectID)
-	assert.NotEmpty(t, result.UploadURL)
 	assert.False(t, result.Duplicate)
-	assert.Contains(t, result.UploadURL, "upload/")
 }
 
 func TestProjectService_CreateProject_Dedup(t *testing.T) {
@@ -481,7 +484,6 @@ func TestProjectService_CreateProject_Dedup(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, second.Duplicate)
 	assert.Equal(t, first.ProjectID, second.ProjectID)
-	assert.Empty(t, second.UploadURL)
 }
 
 func TestProjectService_ConfirmUpload_Success(t *testing.T) {
@@ -676,7 +678,6 @@ func TestProjectService_CreateProject_UpsertByTitle(t *testing.T) {
 		Title: "My Art", ContentHash: hash1, Width: 800, Height: 600,
 	})
 	require.NoError(t, err)
-	assert.NotEmpty(t, result1.UploadURL)
 	assert.False(t, result1.Duplicate)
 
 	// Upsert with same title, different content
@@ -685,7 +686,6 @@ func TestProjectService_CreateProject_UpsertByTitle(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, result1.ProjectID, result2.ProjectID) // same project ID
-	assert.NotEmpty(t, result2.UploadURL)
 	assert.False(t, result2.Duplicate)
 
 	// Verify the project was updated
@@ -744,15 +744,6 @@ func TestProjectService_CreateProject_TitleLookupFails(t *testing.T) {
 
 	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
 	assert.ErrorContains(t, err, "title lookup")
-}
-
-func TestProjectService_CreateProject_UploadURLFails(t *testing.T) {
-	storage := &failingUploadStorageClient{mockStorageClient: *newMockStorageClient()}
-	svc := NewProjectService(newMockProjectRepo(), storage)
-
-	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
-	_, err := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
-	assert.ErrorContains(t, err, "generate upload url")
 }
 
 func TestProjectService_GetProjectByTitle_RepoError(t *testing.T) {

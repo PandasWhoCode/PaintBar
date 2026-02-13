@@ -15,6 +15,9 @@ firebase-service-account.json
 *.swo
 .DS_Store
 bin/
+/server
+coverage.out
+svc_cov.out
 *.exe
 *.dll
 *.so

@@ -390,11 +390,11 @@ func (r *failingFindByTitleRepo) FindByTitle(_ context.Context, _, _ string) (*m
 	return nil, fmt.Errorf("firestore unavailable")
 }
 
-// failingUploadStorageClient fails on GenerateUploadURL.
-type failingUploadStorageClient struct{ mockStorageClient }
+// failingWriteObjectStorageClient fails on WriteObject.
+type failingWriteObjectStorageClient struct{ mockStorageClient }
 
-func (c *failingUploadStorageClient) GenerateUploadURL(_ string, _ time.Duration) (string, error) {
-	return "", fmt.Errorf("storage unavailable")
+func (c *failingWriteObjectStorageClient) WriteObject(_ context.Context, _ string, _ io.Reader, _ string) error {
+	return fmt.Errorf("storage write failed")
 }
 
 // failingReadObjectStorageClient fails on ReadObject.

@@ -81,6 +81,21 @@ func (s *StorageService) emulatorObjectURL(objectPath string) string {
 	return fmt.Sprintf("http://%s/v0/b/%s/o/%s?alt=media", s.emulatorHost, s.bucketName, encoded)
 }
 
+// WriteObject writes data from the given reader to the specified object path
+// in Storage. The content type is set on the object metadata.
+func (s *StorageService) WriteObject(ctx context.Context, objectPath string, data io.Reader, contentType string) error {
+	writer := s.bucket.Object(objectPath).NewWriter(ctx)
+	writer.ContentType = contentType
+	if _, err := io.Copy(writer, data); err != nil {
+		writer.Close()
+		return fmt.Errorf("write object data: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("finalize object write: %w", err)
+	}
+	return nil
+}
+
 // ReadObject opens a streaming reader for an object in Storage.
 // The caller must close the returned ReadCloser when done.
 func (s *StorageService) ReadObject(ctx context.Context, objectPath string) (io.ReadCloser, error) {
