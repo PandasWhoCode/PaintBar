@@ -33,16 +33,8 @@ func NewStorageService(bucketName, emulatorHost string) *StorageService {
 	}
 }
 
-// gcsBaseURL returns the scheme+host for GCS JSON API calls (upload).
-func (s *StorageService) gcsBaseURL() string {
-	if s.emulatorHost != "" {
-		return "http://" + s.emulatorHost
-	}
-	return "https://storage.googleapis.com"
-}
-
-// firebaseBaseURL returns the scheme+host for Firebase Storage REST API calls (download, metadata, delete).
-func (s *StorageService) firebaseBaseURL() string {
+// baseURL returns the scheme+host for Firebase Storage REST API calls.
+func (s *StorageService) baseURL() string {
 	if s.emulatorHost != "" {
 		return "http://" + s.emulatorHost
 	}
@@ -54,7 +46,7 @@ func (s *StorageService) addAuth(ctx context.Context, req *http.Request) error {
 	if s.emulatorHost != "" {
 		return nil
 	}
-	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/devstorage.read_write")
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/firebase")
 	if err != nil {
 		return fmt.Errorf("find default credentials: %w", err)
 	}
@@ -69,22 +61,23 @@ func (s *StorageService) addAuth(ctx context.Context, req *http.Request) error {
 // GenerateUploadURL returns a URL for direct uploads.
 func (s *StorageService) GenerateUploadURL(objectPath string, _ time.Duration) (string, error) {
 	encoded := url.PathEscape(objectPath)
-	return fmt.Sprintf("%s/upload/storage/v1/b/%s/o?uploadType=media&name=%s",
-		s.gcsBaseURL(), s.bucketName, encoded), nil
+	return fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded), nil
 }
 
 // GenerateDownloadURL returns a download URL for the object.
 func (s *StorageService) GenerateDownloadURL(objectPath string, _ time.Duration) (string, error) {
 	encoded := url.PathEscape(objectPath)
 	return fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
-		s.firebaseBaseURL(), s.bucketName, encoded), nil
+		s.baseURL(), s.bucketName, encoded), nil
 }
 
 // WriteObject uploads data to the specified object path via the Firebase Storage REST API.
+// Uses POST to /v0/b/{bucket}/o/{path} with the file body.
 func (s *StorageService) WriteObject(ctx context.Context, objectPath string, data io.Reader, contentType string) error {
 	encoded := url.PathEscape(objectPath)
-	uploadURL := fmt.Sprintf("%s/upload/storage/v1/b/%s/o?uploadType=media&name=%s",
-		s.gcsBaseURL(), s.bucketName, encoded)
+	uploadURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, data)
 	if err != nil {
@@ -114,7 +107,7 @@ func (s *StorageService) WriteObject(ctx context.Context, objectPath string, dat
 func (s *StorageService) ReadObject(ctx context.Context, objectPath string) (io.ReadCloser, error) {
 	encoded := url.PathEscape(objectPath)
 	downloadURL := fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
-		s.firebaseBaseURL(), s.bucketName, encoded)
+		s.baseURL(), s.bucketName, encoded)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
@@ -146,7 +139,7 @@ func (s *StorageService) ReadObject(ctx context.Context, objectPath string) (io.
 func (s *StorageService) ObjectExists(ctx context.Context, objectPath string) (bool, error) {
 	encoded := url.PathEscape(objectPath)
 	metaURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
-		s.firebaseBaseURL(), s.bucketName, encoded)
+		s.baseURL(), s.bucketName, encoded)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaURL, nil)
 	if err != nil {
@@ -178,7 +171,7 @@ func (s *StorageService) ObjectExists(ctx context.Context, objectPath string) (b
 func (s *StorageService) DeleteObject(ctx context.Context, objectPath string) error {
 	encoded := url.PathEscape(objectPath)
 	deleteURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
-		s.firebaseBaseURL(), s.bucketName, encoded)
+		s.baseURL(), s.bucketName, encoded)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, nil)
 	if err != nil {
