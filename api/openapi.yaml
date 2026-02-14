@@ -725,9 +725,6 @@ components:
         projectId:
           type: string
           description: The Firestore document ID of the project
-        uploadURL:
-          type: string
-          description: Upload URL for the PNG blob (omitted for duplicates). Client should POST the blob to /api/projects/{projectId}/upload-blob instead.
         duplicate:
           type: boolean
           description: True if a project with the same contentHash already exists for this user
