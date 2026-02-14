@@ -151,15 +151,20 @@ func SensitiveEndpoint(rl *RateLimiter) func(http.Handler) http.Handler {
 	}
 }
 
-// extractIP gets the client IP, preferring X-Real-IP (set by chi's RealIP middleware).
+// extractIP gets the client IP from RemoteAddr (preferred, set correctly by
+// Cloud Run and most reverse proxies). Falls back to X-Real-IP if RemoteAddr
+// is a loopback address (local dev behind a proxy).
 func extractIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
-	// Fallback: strip port from RemoteAddr
 	addr := r.RemoteAddr
 	if idx := strings.LastIndex(addr, ":"); idx != -1 {
-		return addr[:idx]
+		addr = addr[:idx]
+	}
+	// In production (Cloud Run), RemoteAddr is the real client IP.
+	// Only fall back to X-Real-IP when behind a local proxy (loopback).
+	if addr == "127.0.0.1" || addr == "::1" || addr == "" {
+		if ip := r.Header.Get("X-Real-IP"); ip != "" {
+			return ip
+		}
 	}
 	return addr
 }

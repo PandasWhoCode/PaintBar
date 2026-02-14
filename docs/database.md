@@ -128,12 +128,15 @@ Public gallery items. Sharing to gallery is an explicit user action that opts th
 | `projectId`     | string          |          | Source project ID                             |
 | `name`          | string          | ✅       | Item name (max 200 chars)                     |
 | `description`   | string          |          | Description (max 2000 chars)                  |
-| `imageData`     | string          |          | Base64-encoded image (max 500 KB)             |
-| `thumbnailData` | string          |          | Base64 data:image/ URI thumbnail (max 500 KB) |
+| `imageData`     | string          |          | Base64 `data:image/` URI (max 500 KB)         |
+| `thumbnailData` | string          |          | Base64 `data:image/` URI thumb (max 500 KB)   |
 | `width`         | integer         |          | Image width                                   |
 | `height`        | integer         |          | Image height                                  |
 | `tags`          | array\<string\> |          | Tags                                          |
 | `createdAt`     | timestamp       | ✅       | Creation timestamp                            |
+
+> **Validation**: `imageData` and `thumbnailData` must start with `data:image/`
+> to prevent arbitrary content injection.
 
 **Composite index**: `userId ASC, createdAt DESC`
 
@@ -146,9 +149,9 @@ NFT records with Hiero (Hedera) network metadata.
 | `userId`        | string    | ✅       | Owner's Firebase Auth UID                     |
 | `name`          | string    | ✅       | NFT name (max 200 chars)                      |
 | `description`   | string    |          | Description                                   |
-| `imageData`     | string    |          | Base64-encoded image (max 500 KB)             |
+| `imageData`     | string    |          | Base64 `data:image/` URI (max 500 KB)         |
 | `imageUrl`      | string    |          | External image URL (http/https only)          |
-| `thumbnailData` | string    |          | Base64 data:image/ URI thumbnail (max 500 KB) |
+| `thumbnailData` | string    |          | Base64 `data:image/` URI thumb (max 500 KB)   |
 | `metadata`      | string    |          | NFT metadata JSON                             |
 | `price`         | number    |          | Price in HBAR (≥ 0)                           |
 | `isListed`      | boolean   |          | Whether listed for sale                       |
@@ -159,6 +162,10 @@ NFT records with Hiero (Hedera) network metadata.
 | `updatedAt`     | timestamp | ✅       | Last update timestamp                         |
 
 **Composite index**: `userId ASC, createdAt DESC`
+
+> **Validation**: `imageData` and `thumbnailData` must start with `data:image/`.
+> Blockchain fields (`tokenId`, `serialNumber`, `transactionId`) are server-managed
+> and zeroed on creation to prevent clients from submitting fake metadata.
 
 ---
 
@@ -173,8 +180,9 @@ usernames      Any authenticated user                  Owner only (uid match)   
 users          Owner only                              Owner only                         Owner only                            Owner only
 projects       Owner OR isPublic == true               Owner only (userId match)           Owner only; userId & contentHash      Owner only
                                                                                           immutable; only title, isPublic,
-                                                                                          tags, storageURL, updatedAt,
-                                                                                          thumbnailData may change
+                                                                                          tags, updatedAt, thumbnailData
+                                                                                          may change (storageURL is
+                                                                                          server-managed, not client-writable)
 gallery        Any authenticated user (public by       Owner only (userId match)           Owner only                            Owner only
                design — sharing = opting in)
 nfts           Owner OR isListed == true               Owner only (userId match)           Owner only                            Owner only

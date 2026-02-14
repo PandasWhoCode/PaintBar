@@ -43,6 +43,11 @@ and NFT minting via the Hiero network.
                            │  • gallery       │
                            │  • nfts          │
                            └──────────────────┘
+                           ┌──────────────────┐
+                           │ Firebase Storage  │
+                           │  (REST API)       │
+                           │  • project PNGs   │
+                           └──────────────────┘
 ```
 
 ## Go Backend Layers
@@ -95,14 +100,14 @@ The backend follows a clean **Handler → Service → Repository** architecture:
 
 ### Layer Responsibilities
 
-| Layer          | Package               | Responsibility                                                  |
-| -------------- | --------------------- | --------------------------------------------------------------- |
-| **Config**     | `internal/config`     | Load + validate environment variables                           |
-| **Middleware** | `internal/middleware` | Auth, rate limiting, security headers, CORS, logging, recovery  |
-| **Handler**    | `internal/handler`    | HTTP request/response, JSON encoding, pagination, SSR rendering |
-| **Service**    | `internal/service`    | Business logic, input validation, authorization checks          |
-| **Repository** | `internal/repository` | Firestore CRUD, Firebase client initialization                  |
-| **Model**      | `internal/model`      | Domain structs, field validation, sanitization, update maps     |
+| Layer          | Package               | Responsibility                                                    |
+| -------------- | --------------------- | ----------------------------------------------------------------- |
+| **Config**     | `internal/config`     | Load + validate environment variables                             |
+| **Middleware** | `internal/middleware` | Auth, rate limiting, security headers, CORS, logging, recovery    |
+| **Handler**    | `internal/handler`    | HTTP request/response, JSON encoding, pagination, SSR rendering   |
+| **Service**    | `internal/service`    | Business logic, input validation, authorization checks            |
+| **Repository** | `internal/repository` | Firestore CRUD, Firebase Storage REST API, client initialization  |
+| **Model**      | `internal/model`      | Domain structs, field validation, sanitization, update maps       |
 
 ## Middleware Stack
 

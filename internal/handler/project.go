@@ -194,6 +194,7 @@ func (h *ProjectHandler) DownloadBlob(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Disposition", "inline; filename=\"canvas.png\"")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, reader)

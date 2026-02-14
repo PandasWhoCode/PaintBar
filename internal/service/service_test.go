@@ -1045,6 +1045,141 @@ func TestProjectService_CreateProject_BadThumbnail(t *testing.T) {
 	assert.ErrorContains(t, err, "validation")
 }
 
+// --- UploadBlob tests ---
+
+// validPNG returns a minimal valid PNG file (8-byte header + minimal IHDR).
+func validPNG() []byte {
+	// PNG magic + a few extra bytes to form a valid stream
+	return append(
+		[]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
+		[]byte("fake-png-body-data")...,
+	)
+}
+
+func TestProjectService_UploadBlob_Success(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader(validPNG()))
+	require.NoError(t, err)
+
+	// Verify storageURL was set
+	got, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
+	assert.Contains(t, got.StorageURL, "download/")
+}
+
+func TestProjectService_UploadBlob_InvalidPNG(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	// Send an HTML file instead of PNG
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader([]byte("<html>evil</html>")))
+	assert.ErrorContains(t, err, "not a valid PNG")
+}
+
+func TestProjectService_UploadBlob_ShortBody(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	// Body too short to contain PNG header
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader([]byte{0x89, 0x50}))
+	assert.ErrorContains(t, err, "unable to read file header")
+}
+
+func TestProjectService_UploadBlob_EmptyID(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), newMockStorageClient())
+	err := svc.UploadBlob(context.Background(), "user1", "", bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "project ID is required")
+}
+
+func TestProjectService_UploadBlob_NoStorage(t *testing.T) {
+	svc := NewProjectService(newMockProjectRepo(), nil)
+	err := svc.UploadBlob(context.Background(), "user1", "proj_1", bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "storage is not configured")
+}
+
+func TestProjectService_UploadBlob_Unauthorized(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{
+		Title:       "Art",
+		ContentHash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+	})
+
+	err := svc.UploadBlob(context.Background(), "attacker", result.ProjectID, bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "unauthorized")
+}
+
+func TestProjectService_UploadBlob_NoContentHash(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := newMockStorageClient()
+	svc := NewProjectService(repo, storage)
+
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art"})
+
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "no content hash")
+}
+
+func TestProjectService_UploadBlob_WriteFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := &failingWriteObjectStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "write blob")
+}
+
+func TestProjectService_UploadBlob_DownloadURLFails(t *testing.T) {
+	repo := newMockProjectRepo()
+	storage := &failingDownloadURLStorageClient{mockStorageClient: *newMockStorageClient()}
+	svc := NewProjectService(repo, storage)
+
+	hash := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	result, _ := svc.CreateProject(context.Background(), "user1", &model.Project{Title: "Art", ContentHash: hash})
+
+	err := svc.UploadBlob(context.Background(), "user1", result.ProjectID, bytes.NewReader(validPNG()))
+	assert.ErrorContains(t, err, "download url failed")
+}
+
+// --- NFT blockchain field zeroing test ---
+
+func TestNFTService_CreateNFT_ZerosBlockchainFields(t *testing.T) {
+	svc := NewNFTService(newMockNFTRepo())
+
+	nft := &model.NFT{
+		Name:          "FakeNFT",
+		TokenID:       "0.0.999",
+		SerialNumber:  42,
+		TransactionID: "0.0.999@1234567890.000",
+	}
+	id, err := svc.CreateNFT(context.Background(), "user1", nft)
+	require.NoError(t, err)
+
+	got, err := svc.GetNFT(context.Background(), "user1", id)
+	require.NoError(t, err)
+	assert.Empty(t, got.TokenID, "TokenID should be zeroed")
+	assert.Zero(t, got.SerialNumber, "SerialNumber should be zeroed")
+	assert.Empty(t, got.TransactionID, "TransactionID should be zeroed")
+}
+
 func TestProjectService_CreateProject_StorageURLStripped(t *testing.T) {
 	repo := newMockProjectRepo()
 	svc := NewProjectService(repo, nil)

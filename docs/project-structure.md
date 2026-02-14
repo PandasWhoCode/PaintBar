@@ -49,7 +49,7 @@ paintbar/
 │   │
 │   ├── repository/               # Data access layer
 │   │   ├── firestore.go          # Firebase client initialization + health check
-│   │   ├── storage.go            # StorageService — signed URLs + blob delete
+│   │   ├── storage.go            # StorageService — Firebase Storage REST API (read/write/delete)
 │   │   ├── user.go               # UserRepository interface + Firestore impl
 │   │   ├── project.go            # ProjectRepository interface + Firestore impl
 │   │   ├── gallery.go            # GalleryRepository interface + Firestore impl

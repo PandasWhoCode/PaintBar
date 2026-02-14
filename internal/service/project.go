@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -214,6 +215,9 @@ func (s *ProjectService) ConfirmUpload(ctx context.Context, requestorUID, projec
 	return nil
 }
 
+// pngMagic is the 8-byte PNG file signature.
+var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+
 // UploadBlob writes the PNG blob to Storage and updates the project's storageURL.
 // This replaces the old signed-URL + confirm-upload two-step flow.
 func (s *ProjectService) UploadBlob(ctx context.Context, requestorUID, projectID string, data io.Reader) error {
@@ -235,12 +239,24 @@ func (s *ProjectService) UploadBlob(ctx context.Context, requestorUID, projectID
 		return fmt.Errorf("project has no content hash")
 	}
 
+	// Validate PNG magic bytes before uploading
+	header := make([]byte, 8)
+	n, err := io.ReadFull(data, header)
+	if err != nil || n < 8 {
+		return fmt.Errorf("invalid upload: unable to read file header")
+	}
+	if !bytes.Equal(header, pngMagic) {
+		return fmt.Errorf("invalid upload: file is not a valid PNG image")
+	}
+	// Reconstitute the full stream: header bytes + remaining body
+	fullData := io.MultiReader(bytes.NewReader(header), data)
+
 	objectPath, err := repository.ProjectObjectPath(requestorUID, project.ContentHash)
 	if err != nil {
 		return fmt.Errorf("build object path: %w", err)
 	}
 
-	if err := s.storage.WriteObject(ctx, objectPath, data, "image/png"); err != nil {
+	if err := s.storage.WriteObject(ctx, objectPath, fullData, "image/png"); err != nil {
 		return fmt.Errorf("write blob: %w", err)
 	}
 

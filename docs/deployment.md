@@ -210,6 +210,36 @@ Firebase Hosting acts as a CDN proxy. All requests are rewritten to Cloud Run:
 
 The `public/` directory contains only `favicon.ico` (served from CDN). All other requests proxy to Cloud Run.
 
+### Firebase Storage
+
+The Go server writes/reads PNG blobs to Firebase Storage via the REST API
+(`firebasestorage.googleapis.com`). One-time setup:
+
+1. **Enable the API**: `gcloud services enable firebasestorage.googleapis.com --project=paintbar-7f887`
+2. **Provision the default bucket** (US-CENTRAL1):
+
+   ```bash
+   curl -X POST "https://firebasestorage.googleapis.com/v1beta/projects/paintbar-7f887/defaultBucket" \
+     -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+     -H "Content-Type: application/json" \
+     -H "X-Goog-User-Project: paintbar-7f887" \
+     -d '{"location": "us-central1"}'
+   ```
+
+3. **Deploy storage rules**: `firebase deploy --only storage`
+4. **Grant IAM roles** to the Cloud Run service account:
+
+   ```bash
+   SA="461183067730-compute@developer.gserviceaccount.com"
+   gcloud projects add-iam-policy-binding paintbar-7f887 \
+     --member="serviceAccount:$SA" --role="roles/firebasestorage.admin"
+   gcloud projects add-iam-policy-binding paintbar-7f887 \
+     --member="serviceAccount:$SA" --role="roles/storage.objectAdmin"
+   ```
+
+The bucket name is `paintbar-7f887.firebasestorage.app` (new format — not accessible
+via `gsutil` or the GCS Go client; must use the Firebase Storage REST API).
+
 ### Firestore Rules & Indexes
 
 Deployed alongside hosting:

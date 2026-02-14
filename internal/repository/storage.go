@@ -46,7 +46,7 @@ func (s *StorageService) addAuth(ctx context.Context, req *http.Request) error {
 	if s.emulatorHost != "" {
 		return nil
 	}
-	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/firebase")
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
 		return fmt.Errorf("find default credentials: %w", err)
 	}

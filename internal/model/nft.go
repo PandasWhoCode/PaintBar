@@ -50,6 +50,9 @@ func (n *NFT) Validate() error {
 		if len(n.ImageData) > MaxThumbnailDataLen {
 			return fmt.Errorf("imageData must be %d bytes or less", MaxThumbnailDataLen)
 		}
+		if !strings.HasPrefix(n.ImageData, thumbnailDataPrefix) {
+			return fmt.Errorf("imageData must be a data:image/ URI")
+		}
 	}
 	if n.ImageURL != "" {
 		if err := validateURL(n.ImageURL); err != nil {
