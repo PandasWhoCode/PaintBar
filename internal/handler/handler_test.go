@@ -293,6 +293,11 @@ func (m *mockStorageClient) ReadObject(_ context.Context, objectPath string) (io
 	return nil, fmt.Errorf("object not found: %s", objectPath)
 }
 
+func (m *mockStorageClient) WriteObject(_ context.Context, objectPath string, _ io.Reader, _ string) error {
+	m.objects[objectPath] = true
+	return nil
+}
+
 func (m *mockStorageClient) DeleteObject(_ context.Context, objectPath string) error {
 	delete(m.objects, objectPath)
 	return nil

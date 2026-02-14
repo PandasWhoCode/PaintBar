@@ -285,6 +285,46 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/projects/{id}/upload-blob:
+    post:
+      tags: [Projects]
+      summary: Upload project PNG blob
+      operationId: uploadBlob
+      description: |
+        Accepts a PNG blob body and writes it to Firebase Storage server-side.
+        This avoids CORS issues with direct browser-to-Storage uploads.
+        The blob is stored at `projects/{userId}/{contentHash}.png`.
+        Maximum body size: 10 MB. The server validates the PNG file signature
+        (magic bytes) and rejects non-PNG uploads with a 400 error.
+      parameters:
+        - $ref: "#/components/parameters/ResourceID"
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          description: Request body exceeds 10 MB limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
   /api/projects/{id}/confirm-upload:
     post:
       tags: [Projects]
@@ -292,8 +332,8 @@ paths:
       operationId: confirmUpload
       description: |
         Called by the client after successfully uploading the PNG blob
-        to the signed URL. Verifies the object exists in Storage and
-        sets the storageURL on the project record.
+        via the upload-blob endpoint. Verifies the object exists in Storage
+        and sets the storageURL on the project record.
       parameters:
         - $ref: "#/components/parameters/ResourceID"
       responses:
@@ -685,9 +725,6 @@ components:
         projectId:
           type: string
           description: The Firestore document ID of the project
-        uploadURL:
-          type: string
-          description: Signed URL for PUT upload of the PNG blob (omitted for duplicates)
         duplicate:
           type: boolean
           description: True if a project with the same contentHash already exists for this user

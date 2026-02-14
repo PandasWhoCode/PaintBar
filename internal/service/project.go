@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -16,9 +17,6 @@ const DefaultPageSize = 10
 // MaxPageSize is the maximum allowed page size.
 const MaxPageSize = 50
 
-// UploadURLExpiry is how long a signed upload URL remains valid.
-const UploadURLExpiry = 10 * time.Minute
-
 // StorageClient abstracts the storage operations needed by ProjectService.
 // This allows unit testing without a real GCS bucket.
 type StorageClient interface {
@@ -26,14 +24,13 @@ type StorageClient interface {
 	GenerateDownloadURL(objectPath string, expiry time.Duration) (string, error)
 	ObjectExists(ctx context.Context, objectPath string) (bool, error)
 	ReadObject(ctx context.Context, objectPath string) (io.ReadCloser, error)
+	WriteObject(ctx context.Context, objectPath string, data io.Reader, contentType string) error
 	DeleteObject(ctx context.Context, objectPath string) error
 }
 
-// CreateProjectResult is returned by CreateProject with the project ID and
-// an optional signed upload URL (empty when the content hash already exists).
+// CreateProjectResult is returned by CreateProject with the project ID.
 type CreateProjectResult struct {
 	ProjectID string `json:"projectId"`
-	UploadURL string `json:"uploadURL,omitempty"`
 	Duplicate bool   `json:"duplicate"`
 }
 
@@ -115,20 +112,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, uid string, project 
 		}
 	}
 
-	// Pre-generate signed upload URL before creating/updating the Firestore record.
-	var uploadURL string
-	if s.storage != nil && project.ContentHash != "" {
-		objectPath, err := repository.ProjectObjectPath(uid, project.ContentHash)
-		if err != nil {
-			return nil, fmt.Errorf("build object path: %w", err)
-		}
-
-		uploadURL, err = s.storage.GenerateUploadURL(objectPath, UploadURLExpiry)
-		if err != nil {
-			return nil, fmt.Errorf("generate upload url: %w", err)
-		}
-	}
-
 	// Title upsert: if a project with this title already exists, update it
 	existing, err := s.repo.FindByTitle(ctx, uid, project.Title)
 	if err != nil {
@@ -150,7 +133,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, uid string, project 
 		}
 		return &CreateProjectResult{
 			ProjectID: existing.ID,
-			UploadURL: uploadURL,
 		}, nil
 	}
 
@@ -162,7 +144,6 @@ func (s *ProjectService) CreateProject(ctx context.Context, uid string, project 
 
 	return &CreateProjectResult{
 		ProjectID: id,
-		UploadURL: uploadURL,
 	}, nil
 }
 
@@ -215,6 +196,68 @@ func (s *ProjectService) ConfirmUpload(ctx context.Context, requestorUID, projec
 	}
 	if !exists {
 		return fmt.Errorf("upload not found: blob has not been uploaded yet")
+	}
+
+	// Generate a long-lived download URL (7 days; frontend can refresh)
+	downloadURL, err := s.storage.GenerateDownloadURL(objectPath, 7*24*time.Hour)
+	if err != nil {
+		return fmt.Errorf("generate download url: %w", err)
+	}
+
+	err = s.repo.UpdateRaw(ctx, projectID, map[string]interface{}{
+		"storageURL": downloadURL,
+		"updatedAt":  time.Now(),
+	})
+	if err != nil {
+		return fmt.Errorf("set storage url: %w", err)
+	}
+
+	return nil
+}
+
+// pngMagic is the 8-byte PNG file signature.
+var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+
+// UploadBlob writes the PNG blob to Storage and updates the project's storageURL.
+// This replaces the old signed-URL + confirm-upload two-step flow.
+func (s *ProjectService) UploadBlob(ctx context.Context, requestorUID, projectID string, data io.Reader) error {
+	if projectID == "" {
+		return fmt.Errorf("project ID is required")
+	}
+	if s.storage == nil {
+		return fmt.Errorf("storage is not configured")
+	}
+
+	project, err := s.repo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("get project for upload: %w", err)
+	}
+	if project.UserID != requestorUID {
+		return fmt.Errorf("unauthorized: cannot upload to another user's project")
+	}
+	if project.ContentHash == "" {
+		return fmt.Errorf("project has no content hash")
+	}
+
+	// Validate PNG magic bytes before uploading
+	header := make([]byte, 8)
+	n, err := io.ReadFull(data, header)
+	if err != nil || n < 8 {
+		return fmt.Errorf("invalid upload: unable to read file header")
+	}
+	if !bytes.Equal(header, pngMagic) {
+		return fmt.Errorf("invalid upload: file is not a valid PNG image")
+	}
+	// Reconstitute the full stream: header bytes + remaining body
+	fullData := io.MultiReader(bytes.NewReader(header), data)
+
+	objectPath, err := repository.ProjectObjectPath(requestorUID, project.ContentHash)
+	if err != nil {
+		return fmt.Errorf("build object path: %w", err)
+	}
+
+	if err := s.storage.WriteObject(ctx, objectPath, fullData, "image/png"); err != nil {
+		return fmt.Errorf("write blob: %w", err)
 	}
 
 	// Generate a long-lived download URL (7 days; frontend can refresh)

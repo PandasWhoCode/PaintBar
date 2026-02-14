@@ -115,6 +115,7 @@ type mockTokenVerifier struct {
 - Auth middleware: skip paths, valid token, invalid token, missing header, nil auth service
 - Rate limiter: allow/deny, window reset, cleanup, Close method
 - Sensitive endpoint rate limiter
+- IP extraction: `RemoteAddr` preference, `X-Real-IP` fallback for loopback only
 - Security headers (CSP, HSTS, X-Frame-Options)
 - CORS configuration
 - Recovery middleware (panic handling)
@@ -140,6 +141,8 @@ type mockUserRepo struct {
 - Input sanitization (trimming, handle normalization)
 - Authorization checks (can't update another user's profile)
 - Project/gallery/NFT CRUD with ownership enforcement
+- `UploadBlob` — PNG magic byte validation (valid, invalid, short body), auth, storage errors
+- NFT blockchain field zeroing (`tokenId`, `serialNumber`, `transactionId` cleared on create)
 
 ### Model Tests (`internal/model/model_test.go`)
 
@@ -227,14 +230,21 @@ govulncheck ./...
 # npm audit
 npm audit
 
-# OWASP considerations covered by middleware:
+# OWASP considerations covered by middleware and service layer:
 # - CSP headers (XSS prevention)
 # - X-Frame-Options: DENY (clickjacking)
 # - X-Content-Type-Options: nosniff (MIME sniffing)
-# - Rate limiting (brute force)
+# - Rate limiting (brute force) with IP spoofing prevention
 # - Request body size limits (DoS)
 # - Input sanitization (injection)
 # - HSTS in production (downgrade attacks)
+# - PNG magic byte validation (content-type spoofing)
+# - data:image/ prefix enforcement on imageData fields
+# - DisallowUnknownFields on JSON decoder (mass assignment)
+# - Content-Disposition on blob downloads (content sniffing)
+# - Structured localStorage caching (stored XSS prevention)
+# - Server-managed storageURL (Firestore rules + service layer)
+# - NFT blockchain field zeroing (fake metadata prevention)
 ```
 
 ---

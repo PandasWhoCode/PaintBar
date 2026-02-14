@@ -4,101 +4,164 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	gcs "cloud.google.com/go/storage"
+	"golang.org/x/oauth2/google"
 )
 
-// StorageService provides operations on Firebase/Cloud Storage for project blobs.
+// StorageService provides operations on Firebase Storage for project blobs.
+// It uses the Firebase Storage REST API (firebasestorage.googleapis.com) via HTTP
+// instead of the GCS Go client, because the new .firebasestorage.app bucket format
+// is not accessible via the standard GCS API.
 type StorageService struct {
-	bucket       *gcs.BucketHandle
 	bucketName   string
-	emulatorHost string
+	emulatorHost string // non-empty for local dev (e.g. "localhost:9199")
+	httpClient   *http.Client
 }
 
-// NewStorageService creates a StorageService backed by the given bucket.
-// If emulatorHost is non-empty (e.g. "localhost:9199"), the service generates
-// direct emulator URLs instead of V4 signed URLs.
-func NewStorageService(bucket *gcs.BucketHandle, bucketName, emulatorHost string) *StorageService {
-	return &StorageService{bucket: bucket, bucketName: bucketName, emulatorHost: emulatorHost}
+// NewStorageService creates a StorageService that talks to Firebase Storage via REST.
+// If emulatorHost is non-empty, requests go to the emulator with no auth.
+// Otherwise, requests go to firebasestorage.googleapis.com with ADC OAuth2 tokens.
+func NewStorageService(bucketName, emulatorHost string) *StorageService {
+	return &StorageService{
+		bucketName:   bucketName,
+		emulatorHost: emulatorHost,
+		httpClient:   &http.Client{Timeout: 60 * time.Second},
+	}
 }
 
-// GenerateUploadURL creates a V4-signed URL that allows a client to PUT a PNG
-// blob directly to Cloud Storage. The URL is scoped to the given object path
-// and expires after the specified duration.
-//
-// When running against the Firebase Storage emulator, signed URLs are not
-// supported, so a direct emulator upload URL is returned instead.
-func (s *StorageService) GenerateUploadURL(objectPath string, expiry time.Duration) (string, error) {
+// baseURL returns the scheme+host for Firebase Storage REST API calls.
+func (s *StorageService) baseURL() string {
 	if s.emulatorHost != "" {
-		return s.emulatorUploadURL(objectPath), nil
+		return "http://" + s.emulatorHost
 	}
-	url, err := s.bucket.SignedURL(objectPath, &gcs.SignedURLOptions{
-		Method:      "PUT",
-		Expires:     time.Now().Add(expiry),
-		ContentType: "image/png",
-		Scheme:      gcs.SigningSchemeV4,
-	})
-	if err != nil {
-		return "", fmt.Errorf("generate upload signed url: %w", err)
-	}
-	return url, nil
+	return "https://firebasestorage.googleapis.com"
 }
 
-// GenerateDownloadURL creates a V4-signed URL that allows anyone to GET the
-// object for the specified duration.
-//
-// When running against the Firebase Storage emulator, a direct emulator URL
-// is returned instead of a signed URL.
-func (s *StorageService) GenerateDownloadURL(objectPath string, expiry time.Duration) (string, error) {
+// addAuth adds an Authorization header using Google ADC. No-op for emulator.
+func (s *StorageService) addAuth(ctx context.Context, req *http.Request) error {
 	if s.emulatorHost != "" {
-		return s.emulatorObjectURL(objectPath), nil
+		return nil
 	}
-	url, err := s.bucket.SignedURL(objectPath, &gcs.SignedURLOptions{
-		Method:  "GET",
-		Expires: time.Now().Add(expiry),
-		Scheme:  gcs.SigningSchemeV4,
-	})
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
-		return "", fmt.Errorf("generate download signed url: %w", err)
+		return fmt.Errorf("find default credentials: %w", err)
 	}
-	return url, nil
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		return fmt.Errorf("get access token: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	return nil
 }
 
-// emulatorUploadURL returns the Firebase Storage emulator upload endpoint.
-// Format: http://{emulatorHost}/upload/storage/v1/b/{bucket}/o?uploadType=media&name={path}
-// The client must POST (not PUT) to this URL with the file body.
-func (s *StorageService) emulatorUploadURL(objectPath string) string {
-	encoded := strings.ReplaceAll(objectPath, "/", "%2F")
-	return fmt.Sprintf("http://%s/upload/storage/v1/b/%s/o?uploadType=media&name=%s", s.emulatorHost, s.bucketName, encoded)
+// GenerateUploadURL returns a URL for direct uploads.
+func (s *StorageService) GenerateUploadURL(objectPath string, _ time.Duration) (string, error) {
+	encoded := url.PathEscape(objectPath)
+	return fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded), nil
 }
 
-// emulatorObjectURL returns a direct URL to an object in the Firebase Storage emulator.
-// Format: http://{emulatorHost}/v0/b/{bucket}/o/{urlEncodedPath}?alt=media
-func (s *StorageService) emulatorObjectURL(objectPath string) string {
-	encoded := strings.ReplaceAll(objectPath, "/", "%2F")
-	return fmt.Sprintf("http://%s/v0/b/%s/o/%s?alt=media", s.emulatorHost, s.bucketName, encoded)
+// GenerateDownloadURL returns a download URL for the object.
+func (s *StorageService) GenerateDownloadURL(objectPath string, _ time.Duration) (string, error) {
+	encoded := url.PathEscape(objectPath)
+	return fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
+		s.baseURL(), s.bucketName, encoded), nil
 }
 
-// ReadObject opens a streaming reader for an object in Storage.
+// WriteObject uploads data to the specified object path via the Firebase Storage REST API.
+// Uses POST to /v0/b/{bucket}/o/{path} with the file body.
+func (s *StorageService) WriteObject(ctx context.Context, objectPath string, data io.Reader, contentType string) error {
+	encoded := url.PathEscape(objectPath)
+	uploadURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, data)
+	if err != nil {
+		return fmt.Errorf("create upload request: %w", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+
+	if err := s.addAuth(ctx, req); err != nil {
+		return fmt.Errorf("auth for upload: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("execute upload request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("upload failed (HTTP %d): %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+// ReadObject downloads an object from Firebase Storage via the REST API.
 // The caller must close the returned ReadCloser when done.
 func (s *StorageService) ReadObject(ctx context.Context, objectPath string) (io.ReadCloser, error) {
-	reader, err := s.bucket.Object(objectPath).NewReader(ctx)
+	encoded := url.PathEscape(objectPath)
+	downloadURL := fmt.Sprintf("%s/v0/b/%s/o/%s?alt=media",
+		s.baseURL(), s.bucketName, encoded)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("open object for read: %w", err)
+		return nil, fmt.Errorf("create download request: %w", err)
 	}
-	return reader, nil
+
+	if err := s.addAuth(ctx, req); err != nil {
+		return nil, fmt.Errorf("auth for download: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("execute download request: %w", err)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
+		return nil, fmt.Errorf("object not found: %s", objectPath)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		resp.Body.Close()
+		return nil, fmt.Errorf("download failed (HTTP %d): %s", resp.StatusCode, string(body))
+	}
+	return resp.Body, nil
 }
 
-// ObjectExists checks whether an object exists at the given path.
+// ObjectExists checks whether an object exists at the given path via the REST API.
 func (s *StorageService) ObjectExists(ctx context.Context, objectPath string) (bool, error) {
-	_, err := s.bucket.Object(objectPath).Attrs(ctx)
-	if err == gcs.ErrObjectNotExist {
+	encoded := url.PathEscape(objectPath)
+	metaURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("create metadata request: %w", err)
+	}
+
+	if err := s.addAuth(ctx, req); err != nil {
+		return false, fmt.Errorf("auth for metadata: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("execute metadata request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
-	if err != nil {
-		return false, fmt.Errorf("check object exists: %w", err)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return false, fmt.Errorf("metadata check failed (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 	return true, nil
 }
@@ -106,12 +169,31 @@ func (s *StorageService) ObjectExists(ctx context.Context, objectPath string) (b
 // DeleteObject removes the object at the given path. Returns nil if the object
 // does not exist (idempotent).
 func (s *StorageService) DeleteObject(ctx context.Context, objectPath string) error {
-	err := s.bucket.Object(objectPath).Delete(ctx)
-	if err == gcs.ErrObjectNotExist {
-		return nil
-	}
+	encoded := url.PathEscape(objectPath)
+	deleteURL := fmt.Sprintf("%s/v0/b/%s/o/%s",
+		s.baseURL(), s.bucketName, encoded)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, nil)
 	if err != nil {
-		return fmt.Errorf("delete object: %w", err)
+		return fmt.Errorf("create delete request: %w", err)
+	}
+
+	if err := s.addAuth(ctx, req); err != nil {
+		return fmt.Errorf("auth for delete: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("execute delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil // idempotent
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("delete failed (HTTP %d): %s", resp.StatusCode, string(body))
 	}
 	return nil
 }

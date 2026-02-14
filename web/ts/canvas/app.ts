@@ -1487,8 +1487,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const paintBar = new PaintBar({ width: w, height: h });
 
-        if (project.storageURL) {
-          // Download via API proxy (avoids CORS/auth issues with direct emulator URLs)
+        if (project.contentHash) {
+          // Download via API proxy (avoids CORS/auth issues with direct storage URLs)
           const blobRes = await fetch(`/api/projects/${encodeURIComponent(project.id)}/blob`, {
             headers: { Authorization: `Bearer ${token}` },
           });

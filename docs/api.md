@@ -184,8 +184,10 @@ List the authenticated user's projects (ordered by `createdAt` desc).
 Create or upsert a project. **Titles are unique per user.**
 
 - If a project with the same `contentHash` exists → returns `duplicate: true`, no upload.
-- If a project with the same `title` exists → updates its content (upsert), returns new upload URL.
+- If a project with the same `title` exists → updates its content (upsert).
 - Otherwise → creates a new project.
+
+After creating/upserting, the client uploads the PNG blob via `POST /api/projects/{id}/upload-blob`.
 
 **Request Body**
 
@@ -208,12 +210,11 @@ Create or upsert a project. **Titles are unique per user.**
 ```json
 {
   "projectId": "new-or-existing-project-id",
-  "uploadURL": "https://storage.googleapis.com/...",
   "duplicate": false
 }
 ```
 
-If `duplicate` is `true`, the `uploadURL` is omitted and `projectId` refers to the
+If `duplicate` is `true`, no upload is needed and `projectId` refers to the
 existing project with the same `contentHash`.
 
 #### `GET /api/projects/by-title`
@@ -226,9 +227,25 @@ Look up a project by title for the authenticated user.
 
 **Errors**: `400` (missing title), `404` (not found)
 
+#### `POST /api/projects/{id}/upload-blob`
+
+Upload the project's full-resolution PNG blob. The server writes it to Firebase Storage
+server-side (avoids CORS issues with direct browser-to-Storage uploads).
+
+The server validates the PNG file signature (magic bytes) and rejects non-PNG
+uploads with a `400` error.
+
+**Request**: `image/png` binary body (max 10 MB)
+
+**Response** `200`
+
+```json
+{ "status": "uploaded" }
+```
+
 #### `POST /api/projects/{id}/confirm-upload`
 
-Called after the client successfully uploads the PNG blob to the signed `uploadURL`.
+Called after the client successfully uploads the PNG blob via `upload-blob`.
 Verifies the object exists in Storage and sets the `storageURL` on the project record.
 
 **Response** `200`
@@ -240,7 +257,10 @@ Verifies the object exists in Storage and sets the `storageURL` on the project r
 #### `GET /api/projects/{id}/blob`
 
 Download the project's full-resolution PNG. Streams the blob from Storage through the
-API (avoids CORS issues with direct Storage URLs). Response uses `Cache-Control: no-store`.
+API (avoids CORS issues with direct Storage URLs).
+
+Response headers include `Content-Disposition: inline; filename="canvas.png"` and
+`Cache-Control: no-store`.
 
 **Response** `200`: `image/png` binary
 
@@ -351,15 +371,21 @@ Same patterns as Projects. Listed NFTs (`isListed: true`) are readable by any au
 | Scope              | Limit        | Window   |
 | ------------------ | ------------ | -------- |
 | **Global** per IP  | 100 requests | 1 minute |
-| **Sensitive** (\*) | 5 requests   | 1 minute |
+| **Sensitive** (\*) | 20 requests  | 1 minute |
 
-\* Sensitive endpoints: `POST /api/claim-username`, `POST /api/projects`, `POST /api/projects/{id}/confirm-upload`
+\* Sensitive endpoints: `POST /api/claim-username`, `POST /api/projects`, `POST /api/projects/{id}/upload-blob`, `POST /api/projects/{id}/confirm-upload`
 
 Rate-limited responses return `429 Too Many Requests` with a `Retry-After: 60` header.
 
 ## Request Size Limit
 
 Request bodies are limited to **1 MB** (`maxRequestBodySize`). Exceeding this returns `413 Request Entity Too Large`.
+
+## JSON Request Parsing
+
+The server uses `json.Decoder.DisallowUnknownFields()` — any JSON request
+containing fields not defined in the target struct will be rejected with a `400`
+error. This prevents mass-assignment attacks.
 
 ## Security Headers
 

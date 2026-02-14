@@ -129,8 +129,26 @@ func TestUserFromContext_ReturnsUser(t *testing.T) {
 	assert.Equal(t, "a@b.com", user.Email)
 }
 
-func TestExtractIP_WithXRealIP(t *testing.T) {
+func TestExtractIP_PrefersRemoteAddr(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	req.Header.Set("X-Real-IP", "1.2.3.4")
+	ip := extractIP(req)
+	// RemoteAddr is non-loopback, so X-Real-IP is ignored
+	assert.Equal(t, "10.0.0.1", ip)
+}
+
+func TestExtractIP_LoopbackFallsBackToXRealIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	req.Header.Set("X-Real-IP", "1.2.3.4")
+	ip := extractIP(req)
+	assert.Equal(t, "1.2.3.4", ip)
+}
+
+func TestExtractIP_IPv6LoopbackFallsBackToXRealIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "::1:12345"
 	req.Header.Set("X-Real-IP", "1.2.3.4")
 	ip := extractIP(req)
 	assert.Equal(t, "1.2.3.4", ip)

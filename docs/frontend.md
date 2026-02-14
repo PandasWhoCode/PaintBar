@@ -302,6 +302,28 @@ Defined in `web/ts/shared/types.ts`:
 
 ---
 
+## Security
+
+### Grid Caching (XSS Prevention)
+
+The profile page caches grid data (projects, gallery, NFTs) in `localStorage`
+for instant rendering on subsequent visits. Cached data is stored as **structured
+JSON arrays** (`GridItemData[]`), never as raw HTML. The `renderGridItems()`
+function builds DOM elements from this data using `createElement` and
+`textContent` — no `innerHTML` is used for cached content.
+
+On cache read, an `Array.isArray()` guard discards any stale entries from older
+formats (e.g., raw HTML strings) to prevent type errors and XSS.
+
+### Sanitization Helpers
+
+- **`safeSrc()`** — Validates that image `src` values start with `data:image/`
+  before rendering. Falls back to a placeholder for invalid values.
+- **`textContent`** — All user-supplied text (titles, names) is rendered via
+  `textContent`, never `innerHTML`, to prevent script injection.
+
+---
+
 ## Static Assets
 
 Served by the Go file server at `/static/*` from `web/static/`:

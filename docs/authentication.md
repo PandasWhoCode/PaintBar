@@ -180,13 +180,23 @@ when `ENV=local`.
 
 ## Rate Limiting on Sensitive Endpoints
 
-The `POST /api/claim-username` endpoint has an additional rate limiter
-(5 req/min per IP) applied via `mw.SensitiveEndpoint(sensitiveLimiter)`.
-This is layered on top of the global rate limiter.
+Sensitive endpoints have an additional rate limiter (20 req/min per IP, 60 in
+local dev) applied via `mw.SensitiveEndpoint(sensitiveLimiter)`. This is layered
+on top of the global rate limiter.
 
 ```go
 r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/claim-username", profileHandler.ClaimUsername)
 ```
+
+Sensitive endpoints: `POST /api/claim-username`, `POST /api/projects`,
+`POST /api/projects/{id}/upload-blob`, `POST /api/projects/{id}/confirm-upload`.
+
+### IP Extraction
+
+The rate limiter extracts the client IP from `RemoteAddr` (set correctly by
+Cloud Run). It only falls back to the `X-Real-IP` header when `RemoteAddr` is a
+loopback address (local development behind a proxy). This prevents rate-limit
+bypass via header spoofing in production.
 
 ---
 

@@ -50,7 +50,9 @@ func errorStatus(msg string) int {
 	switch {
 	case strings.Contains(lower, "unauthorized"):
 		return http.StatusForbidden
-	case strings.Contains(lower, "not found"):
+	case strings.Contains(lower, "not found"),
+		strings.Contains(lower, "doesn't exist"),
+		strings.Contains(lower, "does not exist"):
 		return http.StatusNotFound
 	case strings.Contains(lower, "already taken"),
 		strings.Contains(lower, "already set"),
@@ -104,7 +106,9 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) bool {
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 
-	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(dst); err != nil {
 		if strings.Contains(err.Error(), "http: request body too large") {
 			respondJSON(w, http.StatusRequestEntityTooLarge, map[string]string{
 				"error": "request body too large",

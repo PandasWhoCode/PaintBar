@@ -58,6 +58,9 @@ func (s *NFTService) GetNFT(ctx context.Context, requestorUID string, nftID stri
 // Note: This does NOT mint on-chain. Hiero minting will be added later.
 func (s *NFTService) CreateNFT(ctx context.Context, uid string, nft *model.NFT) (string, error) {
 	nft.UserID = uid
+	nft.TokenID = ""
+	nft.SerialNumber = 0
+	nft.TransactionID = ""
 	nft.Sanitize()
 
 	if err := nft.Validate(); err != nil {

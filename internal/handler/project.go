@@ -154,6 +154,27 @@ func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
+// UploadBlob handles POST /api/projects/{id}/upload-blob — accepts a PNG body
+// and writes it to Storage server-side, avoiding CORS issues with direct GCS uploads.
+func (h *ProjectHandler) UploadBlob(w http.ResponseWriter, r *http.Request) {
+	user := requireUser(w, r)
+	if user == nil {
+		return
+	}
+
+	projectID := chi.URLParam(r, "id")
+
+	// Limit request body to 10 MB
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+
+	if err := h.projectService.UploadBlob(r.Context(), user.UID, projectID, r.Body); err != nil {
+		respondError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "uploaded"})
+}
+
 // DownloadBlob handles GET /api/projects/{id}/blob — streams the project PNG
 // from Storage through the API so the browser never hits the storage emulator
 // directly (avoids CORS and auth issues).
@@ -173,6 +194,7 @@ func (h *ProjectHandler) DownloadBlob(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Disposition", "inline; filename=\"canvas.png\"")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, reader)

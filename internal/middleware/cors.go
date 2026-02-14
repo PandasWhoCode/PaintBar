@@ -15,7 +15,7 @@ type CORSConfig struct {
 
 // DefaultCORSConfig returns a sensible default CORS config for the PaintBar API.
 func DefaultCORSConfig(env string) CORSConfig {
-	origins := []string{"https://paintbar.art", "https://paintbar-7f887.web.app"}
+	origins := []string{"https://paintbar.app", "https://paintbar.art", "https://paintbar-7f887.web.app"}
 	if env == "local" {
 		origins = append(origins, "http://localhost:8080", "http://localhost:3000")
 	}

@@ -35,7 +35,7 @@ service cloud.firestore {
                     && request.resource.data.userId == resource.data.userId
                     && request.resource.data.contentHash == resource.data.contentHash
                     && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['title', 'isPublic', 'tags', 'storageURL', 'updatedAt', 'thumbnailData']);
+                       .hasOnly(['title', 'isPublic', 'tags', 'updatedAt', 'thumbnailData']);
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
 

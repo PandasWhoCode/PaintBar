@@ -110,24 +110,75 @@ function clearCachedProfile(): void {
   });
 }
 
-function getCachedGrid(suffix: string): string | null {
+interface GridItemData {
+  id: string;
+  name?: string;
+  title?: string;
+  thumbnailData?: string;
+  imageData?: string;
+  createdAt?: { seconds: number };
+}
+
+function getCachedGrid(suffix: string): GridItemData[] | null {
   try {
     const key = cacheKey(suffix);
     if (!key) return null;
     const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    // Discard stale entries from old HTML-string cache format
+    if (!Array.isArray(parsed)) return null;
+    return parsed;
   } catch {
     return null;
   }
 }
 
-function setCachedGrid(suffix: string, html: string): void {
+function setCachedGrid(suffix: string, items: GridItemData[]): void {
   try {
     const key = cacheKey(suffix);
-    if (key) localStorage.setItem(key, JSON.stringify(html));
+    if (key) localStorage.setItem(key, JSON.stringify(items));
   } catch {
     /* quota exceeded */
   }
+}
+
+function renderGridItems(
+  gridId: string,
+  items: GridItemData[],
+  emptyLabel: string,
+): void {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = "";
+  if (items.length === 0) {
+    const p = document.createElement("p");
+    p.className = "no-projects";
+    p.textContent = emptyLabel;
+    grid.appendChild(p);
+    return;
+  }
+  items.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "project-card";
+    card.dataset.itemId = item.id;
+
+    const img = document.createElement("img");
+    img.src = safeSrc(item.thumbnailData || item.imageData);
+    img.alt = item.name || item.title || "Untitled";
+    img.onerror = function (this: HTMLImageElement) {
+      this.src = "images/placeholder.png";
+    };
+    card.appendChild(img);
+
+    const info = document.createElement("div");
+    info.className = "project-info";
+    const h3 = document.createElement("h3");
+    h3.textContent = item.name || item.title || "Untitled";
+    info.appendChild(h3);
+    card.appendChild(info);
+    grid.appendChild(card);
+  });
 }
 
 // ---- Sanitization helpers ----
@@ -285,11 +336,15 @@ async function handleAuthStateChanged(
     { suffix: GALLERY_CACHE_SUFFIX, id: "galleryGrid" },
     { suffix: NFTS_CACHE_SUFFIX, id: "nftsGrid" },
   ];
+  const gridEmptyLabels: Record<string, string> = {
+    projectsGrid: "No projects yet. Start creating!",
+    galleryGrid: "No gallery items yet.",
+    nftsGrid: "No NFTs yet.",
+  };
   gridCaches.forEach(({ suffix, id }) => {
-    const cachedHtml = getCachedGrid(suffix);
-    if (cachedHtml) {
-      const grid = document.getElementById(id);
-      if (grid) grid.innerHTML = cachedHtml;
+    const cachedItems = getCachedGrid(suffix);
+    if (cachedItems) {
+      renderGridItems(id, cachedItems, gridEmptyLabels[id] || "");
     }
   });
 
@@ -528,44 +583,26 @@ function setupStatsListeners(uid: string): void {
           if (countEl) countEl.textContent = String(snapshot.size);
         }
 
-        const grid = document.getElementById(gridId);
-        if (grid) {
-          grid.innerHTML = "";
-          if (snapshot.size === 0) {
-            grid.innerHTML = `<p class="no-projects">No ${name === "nfts" ? "NFTs" : "gallery items"} yet.</p>`;
-          } else {
-            const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-            items.forEach((item: DocumentData & { id: string }) => {
-              const card = document.createElement("div");
-              card.className = "project-card";
-              card.dataset.itemId = item.id;
-
-              const img = document.createElement("img");
-              img.src = safeSrc(item.thumbnailData || item.imageData);
-              img.alt = item.name || "Untitled";
-              img.onerror = function (this: HTMLImageElement) {
-                this.src = "images/placeholder.png";
-              };
-              card.appendChild(img);
-
-              const info = document.createElement("div");
-              info.className = "project-info";
-              const h3 = document.createElement("h3");
-              h3.textContent = item.name || "Untitled";
-              info.appendChild(h3);
-              card.appendChild(info);
-              grid.appendChild(card);
-            });
-          }
-          setCachedGrid(cacheSuffix, grid.innerHTML);
-        }
+        const emptyLabel = name === "nfts" ? "No NFTs yet." : "No gallery items yet.";
+        const items: GridItemData[] = snapshot.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            name: data.name,
+            thumbnailData: data.thumbnailData,
+            imageData: data.imageData,
+          };
+        });
+        renderGridItems(gridId, items, emptyLabel);
+        setCachedGrid(cacheSuffix, items);
       },
       (error) => {
         console.error(`Error in ${name} listener:`, error);
-        const grid = document.getElementById(gridId);
-        if (grid) {
-          grid.innerHTML = `<p class="no-projects">No ${name === "nfts" ? "NFTs" : "gallery items"} yet.</p>`;
-        }
+        renderGridItems(
+          gridId,
+          [],
+          name === "nfts" ? "No NFTs yet." : "No gallery items yet.",
+        );
       },
     );
 
@@ -845,8 +882,10 @@ function updateProjectsUI(projects: ProjectData[]): void {
 
   projectGrid.innerHTML = "";
   if (projects.length === 0) {
-    projectGrid.innerHTML =
-      '<p class="no-projects">No projects yet. Start creating!</p>';
+    const p = document.createElement("p");
+    p.className = "no-projects";
+    p.textContent = "No projects yet. Start creating!";
+    projectGrid.appendChild(p);
   } else {
     projects.forEach((project) => {
       const card = document.createElement("div");
@@ -905,7 +944,14 @@ function updateProjectsUI(projects: ProjectData[]): void {
     });
   }
 
-  setCachedGrid(PROJECTS_CACHE_SUFFIX, projectGrid.innerHTML);
+  // Cache structured data, not raw HTML
+  const cacheItems: GridItemData[] = projects.map((p) => ({
+    id: p.id,
+    title: p.title,
+    thumbnailData: p.thumbnailData,
+    createdAt: p.createdAt,
+  }));
+  setCachedGrid(PROJECTS_CACHE_SUFFIX, cacheItems);
 }
 
 async function handleDeleteProject(

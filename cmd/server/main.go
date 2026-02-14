@@ -69,7 +69,7 @@ func main() {
 	nftRepo := repository.NewNFTRepository(fbClients.Firestore)
 
 	// Initialize Storage service
-	storageSvc := repository.NewStorageService(fbClients.Storage, cfg.FirebaseStorageBucket, cfg.FirebaseStorageEmulatorHost)
+	storageSvc := repository.NewStorageService(cfg.FirebaseStorageBucket, cfg.FirebaseStorageEmulatorHost)
 
 	// Initialize services
 	authService := service.NewAuthService(fbClients.Auth)
@@ -175,6 +175,7 @@ func main() {
 		r.Put("/projects/{id}", projectHandler.UpdateProject)
 		r.Delete("/projects/{id}", projectHandler.DeleteProject)
 		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects/{id}/confirm-upload", projectHandler.ConfirmUpload)
+		r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/projects/{id}/upload-blob", projectHandler.UploadBlob)
 		r.Get("/projects/{id}/blob", projectHandler.DownloadBlob)
 
 		// Gallery

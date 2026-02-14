@@ -44,6 +44,9 @@ func (g *GalleryItem) Validate() error {
 		if len(g.ImageData) > MaxThumbnailDataLen {
 			return fmt.Errorf("imageData must be %d bytes or less", MaxThumbnailDataLen)
 		}
+		if !strings.HasPrefix(g.ImageData, thumbnailDataPrefix) {
+			return fmt.Errorf("imageData must be a data:image/ URI")
+		}
 	}
 	return nil
 }
