@@ -1,0 +1,60 @@
+{{define "title"}}My Projects - PaintBar{{end}}
+
+{{define "head"}}
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="/static/styles/profile.css">
+    <link rel="stylesheet" href="/static/styles/projects.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
+{{end}}
+
+{{define "body"}}
+    <nav class="menu-bar">
+        <div class="logo">
+            <a href="/canvas">
+                <img src="/static/images/paintbar.logo.png" alt="Paintbar Logo" class="logo-image">
+            </a>
+        </div>
+        <div class="menu-items">
+            <a href="#" class="menu-item">Public Gallery</a>
+            <a href="#" class="menu-item">Paintbar Browser</a>
+            <a href="https://pandaswhocode.com#paintbar" class="menu-item">About</a>
+            <div class="profile-dropdown">
+                <img src="/static/images/panda.png" alt="Profile" class="nav-profile-pic">
+                <div class="dropdown-content">
+                    <a href="/canvas" class="dropdown-item">
+                        <i class="fas fa-plus"></i>
+                        New Canvas
+                    </a>
+                    <hr class="dropdown-separator">
+                    <a href="/profile" class="dropdown-item">
+                        <i class="fas fa-user"></i>
+                        My Profile
+                    </a>
+                    <a href="#" class="dropdown-item" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content projects-page">
+        <div class="projects-page-header">
+            <h1>My Projects</h1>
+        </div>
+        <div class="project-grid" id="projectsGrid">
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+            <div class="project-card skeleton-card"><div class="skeleton-rect"></div></div>
+        </div>
+    </div>
+{{end}}
+
+{{define "scripts"}}
+    <script type="module" src="/static/dist/projects/projects.js"></script>
+{{end}}

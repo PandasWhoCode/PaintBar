@@ -1,0 +1,25 @@
+/* Projects page — overrides and additions on top of profile.css */
+
+.projects-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+.projects-page-header {
+    margin-bottom: 1.5rem;
+}
+
+.projects-page-header h1 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Full-width grid (no sidebar) */
+.projects-page .project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
