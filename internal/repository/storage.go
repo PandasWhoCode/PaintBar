@@ -41,9 +41,13 @@ func (s *StorageService) baseURL() string {
 	return "https://firebasestorage.googleapis.com"
 }
 
-// addAuth adds an Authorization header using Google ADC. No-op for emulator.
+// addAuth adds an Authorization header.
+// For the emulator, it sends "Bearer owner" which the Storage emulator
+// recognises as an admin token (bypasses security rules).
+// For production, it uses Google ADC with cloud-platform scope.
 func (s *StorageService) addAuth(ctx context.Context, req *http.Request) error {
 	if s.emulatorHost != "" {
+		req.Header.Set("Authorization", "Bearer owner")
 		return nil
 	}
 	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")

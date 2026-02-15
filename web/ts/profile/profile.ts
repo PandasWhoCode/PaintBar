@@ -290,7 +290,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".view-all").forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      showUnderConstructionBanner();
+      const section = (e.currentTarget as HTMLElement).closest(".projects-section");
+      if (section?.id === "projectsSection") {
+        window.location.href = "/projects";
+      } else {
+        showUnderConstructionBanner();
+      }
     });
   });
 
@@ -410,7 +415,7 @@ function setupProjectsListener(uid: string): void {
     projectsRef,
     where("userId", "==", uid),
     orderBy("createdAt", "desc"),
-    limit(10),
+    limit(5),
   );
 
   unsubscribeProjects = onSnapshot(

@@ -1799,14 +1799,16 @@ func testTemplatesFS() fstest.MapFS {
 	base := `<!DOCTYPE html><html><head><title>{{block "title" .}}PaintBar{{end}}</title>{{block "head" .}}{{end}}</head><body>{{block "body" .}}{{end}}{{block "scripts" .}}{{end}}</body></html>`
 	login := `{{define "title"}}Login{{end}}{{define "head"}}{{end}}{{define "body"}}<h1>Login</h1>{{end}}{{define "scripts"}}{{end}}`
 	profile := `{{define "title"}}Profile{{end}}{{define "head"}}{{end}}{{define "body"}}<h1>Profile</h1>{{end}}{{define "scripts"}}{{end}}`
+	projects := `{{define "title"}}Projects{{end}}{{define "head"}}{{end}}{{define "body"}}<h1>Projects</h1>{{end}}{{define "scripts"}}{{end}}`
 	canvas := `{{define "title"}}Canvas{{end}}{{define "head"}}{{end}}{{define "body"}}<h1>Canvas</h1>{{end}}{{define "scripts"}}{{end}}`
 	notFound := `{{define "title"}}404{{end}}{{define "head"}}{{end}}{{define "body"}}<h1>404</h1>{{end}}{{define "scripts"}}{{end}}`
 
 	return fstest.MapFS{
-		"templates/layouts/base.html":  &fstest.MapFile{Data: []byte(base)},
-		"templates/pages/login.html":   &fstest.MapFile{Data: []byte(login)},
-		"templates/pages/profile.html": &fstest.MapFile{Data: []byte(profile)},
-		"templates/pages/canvas.html":  &fstest.MapFile{Data: []byte(canvas)},
-		"templates/pages/404.html":     &fstest.MapFile{Data: []byte(notFound)},
+		"templates/layouts/base.html":   &fstest.MapFile{Data: []byte(base)},
+		"templates/pages/login.html":    &fstest.MapFile{Data: []byte(login)},
+		"templates/pages/profile.html":  &fstest.MapFile{Data: []byte(profile)},
+		"templates/pages/projects.html": &fstest.MapFile{Data: []byte(projects)},
+		"templates/pages/canvas.html":   &fstest.MapFile{Data: []byte(canvas)},
+		"templates/pages/404.html":      &fstest.MapFile{Data: []byte(notFound)},
 	}
 }

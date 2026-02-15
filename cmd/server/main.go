@@ -125,6 +125,7 @@ func main() {
 	r.Get("/", pageHandler.Login)
 	r.Get("/login", pageHandler.Login)
 	r.Get("/profile", pageHandler.Profile)
+	r.Get("/projects", pageHandler.Projects)
 	r.Get("/canvas", pageHandler.Canvas)
 	r.NotFound(pageHandler.NotFound)
 
