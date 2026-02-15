@@ -66,10 +66,10 @@ The backend follows a clean **Handler → Service → Repository** architecture:
 │   handler/   │ │ middleware/│  │   handler/       │
 │  (API JSON)  │ │ (auth,    │  │   pages.go       │
 │  profile.go  │ │  rate     │  │   render.go      │
-│  project.go  │ │  limit,   │  │  (SSR templates) │
-│  gallery.go  │ │  security,│  └─────────────────┘
-│  nft.go      │ │  CORS,    │
-│  docs.go     │ │  logging) │
+│  project.go  │ │  security,│  │  (SSR templates) │
+│  gallery.go  │ │  CORS,    │
+│  nft.go      │ │  logging) │
+│  docs.go     │ │           │
 └──────┬───────┘ └───────────┘
        │
        ▼
@@ -218,7 +218,7 @@ The server supports three environments controlled by the `ENV` variable:
 | Environment    | `ENV` value  | Emulators       | Swagger UI | HSTS |
 | -------------- | ------------ | --------------- | ---------- | ---- |
 | **Local**      | `local`      | Auto-configured | Enabled    | Off  |
-| **Preview**    | `preview`    | Off (uses ADC)  | Enabled    | Off  |
+| **Preview**    | `preview`    | Off (uses ADC)  | Disabled   | Off  |
 | **Production** | `production` | Off             | Disabled   | On   |
 
 See [Deployment](deployment.md) for full environment variable reference.

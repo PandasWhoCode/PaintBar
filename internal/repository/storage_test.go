@@ -234,12 +234,12 @@ func TestBaseURL_Production(t *testing.T) {
 
 // --- addAuth ---
 
-func TestAddAuth_EmulatorNoOp(t *testing.T) {
+func TestAddAuth_EmulatorOwnerToken(t *testing.T) {
 	svc := NewStorageService("bucket", "localhost:9199")
 	req, _ := http.NewRequest(http.MethodGet, "http://localhost:9199/test", nil)
 	err := svc.addAuth(context.Background(), req)
 	assert.NoError(t, err)
-	assert.Empty(t, req.Header.Get("Authorization")) // no auth header for emulator
+	assert.Equal(t, "Bearer owner", req.Header.Get("Authorization"))
 }
 
 // --- URL encoding ---

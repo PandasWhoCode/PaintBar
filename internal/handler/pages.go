@@ -31,6 +31,14 @@ func (h *PageHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Projects serves the projects page (GET /projects).
+func (h *PageHandler) Projects(w http.ResponseWriter, r *http.Request) {
+	h.renderer.Render(w, "projects", PageData{
+		Title: "My Projects - PaintBar",
+		Env:   h.env,
+	})
+}
+
 // Canvas serves the canvas page (GET /canvas).
 func (h *PageHandler) Canvas(w http.ResponseWriter, r *http.Request) {
 	h.renderer.Render(w, "canvas", PageData{

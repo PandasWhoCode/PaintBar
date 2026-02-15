@@ -143,6 +143,12 @@ body {
     text-align: center;
 }
 
+.dropdown-separator {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0.25rem 0;
+}
+
 .main-content {
     max-width: 1400px;
     margin: 2rem auto;

@@ -28,10 +28,11 @@ func NewTemplateRenderer(templatesFS fs.FS) (*TemplateRenderer, error) {
 
 	// Pages to register: name -> template file
 	pages := map[string]string{
-		"login":   "templates/pages/login.html",
-		"profile": "templates/pages/profile.html",
-		"canvas":  "templates/pages/canvas.html",
-		"404":     "templates/pages/404.html",
+		"login":    "templates/pages/login.html",
+		"profile":  "templates/pages/profile.html",
+		"projects": "templates/pages/projects.html",
+		"canvas":   "templates/pages/canvas.html",
+		"404":      "templates/pages/404.html",
 	}
 
 	for name, page := range pages {

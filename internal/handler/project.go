@@ -197,7 +197,7 @@ func (h *ProjectHandler) DownloadBlob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "inline; filename=\"canvas.png\"")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, reader)
+	io.Copy(w, io.LimitReader(reader, 10<<20)) // cap at 10 MB
 }
 
 // CountProjects handles GET /api/projects/count

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -76,7 +77,7 @@ func TestUserService_UpdateProfile_LongDisplayName(t *testing.T) {
 	repo.users["user1"] = &model.User{UID: "user1", Email: "a@b.com"}
 	svc := NewUserService(repo)
 
-	long := string(make([]byte, 101))
+	long := strings.Repeat("a", 101)
 	update := &model.UserUpdate{DisplayName: &long}
 	err := svc.UpdateProfile(context.Background(), "user1", "user1", update)
 	assert.ErrorContains(t, err, "display name must be 100")
@@ -151,7 +152,7 @@ func TestUserService_UpdateProfile_LongBio(t *testing.T) {
 	repo.users["user1"] = &model.User{UID: "user1", Email: "a@b.com"}
 	svc := NewUserService(repo)
 
-	long := string(make([]byte, 501))
+	long := strings.Repeat("a", 501)
 	update := &model.UserUpdate{Bio: &long}
 	err := svc.UpdateProfile(context.Background(), "user1", "user1", update)
 	assert.ErrorContains(t, err, "bio must be 500")
@@ -162,7 +163,7 @@ func TestUserService_UpdateProfile_LongLocation(t *testing.T) {
 	repo.users["user1"] = &model.User{UID: "user1", Email: "a@b.com"}
 	svc := NewUserService(repo)
 
-	long := string(make([]byte, 101))
+	long := strings.Repeat("a", 101)
 	update := &model.UserUpdate{Location: &long}
 	err := svc.UpdateProfile(context.Background(), "user1", "user1", update)
 	assert.ErrorContains(t, err, "location must be 100")
@@ -423,11 +424,11 @@ func newMockStorageClient() *mockStorageClient {
 }
 
 func (m *mockStorageClient) GenerateUploadURL(objectPath string, _ time.Duration) (string, error) {
-	return "https://storage.example.com/upload/" + objectPath, nil
+	return "https://firebasestorage.googleapis.com/v0/b/test-bucket/o/" + objectPath, nil
 }
 
 func (m *mockStorageClient) GenerateDownloadURL(objectPath string, _ time.Duration) (string, error) {
-	return "https://storage.example.com/download/" + objectPath, nil
+	return "https://firebasestorage.googleapis.com/v0/b/test-bucket/o/" + objectPath + "?alt=media", nil
 }
 
 func (m *mockStorageClient) ObjectExists(_ context.Context, objectPath string) (bool, error) {
@@ -503,7 +504,7 @@ func TestProjectService_ConfirmUpload_Success(t *testing.T) {
 
 	// Verify storageURL was set
 	got, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
-	assert.Contains(t, got.StorageURL, "download/")
+	assert.Contains(t, got.StorageURL, "alt=media")
 }
 
 func TestProjectService_ConfirmUpload_NotUploaded(t *testing.T) {
@@ -1069,7 +1070,7 @@ func TestProjectService_UploadBlob_Success(t *testing.T) {
 
 	// Verify storageURL was set
 	got, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
-	assert.Contains(t, got.StorageURL, "download/")
+	assert.Contains(t, got.StorageURL, "alt=media")
 }
 
 func TestProjectService_UploadBlob_InvalidPNG(t *testing.T) {
@@ -1191,4 +1192,32 @@ func TestProjectService_CreateProject_StorageURLStripped(t *testing.T) {
 
 	project, _ := svc.GetProject(context.Background(), "user1", result.ProjectID)
 	assert.Empty(t, project.StorageURL)
+}
+
+// --- validateStorageURL tests ---
+
+func TestValidateStorageURL_AllowedHosts(t *testing.T) {
+	tests := []string{
+		"https://firebasestorage.googleapis.com/v0/b/bucket/o/path?alt=media",
+		"http://localhost:9199/v0/b/bucket/o/path?alt=media",
+		"http://127.0.0.1:9199/v0/b/bucket/o/path?alt=media",
+	}
+	for _, u := range tests {
+		assert.NoError(t, validateStorageURL(u), "should allow: %s", u)
+	}
+}
+
+func TestValidateStorageURL_RejectsEvilHost(t *testing.T) {
+	tests := []string{
+		"https://evil.com/phishing.png",
+		"https://attacker.firebasestorage.googleapis.com.evil.com/path",
+		"https://storage.example.com/path",
+	}
+	for _, u := range tests {
+		assert.Error(t, validateStorageURL(u), "should reject: %s", u)
+	}
+}
+
+func TestValidateStorageURL_RejectsMalformed(t *testing.T) {
+	assert.Error(t, validateStorageURL("://not-a-url"))
 }

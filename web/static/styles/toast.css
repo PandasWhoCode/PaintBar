@@ -1,0 +1,55 @@
+/* ============================================================
+   Shared toast notification styles
+   ============================================================ */
+
+.toast-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: toastSlideIn 0.3s ease-out, toastFadeOut 0.3s ease-out forwards;
+    z-index: 10000;
+    max-width: 400px;
+    word-break: break-word;
+    font-size: 0.95rem;
+}
+
+.toast-success {
+    background-color: var(--primary-color, #4caf50);
+    color: var(--background-color, #fff);
+    animation-delay: 0s, 2.7s;
+}
+
+.toast-error {
+    background-color: #d32f2f;
+    color: #fff;
+    animation-delay: 0s, 4.7s;
+}
+
+.toast-info {
+    background-color: #1976d2;
+    color: #fff;
+    animation-delay: 0s, 3.7s;
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}

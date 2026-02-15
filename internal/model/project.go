@@ -71,9 +71,9 @@ func (p *Project) Validate() error {
 
 // Sanitize cleans project input.
 func (p *Project) Sanitize() {
-	p.Title = strings.TrimSpace(p.Title)
+	p.Title = StripControlChars(strings.TrimSpace(p.Title))
 	for i, tag := range p.Tags {
-		p.Tags[i] = strings.TrimSpace(strings.ToLower(tag))
+		p.Tags[i] = StripControlChars(strings.TrimSpace(strings.ToLower(tag)))
 	}
 }
 

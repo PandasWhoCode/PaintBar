@@ -125,6 +125,7 @@ func main() {
 	r.Get("/", pageHandler.Login)
 	r.Get("/login", pageHandler.Login)
 	r.Get("/profile", pageHandler.Profile)
+	r.Get("/projects", pageHandler.Projects)
 	r.Get("/canvas", pageHandler.Canvas)
 	r.NotFound(pageHandler.NotFound)
 
@@ -144,8 +145,8 @@ func main() {
 		})
 	})
 
-	// API docs (Swagger UI) — disabled in production
-	if !cfg.IsProduction() {
+	// API docs (Swagger UI) — local development only
+	if cfg.IsLocal() {
 		r.Get("/api/docs", docsHandler.ServeUI)
 		r.Get("/api/docs/openapi.yaml", docsHandler.ServeSpec)
 		r.Get("/api/docs/init.js", docsHandler.ServeInitJS)

@@ -75,14 +75,14 @@ tasks:
   ts-build:
     desc: Build TypeScript with esbuild (dev — includes source maps)
     cmds:
-      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify --sourcemap
+      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts web/ts/projects/projects.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify --sourcemap
     sources:
       - web/ts/**/*.ts
 
   ts-build:prod:
     desc: Build TypeScript with esbuild (production — no source maps)
     cmds:
-      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify
+      - npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts web/ts/projects/projects.ts --bundle --splitting --format=esm --outdir=web/static/dist --minify
 
   ts-check:
     desc: TypeScript type checking (no emit)

@@ -53,9 +53,9 @@ func (g *GalleryItem) Validate() error {
 
 // Sanitize cleans gallery item input.
 func (g *GalleryItem) Sanitize() {
-	g.Name = strings.TrimSpace(g.Name)
-	g.Description = strings.TrimSpace(g.Description)
+	g.Name = StripControlChars(strings.TrimSpace(g.Name))
+	g.Description = StripControlChars(strings.TrimSpace(g.Description))
 	for i, tag := range g.Tags {
-		g.Tags[i] = strings.TrimSpace(strings.ToLower(tag))
+		g.Tags[i] = StripControlChars(strings.TrimSpace(strings.ToLower(tag)))
 	}
 }

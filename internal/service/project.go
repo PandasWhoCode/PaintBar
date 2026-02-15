@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pandasWhoCode/paintbar/internal/model"
@@ -215,6 +217,32 @@ func (s *ProjectService) ConfirmUpload(ctx context.Context, requestorUID, projec
 	return nil
 }
 
+// allowedStorageHosts lists the hostnames that storageURL may point to.
+// This prevents a regression from ever setting storageURL to an attacker-
+// controlled domain (phishing, data exfiltration).
+var allowedStorageHosts = []string{
+	"firebasestorage.googleapis.com",
+	"localhost",
+	"127.0.0.1",
+}
+
+// validateStorageURL checks that a generated download URL points to an
+// allowed Firebase Storage host. Returns an error if the URL is malformed
+// or points to an unexpected domain.
+func validateStorageURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("malformed storage URL: %w", err)
+	}
+	host := strings.Split(u.Hostname(), ":")[0]
+	for _, allowed := range allowedStorageHosts {
+		if host == allowed {
+			return nil
+		}
+	}
+	return fmt.Errorf("storage URL host %q is not in the allow-list", u.Hostname())
+}
+
 // pngMagic is the 8-byte PNG file signature.
 var pngMagic = []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
 
@@ -264,6 +292,9 @@ func (s *ProjectService) UploadBlob(ctx context.Context, requestorUID, projectID
 	downloadURL, err := s.storage.GenerateDownloadURL(objectPath, 7*24*time.Hour)
 	if err != nil {
 		return fmt.Errorf("generate download url: %w", err)
+	}
+	if err := validateStorageURL(downloadURL); err != nil {
+		return fmt.Errorf("upload blob: %w", err)
 	}
 
 	err = s.repo.UpdateRaw(ctx, projectID, map[string]interface{}{
