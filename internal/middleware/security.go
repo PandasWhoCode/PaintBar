@@ -46,7 +46,9 @@ func SecurityHeaders(env string) func(http.Handler) http.Handler {
 // In local/preview environments, additional sources are allowed for
 // emulators and development tools (Swagger UI).
 func buildCSP(env string) string {
-	scriptSrc := "'self' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com"
+	// 'unsafe-eval' is required by the Firebase JS SDK's persistentLocalCache
+	// (IndexedDB via IDB library uses Function() constructor internally).
+	scriptSrc := "'self' 'unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.googletagmanager.com"
 	connectSrc := "'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.google-analytics.com https://www.googletagmanager.com"
 
 	if env != "production" {
