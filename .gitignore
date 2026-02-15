@@ -68,3 +68,6 @@ yarn-error.log*
 # Browser specific
 .cache/
 .temp/
+
+# windsurf plans
+**/PLAN-**.md
