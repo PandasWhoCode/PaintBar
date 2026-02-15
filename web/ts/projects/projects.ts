@@ -73,7 +73,7 @@ function clearCache(): void {
 // ---- Sanitization helpers ----
 
 function safeSrc(src: string | undefined): string {
-  if (!src) return "images/placeholder.png";
+  if (!src) return "/static/images/placeholder.png";
   if (src.startsWith("data:image/")) return src;
   try {
     const parsed = new URL(src);
@@ -82,7 +82,7 @@ function safeSrc(src: string | undefined): string {
   } catch {
     /* invalid URL */
   }
-  return "images/placeholder.png";
+  return "/static/images/placeholder.png";
 }
 
 // ---- Auth state ----
@@ -177,7 +177,7 @@ function renderProjects(projects: ProjectData[]): void {
     img.src = safeSrc(project.thumbnailData);
     img.alt = project.title || "Untitled";
     img.onerror = function (this: HTMLImageElement) {
-      this.src = "images/placeholder.png";
+      this.src = "/static/images/placeholder.png";
     };
     card.appendChild(img);
 

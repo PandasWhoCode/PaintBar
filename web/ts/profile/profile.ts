@@ -168,7 +168,7 @@ function renderGridItems(
     img.src = safeSrc(item.thumbnailData || item.imageData);
     img.alt = item.name || item.title || "Untitled";
     img.onerror = function (this: HTMLImageElement) {
-      this.src = "images/placeholder.png";
+      this.src = "/static/images/placeholder.png";
     };
     card.appendChild(img);
 
@@ -215,10 +215,10 @@ function createSafeLink(
 }
 
 function safeSrc(src: string | undefined): string {
-  if (!src) return "images/placeholder.png";
+  if (!src) return "/static/images/placeholder.png";
   if (src.startsWith("data:image/")) return src;
   const safe = sanitizeUrl(src);
-  return safe || "images/placeholder.png";
+  return safe || "/static/images/placeholder.png";
 }
 
 // ---- DOMContentLoaded ----
@@ -902,7 +902,7 @@ function updateProjectsUI(projects: ProjectData[]): void {
       img.src = safeSrc(project.thumbnailData);
       img.alt = project.title || "Untitled";
       img.onerror = function (this: HTMLImageElement) {
-        this.src = "images/placeholder.png";
+        this.src = "/static/images/placeholder.png";
       };
       card.appendChild(img);
 
