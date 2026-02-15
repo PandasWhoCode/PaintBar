@@ -3,6 +3,7 @@
 // ============================================================
 
 import { auth, db, signOut } from "../shared/firebase-init";
+import { showSuccess, showError } from "../shared/toast";
 import {
   collection,
   query,
@@ -142,7 +143,7 @@ function setupProjectsListener(uid: string): void {
       }
       if (error.code === "permission-denied") {
         cleanupListeners();
-        alert(
+        showError(
           "You do not have permission to access projects. Please log in again.",
         );
         signOut(auth);
@@ -230,7 +231,8 @@ async function handleDeleteProject(
   projectId: string,
   title: string,
 ): Promise<void> {
-  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const safeTitle = title.replace(/[\x00-\x1f\x7f-\x9f]/g, "").slice(0, 50);
+  if (!confirm(`Delete "${safeTitle}"? This cannot be undone.`)) return;
 
   const user = auth.currentUser;
   if (!user) return;
@@ -247,10 +249,10 @@ async function handleDeleteProject(
         (err as { error?: string }).error || `Delete failed (${res.status})`,
       );
     }
-    showSuccessMessage(`"${title}" deleted.`);
+    showSuccess(`"${title}" deleted.`);
   } catch (err) {
     console.error("Delete project error:", err);
-    alert(`Failed to delete project: ${(err as Error).message}`);
+    showError(`Failed to delete project: ${(err as Error).message}`);
   }
 }
 
@@ -265,7 +267,7 @@ async function handleLogout(e: Event): Promise<void> {
     window.location.replace("/login");
   } catch (error) {
     console.error("Error signing out:", error);
-    alert("Failed to sign out. Please try again.");
+    showError("Failed to sign out. Please try again.");
   }
 }
 
@@ -276,22 +278,6 @@ function cleanupListeners(): void {
     unsubscribeProjects();
     unsubscribeProjects = null;
   }
-}
-
-// ---- Toast ----
-
-function showSuccessMessage(message: string): void {
-  const existing = document.querySelector(".success-message");
-  if (existing) existing.remove();
-
-  const toast = document.createElement("div");
-  toast.className = "success-message";
-  toast.setAttribute("role", "status");
-  toast.setAttribute("aria-live", "polite");
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.remove(), 3000);
 }
 
 // ---- DOMContentLoaded ----

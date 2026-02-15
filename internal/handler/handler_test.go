@@ -1747,6 +1747,18 @@ func TestPageHandler_Profile(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Profile")
 }
 
+func TestPageHandler_Projects(t *testing.T) {
+	renderer, _ := NewTemplateRenderer(testTemplatesFS())
+	h := NewPageHandler(renderer, "local")
+
+	req := httptest.NewRequest(http.MethodGet, "/projects", nil)
+	rr := httptest.NewRecorder()
+	h.Projects(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Projects")
+}
+
 func TestPageHandler_Canvas(t *testing.T) {
 	renderer, _ := NewTemplateRenderer(testTemplatesFS())
 	h := NewPageHandler(renderer, "local")

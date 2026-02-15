@@ -64,6 +64,6 @@ func (n *NFT) Validate() error {
 
 // Sanitize cleans NFT input.
 func (n *NFT) Sanitize() {
-	n.Name = strings.TrimSpace(n.Name)
-	n.Description = strings.TrimSpace(n.Description)
+	n.Name = StripControlChars(strings.TrimSpace(n.Name))
+	n.Description = StripControlChars(strings.TrimSpace(n.Description))
 }

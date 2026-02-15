@@ -3,6 +3,7 @@
 // ============================================================
 
 import { auth, onAuthStateChanged } from "../shared/firebase-init";
+import { showError } from "../shared/toast";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -82,7 +83,7 @@ loginForm.addEventListener("submit", async (e) => {
         break;
     }
 
-    alert(errorMessage);
+    showError(errorMessage);
   }
 });
 
@@ -100,7 +101,7 @@ signupForm.addEventListener("submit", async (e) => {
   ).value;
 
   if (password !== confirmPassword) {
-    alert("Passwords do not match.");
+    showError("Passwords do not match.");
     return;
   }
 
@@ -133,7 +134,7 @@ signupForm.addEventListener("submit", async (e) => {
         break;
     }
 
-    alert(errorMessage);
+    showError(errorMessage);
   }
 });
 

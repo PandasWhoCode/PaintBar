@@ -27,7 +27,7 @@ paintbar/
 │   │   ├── gallery.go            # CRUD /api/gallery
 │   │   ├── nft.go                # CRUD /api/nfts
 │   │   ├── docs.go               # Swagger UI + OpenAPI spec serving
-│   │   ├── pages.go              # SSR page handlers (Login, Profile, Canvas, 404)
+│   │   ├── pages.go              # SSR page handlers (Login, Profile, Projects, Canvas, 404)
 │   │   └── render.go             # Go template renderer + PageData struct
 │   │
 │   ├── middleware/                # HTTP middleware
@@ -73,6 +73,7 @@ paintbar/
 │   │   └── pages/
 │   │       ├── login.html        # Login page template
 │   │       ├── profile.html      # Profile page template
+│   │       ├── projects.html     # Projects grid page template
 │   │       ├── canvas.html       # Canvas app template (settings modal + toolbar)
 │   │       └── 404.html          # Not found page template
 │   │
@@ -93,17 +94,20 @@ paintbar/
 │   │   │   └── iro.d.ts          # Type declarations for iro.js color picker
 │   │   ├── profile/
 │   │   │   └── profile.ts        # Profile page — fetch API, form handling
+│   │   ├── projects/
+│   │   │   └── projects.ts       # Projects page — all projects grid, delete
 │   │   └── shared/
 │   │       ├── types.ts          # Shared TypeScript interfaces
 │   │       ├── firebase-init.ts  # Firebase SDK initialization
 │   │       ├── firebase-config.ts          # Firebase config (gitignored, generated)
 │   │       ├── firebase-config.template.ts # Template for firebase-config.ts
-│   │       └── errors.ts         # Global error handler
+│   │       ├── errors.ts         # Global error handler
+│   │       └── toast.ts          # Shared toast notification utility
 │   │
 │   └── static/                   # Served at /static/* by Go file server
 │       ├── dist/                 # esbuild output (gitignored)
 │       ├── images/               # Icons, logos, menu images, favicon
-│       └── styles/               # CSS files (styles.css, profile.css, etc.)
+│       └── styles/               # CSS files (styles.css, profile.css, toast.css, etc.)
 │
 ├── public/                       # Firebase Hosting root (CDN)
 │   └── favicon.ico               # Browser favicon (served by CDN)

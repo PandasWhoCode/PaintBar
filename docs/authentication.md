@@ -180,7 +180,7 @@ when `ENV=local`.
 
 ## Rate Limiting on Sensitive Endpoints
 
-Sensitive endpoints have an additional rate limiter (20 req/min per IP, 60 in
+Sensitive endpoints have an additional rate limiter (20 req/min, 60 in
 local dev) applied via `mw.SensitiveEndpoint(sensitiveLimiter)`. This is layered
 on top of the global rate limiter.
 
@@ -190,6 +190,12 @@ r.With(mw.SensitiveEndpoint(sensitiveLimiter)).Post("/claim-username", profileHa
 
 Sensitive endpoints: `POST /api/claim-username`, `POST /api/projects`,
 `POST /api/projects/{id}/upload-blob`, `POST /api/projects/{id}/confirm-upload`.
+
+### Rate Limit Keying
+
+The sensitive endpoint limiter uses a **compound key** of UID + IP when the user
+is authenticated (`uid:<UID>|<IP>`), falling back to IP-only for unauthenticated
+requests. This prevents a single user from bypassing limits by rotating IPs.
 
 ### IP Extraction
 

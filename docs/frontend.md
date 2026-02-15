@@ -6,7 +6,7 @@
 
 The frontend consists of:
 
-- **Go `html/template` SSR** — Server-rendered HTML pages (login, profile, canvas, 404)
+- **Go `html/template` SSR** — Server-rendered HTML pages (login, profile, projects, canvas, 404)
 - **TypeScript** — Client-side logic bundled by esbuild
 - **HTML5 Canvas** — Multi-layer drawing application
 - **Firebase Auth SDK** — Client-side authentication
@@ -25,6 +25,7 @@ All pages extend `web/templates/layouts/base.html`, which defines three blocks:
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{block "title" .}}PaintBar{{end}}</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+    <link rel="stylesheet" href="/static/styles/toast.css" />
     {{block "head" .}}{{end}}
     <!-- Page-specific CSS/meta -->
   </head>
@@ -39,12 +40,13 @@ All pages extend `web/templates/layouts/base.html`, which defines three blocks:
 
 ### Page Templates
 
-| Template             | Route         | Description                  |
-| -------------------- | ------------- | ---------------------------- |
-| `pages/login.html`   | `/`, `/login` | Firebase Auth sign-in        |
-| `pages/profile.html` | `/profile`    | User profile with edit modal |
-| `pages/canvas.html`  | `/canvas`     | PaintBar drawing app         |
-| `pages/404.html`     | (catch-all)   | Not found page               |
+| Template              | Route         | Description                  |
+| --------------------- | ------------- | ---------------------------- |
+| `pages/login.html`    | `/`, `/login` | Firebase Auth sign-in        |
+| `pages/profile.html`  | `/profile`    | User profile with edit modal |
+| `pages/projects.html` | `/projects`   | All projects grid view       |
+| `pages/canvas.html`   | `/canvas`     | PaintBar drawing app         |
+| `pages/404.html`      | (catch-all)   | Not found page               |
 
 ### Template Functions
 
@@ -70,13 +72,14 @@ type PageData struct {
 
 ### Entry Points
 
-esbuild bundles three entry points:
+esbuild bundles four entry points:
 
-| Entry                       | Output                               | Page         |
-| --------------------------- | ------------------------------------ | ------------ |
-| `web/ts/canvas/app.ts`      | `web/static/dist/canvas/app.js`      | Canvas app   |
-| `web/ts/auth/login.ts`      | `web/static/dist/auth/login.js`      | Login page   |
-| `web/ts/profile/profile.ts` | `web/static/dist/profile/profile.js` | Profile page |
+| Entry                         | Output                                 | Page          |
+| ----------------------------- | -------------------------------------- | ------------- |
+| `web/ts/canvas/app.ts`        | `web/static/dist/canvas/app.js`        | Canvas app    |
+| `web/ts/auth/login.ts`        | `web/static/dist/auth/login.js`        | Login page    |
+| `web/ts/profile/profile.ts`   | `web/static/dist/profile/profile.js`   | Profile page  |
+| `web/ts/projects/projects.ts` | `web/static/dist/projects/projects.js` | Projects page |
 
 ### Build Pipeline
 
@@ -97,6 +100,7 @@ web/static/dist/
    ├── canvas/app.js          (46 KB)
    ├── auth/login.js          (2 KB)
    ├── profile/profile.js     (13 KB)
+   ├── projects/projects.js   (4 KB)
    ├── chunk-GWDCYFSA.js      (433 KB — Firebase SDK shared chunk)
    ├── chunk-6V3UCYXW.js      (36 KB — shared utilities)
    └── index.esm-*.js         (22 KB — Firebase internals)
@@ -118,7 +122,7 @@ task ts-check          # TypeScript type checking only (no emit)
 - **Module**: ES2022 with bundler resolution
 - **Strict mode**: enabled
 - **noEmit**: true (esbuild handles emit, tsc is for type checking only)
-- **Path aliases**: `@shared/*`, `@canvas/*`, `@auth/*`, `@profile/*`
+- **Path aliases**: `@shared/*`, `@canvas/*`, `@auth/*`, `@profile/*`, `@projects/*`
 
 ---
 
@@ -341,10 +345,12 @@ web/static/
 │       ├── shapes_rectangle.png
 │       └── ... (14 menu icons)
 └── styles/
-    ├── styles.css   # Canvas app styles
-    ├── profile.css  # Profile page styles
-    ├── login.css    # Login page styles
-    └── error.css    # 404 page styles
+    ├── styles.css    # Canvas app styles
+    ├── profile.css   # Profile page styles
+    ├── projects.css  # Projects page styles
+    ├── login.css     # Login page styles
+    ├── toast.css     # Shared toast notification styles
+    └── error.css     # 404 page styles
 ```
 
 Directory listing is disabled (`noDirListing` wrapper in `main.go`).

@@ -516,3 +516,68 @@ func TestNFT_Validate_EmptyImageURL_OK(t *testing.T) {
 	n := &NFT{UserID: "user1", Name: "NFT", ImageURL: ""}
 	assert.NoError(t, n.Validate())
 }
+
+// --- StripControlChars tests ---
+
+func TestStripControlChars_RemovesNewlines(t *testing.T) {
+	assert.Equal(t, "helloworld", StripControlChars("hello\nworld"))
+	assert.Equal(t, "helloworld", StripControlChars("hello\r\nworld"))
+}
+
+func TestStripControlChars_RemovesTabs(t *testing.T) {
+	assert.Equal(t, "helloworld", StripControlChars("hello\tworld"))
+}
+
+func TestStripControlChars_RemovesNullByte(t *testing.T) {
+	assert.Equal(t, "hello", StripControlChars("hello\x00"))
+}
+
+func TestStripControlChars_RemovesC1Range(t *testing.T) {
+	// \x7f is DEL (single-byte control char)
+	assert.Equal(t, "hello", StripControlChars("hello\x7f"))
+	// U+0080 and U+009F are C1 control characters (multi-byte in UTF-8)
+	assert.Equal(t, "hello", StripControlChars("hello\u0080\u009F"))
+}
+
+func TestStripControlChars_PreservesSpaces(t *testing.T) {
+	assert.Equal(t, "hello world", StripControlChars("hello world"))
+}
+
+func TestStripControlChars_PreservesUnicode(t *testing.T) {
+	assert.Equal(t, "café 🎨", StripControlChars("café 🎨"))
+}
+
+func TestStripControlChars_EmptyString(t *testing.T) {
+	assert.Equal(t, "", StripControlChars(""))
+}
+
+func TestProject_Sanitize_StripsControlChars(t *testing.T) {
+	p := &Project{
+		Title: "My\nEvil\tProject\x00",
+		Tags:  []string{"tag\none", "tag\ttwo"},
+	}
+	p.Sanitize()
+	assert.Equal(t, "MyEvilProject", p.Title)
+	assert.Equal(t, "tagone", p.Tags[0])
+	assert.Equal(t, "tagtwo", p.Tags[1])
+}
+
+func TestGalleryItem_Sanitize_StripsControlChars(t *testing.T) {
+	g := &GalleryItem{
+		Name:        "Gallery\nItem",
+		Description: "Desc\x00ription",
+	}
+	g.Sanitize()
+	assert.Equal(t, "GalleryItem", g.Name)
+	assert.Equal(t, "Description", g.Description)
+}
+
+func TestNFT_Sanitize_StripsControlChars(t *testing.T) {
+	n := &NFT{
+		Name:        "NFT\rName",
+		Description: "NFT\tDesc",
+	}
+	n.Sanitize()
+	assert.Equal(t, "NFTName", n.Name)
+	assert.Equal(t, "NFTDesc", n.Description)
+}

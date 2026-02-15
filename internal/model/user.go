@@ -78,9 +78,9 @@ func (u *User) Validate() error {
 
 // Sanitize cleans user input by trimming whitespace and normalizing handles.
 func (u *User) Sanitize() {
-	u.DisplayName = strings.TrimSpace(u.DisplayName)
-	u.Bio = strings.TrimSpace(u.Bio)
-	u.Location = strings.TrimSpace(u.Location)
+	u.DisplayName = StripControlChars(strings.TrimSpace(u.DisplayName))
+	u.Bio = StripControlChars(strings.TrimSpace(u.Bio))
+	u.Location = StripControlChars(strings.TrimSpace(u.Location))
 	u.Website = strings.TrimSpace(u.Website)
 	u.GithubURL = strings.TrimSpace(u.GithubURL)
 	u.TwitterHandle = normalizeHandle(u.TwitterHandle)
@@ -128,6 +128,22 @@ func (u *UserUpdate) ToUpdateMap() map[string]interface{} {
 func normalizeHandle(handle string) string {
 	handle = strings.TrimSpace(handle)
 	return strings.TrimPrefix(handle, "@")
+}
+
+// StripControlChars removes C0 control characters (U+0000–U+001F except space
+// U+0020) and the C1 range (U+007F–U+009F) from s. This prevents social-
+// engineering attacks via newlines/tabs in confirm() dialogs, log injection,
+// and null-byte truncation.
+func StripControlChars(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r == ' ' {
+			return r
+		}
+		if r <= 0x1F || (r >= 0x7F && r <= 0x9F) {
+			return -1 // drop
+		}
+		return r
+	}, s)
 }
 
 // validateURL checks that a string is a valid http/https URL.

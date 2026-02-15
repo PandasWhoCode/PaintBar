@@ -8,6 +8,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "../shared/firebase-init";
+import { showSuccess, showError } from "../shared/toast";
 import {
   doc,
   setDoc,
@@ -394,7 +395,7 @@ async function handleAuthStateChanged(
       console.error("Error in profile listener:", error);
       if (error.code === "permission-denied") {
         cleanupListeners();
-        alert(
+        showError(
           "You do not have permission to access this profile. Please log in again.",
         );
         signOut(auth);
@@ -449,7 +450,7 @@ function setupProjectsListener(uid: string): void {
       }
       if (error.code === "permission-denied") {
         cleanupListeners();
-        alert(
+        showError(
           "You do not have permission to access projects. Please log in again.",
         );
         signOut(auth);
@@ -466,7 +467,7 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
 
   const user = auth.currentUser;
   if (!user) {
-    alert("Please log in to update your profile.");
+    showError("Please log in to update your profile.");
     return;
   }
 
@@ -494,7 +495,7 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
       .toLowerCase();
     if (newUsername) {
       if (!/^[a-z0-9_-]{3,30}$/.test(newUsername)) {
-        alert(
+        showError(
           "Username must be 3-30 characters and can only contain letters, numbers, underscores, and hyphens.",
         );
         return;
@@ -503,12 +504,12 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
       try {
         const usernameDoc = await getDoc(usernameDocRef);
         if (usernameDoc.exists()) {
-          alert("That username is already taken. Please choose another.");
+          showError("That username is already taken. Please choose another.");
           return;
         }
       } catch (error) {
         console.error("Error checking username:", error);
-        alert("Could not verify username availability. Please try again.");
+        showError("Could not verify username availability. Please try again.");
         return;
       }
       updates.username = newUsername;
@@ -526,7 +527,7 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
   const merged: ProfileData = { ...cachedData, ...updates, uid: user.uid };
   setCachedProfile(merged);
   updateProfileUI(merged);
-  showSuccessMessage("Profile updated successfully!");
+  showSuccess("Profile updated successfully!");
 
   // Write to Firestore in background
   try {
@@ -546,9 +547,9 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
       const reverted: ProfileData = { ...merged, username: "" };
       setCachedProfile(reverted);
       updateProfileUI(reverted);
-      showSuccessMessage("Username could not be claimed. Please try again.");
+      showError("Username could not be claimed. Please try again.");
     } else {
-      showSuccessMessage(
+      showSuccess(
         "Saved locally. Will sync when connection is restored.",
       );
     }
@@ -963,7 +964,8 @@ async function handleDeleteProject(
   projectId: string,
   title: string,
 ): Promise<void> {
-  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const safeTitle = title.replace(/[\x00-\x1f\x7f-\x9f]/g, "").slice(0, 50);
+  if (!confirm(`Delete "${safeTitle}"? This cannot be undone.`)) return;
 
   const user = auth.currentUser;
   if (!user) return;
@@ -980,10 +982,10 @@ async function handleDeleteProject(
         (err as { error?: string }).error || `Delete failed (${res.status})`,
       );
     }
-    showSuccessMessage(`"${title}" deleted.`);
+    showSuccess(`"${title}" deleted.`);
   } catch (err) {
     console.error("Delete project error:", err);
-    alert(`Failed to delete project: ${(err as Error).message}`);
+    showError(`Failed to delete project: ${(err as Error).message}`);
   }
 }
 
@@ -999,7 +1001,7 @@ async function handleLogout(e: Event): Promise<void> {
     window.location.replace("/login");
   } catch (error) {
     console.error("Error signing out:", error);
-    alert("Failed to sign out. Please try again.");
+    showError("Failed to sign out. Please try again.");
   }
 }
 
@@ -1011,10 +1013,10 @@ async function handleResetPassword(): Promise<void> {
 
   try {
     await sendPasswordResetEmail(auth, user.email);
-    alert("Password reset email sent. Please check your inbox.");
+    showSuccess("Password reset email sent. Please check your inbox.");
   } catch (error) {
     console.error("Error sending reset email:", error);
-    alert("Failed to send reset email. Please try again.");
+    showError("Failed to send reset email. Please try again.");
   }
 }
 
@@ -1048,21 +1050,7 @@ function showWelcomeModal(): void {
   }
 }
 
-// ---- Toast / banner ----
-
-function showSuccessMessage(message: string): void {
-  const existing = document.querySelector(".success-message");
-  if (existing) existing.remove();
-
-  const toast = document.createElement("div");
-  toast.className = "success-message";
-  toast.setAttribute("role", "status");
-  toast.setAttribute("aria-live", "polite");
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.remove(), 3000);
-}
+// ---- Banner ----
 
 function showUnderConstructionBanner(): void {
   const existing = document.querySelector(".under-construction-banner");

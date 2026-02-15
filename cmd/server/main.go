@@ -145,8 +145,8 @@ func main() {
 		})
 	})
 
-	// API docs (Swagger UI) — disabled in production
-	if !cfg.IsProduction() {
+	// API docs (Swagger UI) — local development only
+	if cfg.IsLocal() {
 		r.Get("/api/docs", docsHandler.ServeUI)
 		r.Get("/api/docs/openapi.yaml", docsHandler.ServeSpec)
 		r.Get("/api/docs/init.js", docsHandler.ServeInitJS)

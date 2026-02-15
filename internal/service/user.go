@@ -101,10 +101,10 @@ func (s *UserService) ClaimUsername(ctx context.Context, uid string, username st
 	return s.repo.ClaimUsername(ctx, uid, username)
 }
 
-// sanitizeUpdateField trims whitespace on a pointer string field.
+// sanitizeUpdateField trims whitespace and strips control characters on a pointer string field.
 func sanitizeUpdateField(field *string) {
 	if field != nil {
-		*field = strings.TrimSpace(*field)
+		*field = model.StripControlChars(strings.TrimSpace(*field))
 	}
 }
 

@@ -142,6 +142,7 @@ type mockUserRepo struct {
 - Authorization checks (can't update another user's profile)
 - Project/gallery/NFT CRUD with ownership enforcement
 - `UploadBlob` — PNG magic byte validation (valid, invalid, short body), auth, storage errors
+- `validateStorageURL` — allow-list enforcement for Firebase Storage hosts
 - NFT blockchain field zeroing (`tokenId`, `serialNumber`, `transactionId` cleared on create)
 
 ### Model Tests (`internal/model/model_test.go`)
@@ -150,7 +151,8 @@ type mockUserRepo struct {
 
 - Field validation (required fields, max lengths, URL format)
 - Username regex validation
-- Sanitization (whitespace trimming, handle @ stripping)
+- Sanitization (whitespace trimming, handle @ stripping, control character removal)
+- `StripControlChars` — newlines, tabs, null bytes, C1 range, space/unicode preservation
 - `ToUpdateMap()` — only non-nil fields included, `updatedAt` always set
 
 ### Repository Tests (`internal/repository/repository_test.go`)
@@ -244,6 +246,11 @@ npm audit
 # - Content-Disposition on blob downloads (content sniffing)
 # - Structured localStorage caching (stored XSS prevention)
 # - Server-managed storageURL (Firestore rules + service layer)
+# - storageURL host allow-list validation (phishing prevention)
+# - Control character stripping in model Sanitize (social engineering prevention)
+# - io.LimitReader on blob downloads (resource exhaustion prevention)
+# - Per-UID rate limiting on sensitive endpoints (bypass prevention)
+# - Non-blocking toast notifications (replaces alert() to prevent UI hijacking)
 # - NFT blockchain field zeroing (fake metadata prevention)
 ```
 

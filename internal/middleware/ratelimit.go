@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pandasWhoCode/paintbar/internal/service"
 )
 
 // RateLimiter implements an in-memory token bucket rate limiter.
@@ -129,13 +131,21 @@ func (rl *RateLimiter) purgeExpired() {
 // SensitiveEndpoint returns middleware that applies a stricter rate limit
 // to sensitive endpoints like username claiming. It uses a separate limiter
 // instance so it doesn't share the global budget.
+//
+// The key is a compound of UID (if authenticated) + IP. This prevents a
+// single user from bypassing limits by rotating IPs, while still applying
+// IP-based limits for unauthenticated requests.
 func SensitiveEndpoint(rl *RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			key := extractIP(r)
+			ip := extractIP(r)
+			key := ip
+			if userInfo, ok := r.Context().Value(UserContextKey).(*service.UserInfo); ok && userInfo != nil {
+				key = "uid:" + userInfo.UID + "|" + ip
+			}
 			if !rl.allow(key) {
 				slog.Warn("sensitive endpoint rate limit exceeded",
-					"ip", key,
+					"key", key,
 					"path", r.URL.Path,
 				)
 				w.Header().Set("Content-Type", "application/json")
