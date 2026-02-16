@@ -96,17 +96,11 @@ func (c *Config) validate() error {
 		return fmt.Errorf("FIREBASE_PROJECT_ID is required")
 	}
 
-	// Service account required for production (preview uses ADC on Cloud Run)
-	if c.Env == EnvProduction && c.FirebaseServiceAccountPath == "" {
-		return fmt.Errorf("FIREBASE_SERVICE_ACCOUNT_PATH is required for %s environment", c.Env)
-	}
+	// Service account is optional — Cloud Run uses ADC (Application Default
+	// Credentials) in both preview and production environments.
 
-	// Hiero operator credentials required for non-local environments
-	if c.Env == EnvProduction {
-		if c.HieroOperatorID == "" || c.HieroOperatorKey == "" {
-			return fmt.Errorf("HIERO_OPERATOR_ID and HIERO_OPERATOR_KEY are required for production")
-		}
-	}
+	// Hiero operator credentials are not yet required — tokenization is not
+	// implemented. This check will be re-enabled when NFT minting goes live.
 
 	return nil
 }

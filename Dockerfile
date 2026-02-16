@@ -22,7 +22,7 @@ RUN npm install --save-dev typescript esbuild
 # firebase-config.ts is gitignored but included via .dockerignore
 COPY web/ts/ web/ts/
 
-RUN npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts \
+RUN npx esbuild web/ts/canvas/app.ts web/ts/auth/login.ts web/ts/profile/profile.ts web/ts/projects/projects.ts \
     --bundle --splitting --format=esm --outdir=web/static/dist --minify
 
 # Stage 3: Minimal runtime

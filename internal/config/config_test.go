@@ -45,7 +45,7 @@ func TestLoad_InvalidEnv(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid ENV")
 }
 
-func TestLoad_ProductionRequiresServiceAccount(t *testing.T) {
+func TestLoad_ProductionAllowsADC(t *testing.T) {
 	os.Setenv("ENV", "production")
 	os.Setenv("FIREBASE_SERVICE_ACCOUNT_PATH", "")
 	defer func() {
@@ -53,26 +53,25 @@ func TestLoad_ProductionRequiresServiceAccount(t *testing.T) {
 		os.Unsetenv("FIREBASE_SERVICE_ACCOUNT_PATH")
 	}()
 
-	_, err := Load()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "FIREBASE_SERVICE_ACCOUNT_PATH")
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.True(t, cfg.IsProduction())
+	assert.Empty(t, cfg.FirebaseServiceAccountPath)
 }
 
-func TestLoad_ProductionRequiresHieroCredentials(t *testing.T) {
+func TestLoad_ProductionDoesNotRequireHieroCredentials(t *testing.T) {
 	os.Setenv("ENV", "production")
-	os.Setenv("FIREBASE_SERVICE_ACCOUNT_PATH", "/path/to/sa.json")
 	os.Setenv("HIERO_OPERATOR_ID", "")
 	os.Setenv("HIERO_OPERATOR_KEY", "")
 	defer func() {
 		os.Unsetenv("ENV")
-		os.Unsetenv("FIREBASE_SERVICE_ACCOUNT_PATH")
 		os.Unsetenv("HIERO_OPERATOR_ID")
 		os.Unsetenv("HIERO_OPERATOR_KEY")
 	}()
 
-	_, err := Load()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "HIERO_OPERATOR_ID")
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.True(t, cfg.IsProduction())
 }
 
 func TestLoad_CustomPort(t *testing.T) {
@@ -147,15 +146,7 @@ func TestLoad_LocalWithEmptyHieroNetwork(t *testing.T) {
 
 func TestLoad_ProductionValid(t *testing.T) {
 	os.Setenv("ENV", "production")
-	os.Setenv("FIREBASE_SERVICE_ACCOUNT_PATH", "/path/to/sa.json")
-	os.Setenv("HIERO_OPERATOR_ID", "0.0.1234")
-	os.Setenv("HIERO_OPERATOR_KEY", "302e...")
-	defer func() {
-		os.Unsetenv("ENV")
-		os.Unsetenv("FIREBASE_SERVICE_ACCOUNT_PATH")
-		os.Unsetenv("HIERO_OPERATOR_ID")
-		os.Unsetenv("HIERO_OPERATOR_KEY")
-	}()
+	defer os.Unsetenv("ENV")
 
 	cfg, err := Load()
 	require.NoError(t, err)
