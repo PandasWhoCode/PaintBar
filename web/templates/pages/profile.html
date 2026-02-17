@@ -145,6 +145,13 @@
             <form id="editProfileForm" class="profile-form" method="POST" action="javascript:void(0)">
                 <div class="form-section">
                     <h3>Basic Information</h3>
+                    <div class="form-group form-group-toggle">
+                        <label for="useGravatar" class="toggle-label">
+                            <input type="checkbox" id="useGravatar" name="useGravatar">
+                            <span>Use Gravatar for profile picture</span>
+                        </label>
+                        <small class="form-hint">Uses the avatar linked to your email on <a href="https://gravatar.com" target="_blank" rel="noopener noreferrer">gravatar.com</a></small>
+                    </div>
                     <div class="form-group">
                         <label for="displayName">Display Name</label>
                         <input type="text" id="displayName" name="displayName" placeholder="Your display name">

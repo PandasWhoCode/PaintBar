@@ -9,6 +9,7 @@ import {
   signOut,
 } from "../shared/firebase-init";
 import { showSuccess, showError, bindUnderConstruction } from "../shared/toast";
+import { applyProfileImage, DEFAULT_PROFILE_IMAGE } from "../shared/gravatar";
 import {
   doc,
   setDoc,
@@ -41,6 +42,7 @@ interface ProfileData {
   blueskyHandle?: string;
   instagramHandle?: string;
   hbarAddress?: string;
+  useGravatar?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   [key: string]: unknown;
@@ -475,6 +477,7 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
   }
 
   const formData = new FormData(event.target as HTMLFormElement);
+  const useGravatarCheckbox = document.getElementById("useGravatar") as HTMLInputElement | null;
   const updates: Record<string, unknown> = {
     displayName: formData.get("displayName") || "",
     bio: formData.get("bio") || "",
@@ -485,6 +488,7 @@ async function handleProfileFormSubmit(event: Event): Promise<void> {
     blueskyHandle: formData.get("blueskyHandle") || "",
     instagramHandle: formData.get("instagramHandle") || "",
     hbarAddress: formData.get("hbarAddress") || "",
+    useGravatar: useGravatarCheckbox?.checked ?? false,
     updatedAt: new Date(),
   };
 
@@ -622,6 +626,18 @@ function setupStatsListeners(uid: string): void {
 // ---- UI update functions ----
 
 function updateProfileUI(userData: ProfileData): void {
+  // Apply Gravatar or default to profile picture and nav pic
+  const useGravatar = userData.useGravatar === true;
+  const email = userData.email || auth.currentUser?.email || "";
+  const profilePic = document.getElementById("profilePicture") as HTMLImageElement | null;
+  if (profilePic) {
+    applyProfileImage(profilePic, email, useGravatar, 200);
+  }
+  const navPic = document.querySelector(".nav-profile-pic") as HTMLImageElement | null;
+  if (navPic) {
+    applyProfileImage(navPic, email, useGravatar, 80);
+  }
+
   const usernameEl = document.getElementById("profileUsername");
   if (usernameEl) {
     usernameEl.textContent = userData.username || "Choose a username";
@@ -788,6 +804,11 @@ function populateFormData(userData: ProfileData | DocumentData): void {
     "#hbarAddress",
   ) as HTMLInputElement | null;
   if (hbarInput) hbarInput.value = (userData.hbarAddress as string) || "";
+
+  const gravatarInput = form.querySelector(
+    "#useGravatar",
+  ) as HTMLInputElement | null;
+  if (gravatarInput) gravatarInput.checked = userData.useGravatar === true;
 }
 
 function populateFormFromUI(): void {

@@ -62,7 +62,7 @@ func buildCSP(env string) string {
 		"script-src " + scriptSrc + "; " +
 		"style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; " +
 		"font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
-		"img-src 'self' data: blob:; " +
+		"img-src 'self' data: blob: https://gravatar.com; " +
 		"connect-src " + connectSrc + "; " +
 		"frame-src https://*.firebaseapp.com; " +
 		"object-src 'none'; " +

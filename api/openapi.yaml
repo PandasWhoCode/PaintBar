@@ -614,6 +614,9 @@ components:
           type: string
         hbarAddress:
           type: string
+        useGravatar:
+          type: boolean
+          description: Whether to use Gravatar for the profile picture
         createdAt:
           type: string
           format: date-time
@@ -648,6 +651,9 @@ components:
           type: string
         hbarAddress:
           type: string
+        useGravatar:
+          type: boolean
+          description: Whether to use Gravatar for the profile picture
 
     Project:
       type: object
