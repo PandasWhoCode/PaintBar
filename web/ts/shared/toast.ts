@@ -42,3 +42,23 @@ export function showSuccess(message: string): void {
 export function showError(message: string): void {
   showToast(message, "error");
 }
+
+/**
+ * Shows an info toast notification.
+ */
+export function showInfo(message: string): void {
+  showToast(message, "info");
+}
+
+/**
+ * Binds "under construction" click handlers to elements by ID.
+ * Clicking any of the listed elements shows an info toast.
+ */
+export function bindUnderConstruction(...ids: string[]): void {
+  ids.forEach((id) => {
+    document.getElementById(id)?.addEventListener("click", (e) => {
+      e.preventDefault();
+      showInfo("\u{1F6A7} This feature is under construction. Stay tuned!");
+    });
+  });
+}

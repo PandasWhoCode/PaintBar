@@ -3,7 +3,7 @@
 // ============================================================
 
 import { auth, db, signOut } from "../shared/firebase-init";
-import { showSuccess, showError } from "../shared/toast";
+import { showSuccess, showError, bindUnderConstruction } from "../shared/toast";
 import {
   collection,
   query,
@@ -283,6 +283,9 @@ function cleanupListeners(): void {
 // ---- DOMContentLoaded ----
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Under construction menu items
+  bindUnderConstruction("publicGalleryBtn", "paintbarNftsBtn");
+
   // Set up auth state listener
   auth.onAuthStateChanged(handleAuthStateChanged);
 
