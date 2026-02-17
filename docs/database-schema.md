@@ -38,6 +38,7 @@ User profile documents. The `userId` is the Firebase Auth UID.
 | `blueskyHandle`   | string    | No       | Bluesky handle                              |
 | `instagramHandle` | string    | No       | Instagram handle                            |
 | `hbarAddress`     | string    | No       | Hedera HBAR wallet address                  |
+| `useGravatar`     | boolean   | No       | Whether to use Gravatar for profile picture |
 | `createdAt`       | timestamp | Yes      | Account creation timestamp                  |
 | `updatedAt`       | timestamp | Yes      | Last profile update timestamp               |
 
@@ -62,6 +63,7 @@ User profile documents. The `userId` is the Firebase Auth UID.
   "blueskyHandle": "@artist.bsky.social",
   "instagramHandle": "@artist",
   "hbarAddress": "0.0.123456",
+  "useGravatar": true,
   "createdAt": "2025-01-15T10:30:00Z",
   "updatedAt": "2025-01-20T14:45:00Z"
 }

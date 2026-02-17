@@ -113,6 +113,17 @@ func TestSecurityHeaders_HSTSInProduction(t *testing.T) {
 	assert.Contains(t, rr.Header().Get("Strict-Transport-Security"), "max-age=63072000")
 }
 
+func TestSecurityHeaders_CSPIncludesGravatar(t *testing.T) {
+	handler := SecurityHeaders("production")(okHandler())
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	csp := rr.Header().Get("Content-Security-Policy")
+	assert.Contains(t, csp, "https://gravatar.com")
+}
+
 // --- RateLimiter tests ---
 
 func TestRateLimiter_Close(t *testing.T) {

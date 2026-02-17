@@ -40,6 +40,10 @@ paintbar/
 │   │   ├── recovery.go           # Panic recovery middleware
 │   │   └── security.go           # Security headers (CSP, HSTS, X-Frame-Options)
 │   │
+│   ├── gravatar/                 # Gravatar URL helper (MD5 hash, d=404)
+│   │   ├── gravatar.go           # URL(email, size) → Gravatar URL
+│   │   └── gravatar_test.go      # Gravatar helper unit tests
+│   │
 │   ├── model/                    # Domain models
 │   │   ├── user.go               # User, UserUpdate structs + validation
 │   │   ├── project.go            # Project, ProjectUpdate structs + validation
@@ -102,7 +106,8 @@ paintbar/
 │   │       ├── firebase-config.ts          # Firebase config (gitignored, generated)
 │   │       ├── firebase-config.template.ts # Template for firebase-config.ts
 │   │       ├── errors.ts         # Global error handler
-│   │       └── toast.ts          # Shared toast notification utility
+│   │       ├── toast.ts          # Shared toast notification utility
+│   │       └── gravatar.ts       # Gravatar URL helper (MD5 hash, onerror fallback)
 │   │
 │   └── static/                   # Served at /static/* by Go file server
 │       ├── dist/                 # esbuild output (gitignored)

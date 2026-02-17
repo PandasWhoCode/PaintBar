@@ -4,8 +4,10 @@
 
 import { auth, db, signOut } from "../shared/firebase-init";
 import { showSuccess, showError, bindUnderConstruction } from "../shared/toast";
+import { applyProfileImage } from "../shared/gravatar";
 import {
   collection,
+  doc,
   query,
   where,
   onSnapshot,
@@ -32,6 +34,7 @@ interface ProjectData {
 // ---- Listener state ----
 
 let unsubscribeProjects: Unsubscribe | null = null;
+let unsubscribeUserProfile: Unsubscribe | null = null;
 
 // ---- Cache ----
 
@@ -95,6 +98,9 @@ function handleAuthStateChanged(user: FirebaseUser | null): void {
   }
 
   currentUid = user.uid;
+
+  // Listen for profile changes to update nav Gravatar
+  setupNavProfileListener(user.uid, user.email || "");
 
   // Render from cache immediately
   const cached = getCachedProjects();
@@ -273,10 +279,30 @@ async function handleLogout(e: Event): Promise<void> {
 
 // ---- Cleanup ----
 
+function setupNavProfileListener(uid: string, email: string): void {
+  const userDocRef = doc(db, "users", uid);
+  unsubscribeUserProfile = onSnapshot(
+    userDocRef,
+    (snapshot) => {
+      const navPic = document.querySelector(".nav-profile-pic") as HTMLImageElement | null;
+      if (!navPic) return;
+      const useGravatar = snapshot.exists() && snapshot.data()?.useGravatar === true;
+      applyProfileImage(navPic, email, useGravatar, 80);
+    },
+    (error) => {
+      console.error("Error in nav profile listener:", error);
+    },
+  );
+}
+
 function cleanupListeners(): void {
   if (unsubscribeProjects) {
     unsubscribeProjects();
     unsubscribeProjects = null;
+  }
+  if (unsubscribeUserProfile) {
+    unsubscribeUserProfile();
+    unsubscribeUserProfile = null;
   }
 }
 

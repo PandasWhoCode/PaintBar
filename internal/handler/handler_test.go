@@ -537,6 +537,21 @@ func TestUpdateProfile_ValidationError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
+func TestUpdateProfile_UseGravatar(t *testing.T) {
+	repo := newMockUserRepo()
+	repo.users["user1"] = &model.User{UID: "user1", Email: "a@b.com"}
+	h := NewProfileHandler(service.NewUserService(repo))
+
+	body := jsonBody(map[string]interface{}{"useGravatar": true})
+	req := httptest.NewRequest(http.MethodPut, "/api/profile", body)
+	req = withUser(req, "user1", "a@b.com")
+	rr := httptest.NewRecorder()
+	h.UpdateProfile(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "updated")
+}
+
 func TestClaimUsername_Success(t *testing.T) {
 	repo := newMockUserRepo()
 	repo.users["user1"] = &model.User{UID: "user1", Email: "a@b.com"}

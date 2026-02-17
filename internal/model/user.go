@@ -25,6 +25,7 @@ type User struct {
 	BlueskyHandle   string    `firestore:"blueskyHandle,omitempty" json:"blueskyHandle,omitempty"`
 	InstagramHandle string    `firestore:"instagramHandle,omitempty" json:"instagramHandle,omitempty"`
 	HbarAddress     string    `firestore:"hbarAddress,omitempty" json:"hbarAddress,omitempty"`
+	UseGravatar     bool      `firestore:"useGravatar" json:"useGravatar"`
 	CreatedAt       time.Time `firestore:"createdAt" json:"createdAt"`
 	UpdatedAt       time.Time `firestore:"updatedAt" json:"updatedAt"`
 }
@@ -41,6 +42,7 @@ type UserUpdate struct {
 	BlueskyHandle   *string `firestore:"blueskyHandle,omitempty" json:"blueskyHandle,omitempty"`
 	InstagramHandle *string `firestore:"instagramHandle,omitempty" json:"instagramHandle,omitempty"`
 	HbarAddress     *string `firestore:"hbarAddress,omitempty" json:"hbarAddress,omitempty"`
+	UseGravatar     *bool   `firestore:"useGravatar,omitempty" json:"useGravatar,omitempty"`
 }
 
 // Validate checks that the User struct has required fields and valid formats.
@@ -119,6 +121,9 @@ func (u *UserUpdate) ToUpdateMap() map[string]interface{} {
 	}
 	if u.HbarAddress != nil {
 		m["hbarAddress"] = *u.HbarAddress
+	}
+	if u.UseGravatar != nil {
+		m["useGravatar"] = *u.UseGravatar
 	}
 	m["updatedAt"] = time.Now()
 	return m

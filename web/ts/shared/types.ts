@@ -41,6 +41,9 @@ export interface User {
   // Blockchain
   hbarAddress?: string;
 
+  // Gravatar
+  useGravatar?: boolean;
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +60,7 @@ export interface UserUpdate {
   twitterHandle?: string;
   blueskyHandle?: string;
   hbarAddress?: string;
+  useGravatar?: boolean;
 }
 
 /** Canvas configuration options */

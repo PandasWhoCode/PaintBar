@@ -323,6 +323,7 @@ func TestUserUpdate_ToUpdateMap_AllFields(t *testing.T) {
 	ig := "alice_art"
 	hbar := "0.0.12345"
 
+	useGravatar := true
 	update := &UserUpdate{
 		DisplayName:     &name,
 		Bio:             &bio,
@@ -333,6 +334,7 @@ func TestUserUpdate_ToUpdateMap_AllFields(t *testing.T) {
 		BlueskyHandle:   &bs,
 		InstagramHandle: &ig,
 		HbarAddress:     &hbar,
+		UseGravatar:     &useGravatar,
 	}
 	m := update.ToUpdateMap()
 	assert.Equal(t, "Alice", m["displayName"])
@@ -344,7 +346,22 @@ func TestUserUpdate_ToUpdateMap_AllFields(t *testing.T) {
 	assert.Equal(t, "alice.bsky.social", m["blueskyHandle"])
 	assert.Equal(t, "alice_art", m["instagramHandle"])
 	assert.Equal(t, "0.0.12345", m["hbarAddress"])
+	assert.Equal(t, true, m["useGravatar"])
 	assert.Contains(t, m, "updatedAt")
+}
+
+func TestUserUpdate_ToUpdateMap_UseGravatar_False(t *testing.T) {
+	useGravatar := false
+	update := &UserUpdate{UseGravatar: &useGravatar}
+	m := update.ToUpdateMap()
+	assert.Equal(t, false, m["useGravatar"])
+	assert.Contains(t, m, "updatedAt")
+}
+
+func TestUserUpdate_ToUpdateMap_UseGravatar_Nil(t *testing.T) {
+	update := &UserUpdate{}
+	m := update.ToUpdateMap()
+	assert.NotContains(t, m, "useGravatar")
 }
 
 // --- validateURL tests ---
