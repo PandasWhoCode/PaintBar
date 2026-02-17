@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
   signOut,
 } from "../shared/firebase-init";
-import { showSuccess, showError } from "../shared/toast";
+import { showSuccess, showError, bindUnderConstruction } from "../shared/toast";
 import {
   doc,
   setDoc,
@@ -228,6 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".copyright-year").forEach((el) => {
     el.textContent = String(new Date().getFullYear());
   });
+
+  // Under construction menu items
+  bindUnderConstruction("publicGalleryBtn", "paintbarNftsBtn");
 
   // Set up auth state listener
   auth.onAuthStateChanged(handleAuthStateChanged);
